@@ -50,7 +50,7 @@ export default function CoachDashboard() {
             if (logsData) {
                 // Filter for 'today' in client side to be safe
                 const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-                const todaysLogs = logsData.filter(log => {
+                const todaysLogs = logsData.filter((log: any) => {
                     // Fallback to created_at if date column is empty/missing
                     const logDate = log.date || log.created_at;
                     if (!logDate) return false;
