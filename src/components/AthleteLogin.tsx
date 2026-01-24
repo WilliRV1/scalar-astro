@@ -52,9 +52,9 @@ export default function AthleteLogin({ onLoginSuccess, onBack }: AthleteLoginPro
     };
 
     return (
-        <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col items-center justify-center p-4">
-            <button onClick={onBack} className="absolute top-4 left-4 text-gray-500 hover:text-primary flex items-center gap-2">
-                <span className="material-icons">arrow_back</span> Atrás
+        <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col items-center justify-center p-4 relative">
+            <button onClick={onBack} className="absolute top-8 left-6 text-gray-500 hover:text-primary flex items-center gap-2 py-2 pr-4 z-10">
+                <span className="material-icons text-xl">arrow_back</span> <span className="font-bold uppercase tracking-wider">Atrás</span>
             </button>
 
             <div className="max-w-md w-full bg-surface-light dark:bg-surface-dark p-8 border-t-4 border-primary shadow-2xl rounded">

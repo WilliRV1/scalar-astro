@@ -93,9 +93,9 @@ export default function AthletePersonalView({ athlete, onLogout }: AthletePerson
                                 <button
                                     key={lvl}
                                     onClick={() => setEnergy(lvl)}
-                                    className={`w-10 h-12 flex items-center justify-center rounded transition-all transform ${energy === lvl ? 'scale-125 bg-primary/20 border-b-2 border-primary' : 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0'}`}
+                                    className={`w-12 h-14 flex items-center justify-center rounded transition-all transform ${energy === lvl ? 'scale-125 bg-primary/20 border-b-2 border-primary' : 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0'}`}
                                 >
-                                    {['💀', '😫', '😐', '🙂', '⚡'][lvl - 1]}
+                                    <span className="text-2xl">{['💀', '😫', '😐', '🙂', '⚡'][lvl - 1]}</span>
                                 </button>
                             ))}
                         </div>

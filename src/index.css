@@ -9,21 +9,27 @@
     .grunge-border {
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     .chalk-text {
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
+/* Mobile "Native App" Feel */
+html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
-::-webkit-scrollbar-track {
-    background: #111; 
+
+body {
+    user-select: none;
+    /* Prevent text selection like an app */
+    -webkit-user-select: none;
 }
-::-webkit-scrollbar-thumb {
-    background: #FF0000; 
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #cc0000; 
+
+/* Allow selection in inputs/textareas */
+input,
+textarea {
+    user-select: text;
+    -webkit-user-select: text;
 }
