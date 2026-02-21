@@ -7,30 +7,57 @@ const inMemoryStore = {
     athletes: [
         {
             id: '1',
-            name: 'DEMO John Doe',
+            name: 'John Doe',
             avatar_url: null,
             payment_status: 'pending',
             cut_day: '05',
-            snatch_rm: '95',
-            clean_rm: '115'
+            referral_source: 'Instagram',
+            back_squat: '120',
+            bench_press: '80',
+            deadlift: '140',
+            shoulder_press: '55',
+            front_squat: '100',
+            clean_rm: '95',
+            push_press: '65',
+            karen: '8:30',
+            burpees_100: '7:15',
+            snatch_rm: '75',
         },
         {
             id: '2',
-            name: 'DEMO Sarah Connor',
-            avatar_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAsC_F_XKleY-2N6iMfqWmlAcL0QwmS9ldzUH1E-7r0mbIQe458B33_Sa6tXqPeLmTfWnl5nYQf9uKXVBN8rerYz1T5hhdWqChNYvPUMpnTVpj4tTCtxxrJOYtXUsyvCabWMhnKcuHFvf9Cl0IlCmq2r7jiv5w3ZUwv10FH8Uu8hyqEDOOdmimP4jhS_vMpOqN5Lc3JRUVhVjQpTLtEanQ-ClwANaw2E0HvA9odBMwxEU8DKjrix46qowjF-hJzps0kgVY2YN_EJM8',
+            name: 'Sarah Connor',
+            avatar_url: null,
             payment_status: 'active',
             cut_day: '15',
-            snatch_rm: '65',
-            clean_rm: '85'
+            referral_source: 'Referido',
+            back_squat: '85',
+            bench_press: '50',
+            deadlift: '95',
+            shoulder_press: '35',
+            front_squat: '70',
+            clean_rm: '65',
+            push_press: '45',
+            karen: '10:45',
+            burpees_100: '9:30',
+            snatch_rm: '55',
         },
         {
             id: '3',
-            name: 'DEMO Mike Tyson',
-            avatar_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC5EskrZE3I6whoSj7n4T5nPMjy9HqENK_DF1Ir7Mxv7kH8t2b1Bs1WCRcYORh8r0IUWylJvq6nUW2x9PauXqqsNP3lGpXC6LPsGyDJAh2hl2-oFXZo5hji_TzJvzP4i9Dk3l7Zm8rmB0Wpl0FcrzEy_KYvO10PQn9TwDRvdRMsnK_w5ki-g4RJFRrGc2m5rc0vbufRcXa7CC2DusqmU24QRs3u4wS72DVgSz3qBd-6mf-IqA-RGFnBQl-hUf2Xoz2SWABcDE1semA',
+            name: 'Mike Tyson',
+            avatar_url: null,
             payment_status: 'pending',
             cut_day: '01',
-            snatch_rm: '105',
-            clean_rm: '135'
+            referral_source: 'Google',
+            back_squat: '150',
+            bench_press: '110',
+            deadlift: '180',
+            shoulder_press: '70',
+            front_squat: '130',
+            clean_rm: '115',
+            push_press: '80',
+            karen: '6:50',
+            burpees_100: '5:45',
+            snatch_rm: '95',
         }
     ]
 }
@@ -46,16 +73,75 @@ export const supabase = isConfigured
                 console.warn('Supabase not configured. Returning demo data.');
                 return Promise.resolve({ data: (inMemoryStore as any)[table] || [], error: null })
             },
-            insert: () => Promise.resolve({ data: null, error: { message: 'Demo Mode: Insert not supported' } }),
+            insert: (rows: any[]) => {
+                console.warn('Supabase not configured. Mock insert:', rows);
+                if (table === 'athletes' && rows) {
+                    const newRows = rows.map(r => ({ ...r, id: crypto.randomUUID() }));
+                    inMemoryStore.athletes.push(...newRows as any);
+                    return {
+                        select: () => ({
+                            single: () => Promise.resolve({ data: newRows[0] || null, error: null })
+                        }),
+                        then: (resolve: any) => resolve({ data: newRows, error: null })
+                    };
+                }
+                return {
+                    select: () => ({
+                        single: () => Promise.resolve({ data: null, error: null })
+                    }),
+                    then: (resolve: any) => resolve({ data: null, error: null })
+                };
+            },
             update: (updates: any) => {
                 console.warn('Supabase not configured. Mock update:', updates);
-                return Promise.resolve({ data: null, error: null }) // Pretend it worked
+                return {
+                    eq: (col: string, val: string) => {
+                        const index = inMemoryStore.athletes.findIndex((a: any) => a[col] === val);
+                        if (index !== -1) {
+                            inMemoryStore.athletes[index] = { ...inMemoryStore.athletes[index], ...updates };
+                        }
+                        return Promise.resolve({ data: null, error: null });
+                    }
+                };
             },
-            eq: () => ({
-                // Chaining for update().eq()
-                select: () => Promise.resolve({ data: [], error: null }),
-                // Mock the promise return for update chain
+            delete: () => ({
+                eq: (col: string, val: string) => {
+                    console.warn('Supabase not configured. Mock delete.');
+                    const index = inMemoryStore.athletes.findIndex((a: any) => a[col] === val);
+                    if (index !== -1) {
+                        inMemoryStore.athletes.splice(index, 1);
+                    }
+                    return Promise.resolve({ data: null, error: null });
+                }
+            }),
+            eq: (col: string, val: string) => ({
+                select: () => {
+                    const data = inMemoryStore.athletes.filter((a: any) => a[col] === val);
+                    return Promise.resolve({ data, error: null });
+                },
                 then: (resolve: any) => resolve({ data: null, error: null })
-            })
+            }),
+            order: (col: string, options: any) => ({
+                limit: (n: number) => {
+                    let data = [...inMemoryStore.athletes];
+                    // Very simple mock sorting
+                    if (col === 'created_at') {
+                        data.reverse();
+                    }
+                    return Promise.resolve({ data: data.slice(0, n), error: null });
+                }
+            }),
+            upsert: (rows: any[]) => {
+                console.warn('Supabase not configured. Mock upsert:', rows);
+                rows.forEach(row => {
+                    const index = inMemoryStore.athletes.findIndex((a: any) => a.id === row.id);
+                    if (index !== -1) {
+                        inMemoryStore.athletes[index] = { ...inMemoryStore.athletes[index], ...row };
+                    } else {
+                        inMemoryStore.athletes.push({ ...row, id: row.id || crypto.randomUUID() });
+                    }
+                });
+                return Promise.resolve({ data: rows, error: null });
+            }
         })
     } as any;

@@ -1,116 +1,223 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
+import ExcelImport from './ExcelImport';
 
-// Define the Athlete type based on our database schema
+// ─── Types ───────────────────────────────────────────────────────────
 type Athlete = {
     id: string;
     name: string;
     avatar_url: string | null;
     payment_status: 'active' | 'pending';
     cut_day: string;
-    snatch_rm: string;
+    referral_source: string;
+    back_squat: string;
+    bench_press: string;
+    deadlift: string;
+    shoulder_press: string;
+    front_squat: string;
     clean_rm: string;
+    snatch_rm: string;
+    push_press: string;
+    karen: string;
+    burpees_100: string;
+    access_code: string;
 };
 
-// Haptic Feedback Helper
-const vibrate = (pattern: number | number[]) => {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(pattern);
-    }
+type FilterMode = 'all' | 'active' | 'pending';
+
+// ─── Constants ───────────────────────────────────────────────────────
+const LIFTS = [
+    { key: 'back_squat', label: 'Back Squat', short: 'B.SQ', icon: '🏋️', unit: 'kg' },
+    { key: 'bench_press', label: 'Bench Press', short: 'BCH', icon: '💪', unit: 'kg' },
+    { key: 'deadlift', label: 'Deadlift', short: 'DL', icon: '⚡', unit: 'kg' },
+    { key: 'shoulder_press', label: 'Sh. Press', short: 'SHP', icon: '🔥', unit: 'kg' },
+    { key: 'front_squat', label: 'Front Squat', short: 'FSQ', icon: '🦵', unit: 'kg' },
+    { key: 'clean_rm', label: 'Clean', short: 'CLN', icon: '🏅', unit: 'kg' },
+    { key: 'snatch_rm', label: 'Snatch', short: 'SNT', icon: '🏋️‍♀️', unit: 'kg' },
+    { key: 'push_press', label: 'Push Press', short: 'PP', icon: '🚀', unit: 'kg' },
+] as const;
+
+const BENCHMARKS = [
+    { key: 'karen', label: 'Karen', short: 'KRN', icon: '⏱️', unit: 'min' },
+    { key: 'burpees_100', label: '100 Burpees', short: 'BRP', icon: '💥', unit: 'min' },
+] as const;
+
+// ─── Helpers ─────────────────────────────────────────────────────────
+const vibrate = (ms: number) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms);
 };
 
-// Sparkline Component
-const Sparkline = ({ data }: { data: number[] }) => {
-    if (!data || data.length < 2) {
-        // Placeholder line if not enough data
-        return (
-            <svg width="100%" height="20" viewBox="0 0 100 20" className="opacity-20">
-                <path d="M0 10 L100 10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="4 4" />
-            </svg>
-        );
-    }
+const getAccent = (name: string) => {
+    const h = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const accents = [
+        { text: 'text-red-400', border: 'border-red-500/30', bg: 'bg-red-500', ring: 'ring-red-500/30', gradient: 'from-red-600/20 via-red-900/5' },
+        { text: 'text-blue-400', border: 'border-blue-500/30', bg: 'bg-blue-500', ring: 'ring-blue-500/30', gradient: 'from-blue-600/20 via-blue-900/5' },
+        { text: 'text-purple-400', border: 'border-purple-500/30', bg: 'bg-purple-500', ring: 'ring-purple-500/30', gradient: 'from-purple-600/20 via-purple-900/5' },
+        { text: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500', ring: 'ring-emerald-500/30', gradient: 'from-emerald-600/20 via-emerald-900/5' },
+        { text: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500', ring: 'ring-amber-500/30', gradient: 'from-amber-600/20 via-amber-900/5' },
+        { text: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-500', ring: 'ring-rose-500/30', gradient: 'from-rose-600/20 via-rose-900/5' },
+        { text: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-500', ring: 'ring-sky-500/30', gradient: 'from-sky-600/20 via-sky-900/5' },
+        { text: 'text-lime-400', border: 'border-lime-500/30', bg: 'bg-lime-500', ring: 'ring-lime-500/30', gradient: 'from-lime-600/20 via-lime-900/5' },
+    ];
+    return accents[h % accents.length];
+};
 
-    const max = 5; // Energy is 1-5
-    const min = 1;
-    const width = 100;
-    const height = 20;
+// ─── Edit Drawer (Full-screen mobile form) ───────────────────────────
+function EditDrawer({ athlete, accent, onSave, onClose, onDelete }: {
+    athlete: Athlete;
+    accent: ReturnType<typeof getAccent>;
+    onSave: (updates: Partial<Athlete>) => void;
+    onClose: () => void;
+    onDelete: () => void;
+}) {
+    const [form, setForm] = useState({ ...athlete });
+    const set = (key: string, val: string) => setForm(prev => ({ ...prev, [key]: val }));
 
-    const points = data.map((val, i) => {
-        const x = (i / (data.length - 1)) * width;
-        const normalizedVal = (val - min) / (max - min);
-        const y = height - (normalizedVal * height); // Invert Y because SVG 0 is top
-        return `${x},${y}`;
-    }).join(' ');
-
-    const isTrendingUp = data[data.length - 1] >= data[0];
-    const colorClass = isTrendingUp ? 'text-green-500' : 'text-red-500';
+    const handleSave = () => {
+        const changes: Partial<Athlete> = {};
+        for (const key of Object.keys(form) as (keyof Athlete)[]) {
+            if (form[key] !== athlete[key]) (changes as any)[key] = form[key];
+        }
+        if (Object.keys(changes).length > 0) onSave(changes);
+        onClose();
+    };
 
     return (
-        <svg width="100%" height="20" viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
-            <motion.path
-                d={`M ${points}`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={colorClass}
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 1.5, ease: "easeInOut" }}
-            />
-        </svg>
-    );
-};
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-end sm:items-center sm:justify-center"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="bg-surface-dark w-full sm:w-[480px] sm:max-h-[85vh] max-h-[92vh] rounded-t-2xl sm:rounded-2xl overflow-y-auto border border-gray-800 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Drawer Header */}
+                <div className="sticky top-0 z-10 bg-surface-dark/95 backdrop-blur-lg border-b border-gray-800 px-5 py-4 flex items-center justify-between">
+                    <button onClick={onClose} className="text-gray-400 hover:text-white p-1 -ml-1">
+                        <span className="material-icons">close</span>
+                    </button>
+                    <h2 className="font-display text-lg uppercase tracking-wider text-white">Editar Atleta</h2>
+                    <button onClick={handleSave}
+                        className="bg-primary hover:bg-red-700 text-white text-sm font-bold uppercase px-4 py-1.5 rounded-full transition-all">
+                        Guardar
+                    </button>
+                </div>
 
+                <div className="p-5 space-y-6">
+                    {/* Name & Info */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-1 h-5 rounded-full ${accent.bg}`} />
+                            <span className="text-xs text-gray-400 uppercase tracking-widest font-bold">Información</span>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Nombre</label>
+                            <input className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-primary transition-colors"
+                                value={form.name} onChange={e => set('name', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Día de Corte</label>
+                                <input className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-primary transition-colors"
+                                    value={form.cut_day} onChange={e => set('cut_day', e.target.value)} placeholder="01-31" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Como Llegó</label>
+                                <input className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-primary transition-colors"
+                                    value={form.referral_source} onChange={e => set('referral_source', e.target.value)} placeholder="Instagram, Referido..." />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Lifts */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="w-1 h-5 rounded-full bg-emerald-500" />
+                            <span className="text-xs text-gray-400 uppercase tracking-widest font-bold">Levantamientos (kg)</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {LIFTS.map(lift => (
+                                <div key={lift.key}>
+                                    <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">
+                                        {lift.icon} {lift.label}
+                                    </label>
+                                    <input
+                                        className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-emerald-500 transition-colors text-center font-display text-lg"
+                                        value={(form as any)[lift.key] || ''}
+                                        onChange={e => set(lift.key, e.target.value)}
+                                        placeholder="—"
+                                        inputMode="numeric"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Benchmarks */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="w-1 h-5 rounded-full bg-amber-500" />
+                            <span className="text-xs text-gray-400 uppercase tracking-widest font-bold">Benchmarks</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {BENCHMARKS.map(bm => (
+                                <div key={bm.key}>
+                                    <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">
+                                        {bm.icon} {bm.label}
+                                    </label>
+                                    <input
+                                        className="w-full bg-black border border-amber-500/20 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-amber-500 transition-colors text-center font-display text-lg"
+                                        value={(form as any)[bm.key] || ''}
+                                        onChange={e => set(bm.key, e.target.value)}
+                                        placeholder="—"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Danger Zone */}
+                    <div className="pt-4 border-t border-gray-800">
+                        <button onClick={() => { if (confirm('¿Eliminar este atleta permanentemente?')) { onDelete(); onClose(); } }}
+                            className="w-full flex items-center justify-center gap-2 text-red-400/60 hover:text-red-400 text-sm py-3 transition-colors">
+                            <span className="material-icons text-sm">delete_outline</span>
+                            Eliminar Atleta
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// ─── Main Component ──────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════
 export default function CoachDashboard() {
     const [athletes, setAthletes] = useState<Athlete[]>([]);
     const [loading, setLoading] = useState(true);
-    const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-    const [logs, setLogs] = useState<any[]>([]);
-    const [showOnlyTrained, setShowOnlyTrained] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filter, setFilter] = useState<FilterMode>('all');
+    const [showExcelImport, setShowExcelImport] = useState(false);
+    const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
+    const [sortBy, setSortBy] = useState<'name' | 'payment'>('name');
 
-    // Initial data fetch
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useEffect(() => { fetchData(); }, []);
 
     async function fetchData() {
         try {
             setLoading(true);
-
-            // Fetch Athletes
-            const { data: athletesData, error: athletesError } = await supabase
-                .from('athletes')
-                .select('*');
-
-            if (athletesError) throw athletesError;
-            if (athletesData) setAthletes(athletesData);
-
-            // Fetch Logs (Increased limit for history)
-            const { data: logsData, error: logsError } = await supabase
-                .from('workout_logs')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(500);
-
-            if (logsError) {
-                console.warn("Log fetch error:", logsError);
-            }
-
-            if (logsData) {
-                // Filter for 'today' in client side to be safe
-                const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-                // We keep ALL logs for history, but mark which ones are "today" 
-                // Correction: The state 'logs' currently stores everything. 
-                // We will filter 'today' locally inside the render or helper.
-                setLogs(logsData);
-            } else {
-                setLogs([]);
-            }
-
+            const { data, error } = await supabase.from('athletes').select('*');
+            if (error) throw error;
+            if (data) setAthletes(data);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -118,350 +225,325 @@ export default function CoachDashboard() {
         }
     }
 
-    const getTodayLog = (athleteId: string) => {
-        const today = new Date().toISOString().split('T')[0];
-        return logs.find(log => {
-            const logDate = log.date || log.created_at;
-            return log.athlete_id === athleteId && logDate && logDate.startsWith(today);
+    // ─── Filtering & Sorting ─────────────────────────────────────
+    const filtered = athletes
+        .filter(a => {
+            if (filter === 'active') return a.payment_status === 'active';
+            if (filter === 'pending') return a.payment_status === 'pending';
+            return true;
+        })
+        .filter(a => !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => {
+            if (sortBy === 'payment') {
+                if (a.payment_status !== b.payment_status) return a.payment_status === 'pending' ? -1 : 1;
+            }
+            return a.name.localeCompare(b.name);
         });
-    };
 
-    const getEnergyHistory = (athleteId: string) => {
-        return logs
-            .filter(log => log.athlete_id === athleteId) // Get athlete's logs
-            .sort((a, b) => { // Sort by date ascending for the graph
-                const dateA = a.date || a.created_at;
-                const dateB = b.date || b.created_at;
-                return dateA.localeCompare(dateB);
-            })
-            .slice(-5) // Take last 5
-            .map(log => log.energy || 0); // Extract energy
-    };
-
-    // Derived state for sorting/filtering
-    const sortedAthletes = [...athletes].sort((a, b) => {
-        if (!showOnlyTrained) return 0; // Default order
-        const logA = getTodayLog(a.id);
-        const logB = getTodayLog(b.id);
-        // Put those with logs first
-        if (logA && !logB) return -1;
-        if (!logA && logB) return 1;
-        return 0;
-    }).filter(a => !showOnlyTrained || getTodayLog(a.id));
-
-
-    // Optimistic Update Helper
-    const updateAthlete = async (id: string, updates: Partial<Athlete>) => {
-        const previousAthletes = [...athletes];
-        setAthletes((current) =>
-            current.map((athlete) =>
-                athlete.id === id ? { ...athlete, ...updates } : athlete
-            )
-        );
-
+    // ─── CRUD Operations ─────────────────────────────────────────
+    const updateAthlete = useCallback(async (id: string, updates: Partial<Athlete>) => {
+        const prev = [...athletes];
+        setAthletes(c => c.map(a => a.id === id ? { ...a, ...updates } : a));
         try {
-            const { error } = await supabase
-                .from('athletes')
-                .update(updates)
-                .eq('id', id);
-
+            const { error } = await supabase.from('athletes').update(updates).eq('id', id);
             if (error) throw error;
         } catch (error) {
-            console.error('Error updating athlete:', error);
-            setAthletes(previousAthletes);
+            console.error('Error updating:', error);
+            setAthletes(prev);
         }
-    };
+    }, [athletes]);
 
-    // Excel-style Add
     const addAthlete = async () => {
-        const newAthlete: Omit<Athlete, 'id'> = {
-            name: 'Nuevo Atleta',
-            avatar_url: null,
-            payment_status: 'pending',
-            cut_day: '01',
-            snatch_rm: '0',
-            clean_rm: '0'
+        vibrate(20);
+        const newAthlete = {
+            name: 'Nuevo Atleta', avatar_url: null, payment_status: 'pending' as const,
+            cut_day: '', referral_source: '', back_squat: '', bench_press: '',
+            deadlift: '', shoulder_press: '', front_squat: '', clean_rm: '',
+            push_press: '', karen: '', burpees_100: '',
         };
-
         const tempId = crypto.randomUUID();
-        const optimisticAthlete = { ...newAthlete, id: tempId };
-        setAthletes([...athletes, optimisticAthlete]);
+        const optimistic = { ...newAthlete, id: tempId };
+        setAthletes(prev => [...prev, optimistic]);
 
         try {
-            const { data, error } = await supabase
-                .from('athletes')
-                .insert([newAthlete])
-                .select()
-                .single();
-
+            const { data, error } = await supabase.from('athletes').insert([newAthlete]).select().single();
             if (error) throw error;
             if (data) {
-                setAthletes(current => current.map(a => a.id === tempId ? data : a));
+                setAthletes(c => c.map(a => a.id === tempId ? data : a));
+                setEditingAthlete(data);
             }
         } catch (error) {
-            console.error('Error adding athlete:', error);
-            setAthletes(current => current.filter(a => a.id !== tempId));
+            console.error('Error adding:', error);
+            setEditingAthlete(optimistic);
         }
     };
 
-    // Delete Athlete
     const deleteAthlete = async (id: string) => {
-        vibrate(50); // Strong haptic
-        if (!confirm('¿Estás seguro de eliminar este atleta?')) return;
-
-        const previousAthletes = [...athletes];
-        setAthletes(current => current.filter(a => a.id !== id));
-        setMenuOpenId(null);
-
+        vibrate(50);
+        const prev = [...athletes];
+        setAthletes(c => c.filter(a => a.id !== id));
         try {
-            const { error } = await supabase
-                .from('athletes')
-                .delete()
-                .eq('id', id);
-
+            const { error } = await supabase.from('athletes').delete().eq('id', id);
             if (error) throw error;
         } catch (error) {
-            console.error('Error deleting athlete:', error);
-            setAthletes(previousAthletes);
+            console.error('Error deleting:', error);
+            setAthletes(prev);
         }
-    }
-
-    const togglePaymentStatus = (id: string, currentStatus: string) => {
-        vibrate(10); // Light haptic
-        const newStatus = currentStatus === 'active' ? 'pending' : 'active';
-        updateAthlete(id, { payment_status: newStatus });
     };
 
-    const handleBlur = (id: string, field: keyof Athlete, value: string) => {
-        updateAthlete(id, { [field]: value });
+    const togglePayment = (id: string, current: string) => {
+        vibrate(10);
+        updateAthlete(id, { payment_status: current === 'active' ? 'pending' : 'active' } as Partial<Athlete>);
     };
 
+    // ─── Excel Import ────────────────────────────────────────────
+    const handleExcelImport = async (importedAthletes: any[]) => {
+        setShowExcelImport(false);
+        try {
+            const toInsert = importedAthletes.map(a => ({
+                name: a.name || 'Sin Nombre', payment_status: 'pending', avatar_url: null,
+                cut_day: a.cut_day || '', referral_source: a.referral_source || '',
+                back_squat: a.back_squat || '', bench_press: a.bench_press || '',
+                deadlift: a.deadlift || '', shoulder_press: a.shoulder_press || '',
+                front_squat: a.front_squat || '', clean_rm: a.clean_rm || '',
+                push_press: a.push_press || '', karen: a.karen || '', burpees_100: a.burpees_100 || '',
+            }));
+            const { error } = await supabase.from('athletes').insert(toInsert);
+            if (error) throw error;
+            fetchData();
+        } catch (error) {
+            console.error('Error importing:', error);
+            fetchData();
+        }
+    };
+
+    // ─── Stats ───────────────────────────────────────────────────
+    const totalCount = athletes.length;
+    const activeCount = athletes.filter(a => a.payment_status === 'active').length;
     const pendingCount = athletes.filter(a => a.payment_status === 'pending').length;
 
-    return (
-        <div className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full" onClick={() => setMenuOpenId(null)}>
-            {/* Header Stats / Filters */}
-            <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between items-end md:items-center">
-                <div className="w-full md:hidden flex items-center gap-2 px-4 py-3 bg-red-900/20 border border-primary rounded mb-2">
-                    <span className="material-icons text-primary animate-pulse">warning</span>
-                    <span className="font-display text-lg text-white">{pendingCount} Pending Payments</span>
-                </div>
+    // Count how many PRs an athlete has filled in
+    const prCount = (a: Athlete) => {
+        return [...LIFTS, ...BENCHMARKS].filter(f => (a as any)[f.key]).length;
+    };
 
-                <div className="relative w-full md:w-96">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <span className="material-icons text-gray-400">search</span>
+    return (
+        <div className="flex-grow max-w-3xl mx-auto w-full pb-24 relative">
+
+            {/* ─── Sticky Search & Filter Bar ─────────────────────── */}
+            <div className="sticky top-0 z-40 bg-background-dark/95 backdrop-blur-lg border-b border-gray-800/50 px-4 pt-4 pb-3 space-y-3">
+                {/* Search */}
+                <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                        <span className="material-icons text-gray-500 text-xl">search</span>
                     </span>
                     <input
-                        className="w-full bg-surface-light dark:bg-surface-dark border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded focus:ring-primary focus:border-primary block pl-10 p-3 uppercase font-bold tracking-wide shadow-sm"
-                        placeholder="SEARCH ATHLETE..."
-                        type="text"
+                        className="w-full bg-surface-dark border border-gray-800 text-white text-sm rounded-xl pl-11 pr-4 py-3 focus:ring-1 focus:ring-primary focus:border-primary placeholder-gray-600 transition-colors"
+                        placeholder="Buscar atleta..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                    {searchQuery && (
+                        <button onClick={() => setSearchQuery('')}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-500 hover:text-white">
+                            <span className="material-icons text-lg">close</span>
+                        </button>
+                    )}
                 </div>
 
-                <div className="flex gap-2">
+                {/* Filter Pills + Stats */}
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    {([
+                        { key: 'all', label: 'Todos', count: totalCount, color: 'gray' },
+                        { key: 'active', label: 'Activos', count: activeCount, color: 'emerald' },
+                        { key: 'pending', label: 'Pendientes', count: pendingCount, color: 'red' },
+                    ] as const).map(f => (
+                        <button
+                            key={f.key}
+                            onClick={() => { vibrate(5); setFilter(f.key); }}
+                            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all shrink-0 ${filter === f.key
+                                ? f.color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                    : f.color === 'red' ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                                        : 'bg-white/10 text-white border border-white/20'
+                                : 'text-gray-500 border border-transparent hover:text-gray-300'
+                                }`}
+                        >
+                            {f.label}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/10' : 'bg-gray-800'}`}>
+                                {f.count}
+                            </span>
+                        </button>
+                    ))}
+
+                    {/* Spacer */}
+                    <div className="flex-1" />
+
+                    {/* Sort Toggle */}
                     <button
-                        onClick={() => setShowOnlyTrained(!showOnlyTrained)}
-                        className={`flex items-center gap-2 px-5 py-2.5 border transition-all shadow-sm font-bold uppercase tracking-wide text-sm ${showOnlyTrained ? 'bg-primary text-white border-primary' : 'bg-surface-light dark:bg-surface-dark text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-primary'}`}
+                        onClick={() => setSortBy(s => s === 'name' ? 'payment' : 'name')}
+                        className="flex items-center gap-1 text-gray-500 hover:text-gray-300 text-xs px-2 py-1.5 rounded-lg transition-colors shrink-0"
+                        title="Ordenar"
                     >
-                        <span className="material-icons-outlined text-sm">{showOnlyTrained ? 'check_box' : 'check_box_outline_blank'}</span>
-                        Filtrar: Entrenaron Hoy
+                        <span className="material-icons text-sm">sort</span>
+                        <span className="hidden sm:inline uppercase tracking-wider font-bold">{sortBy === 'name' ? 'A-Z' : 'Pago'}</span>
                     </button>
-                    <button
-                        onClick={addAthlete}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-red-700 text-white text-sm font-bold uppercase tracking-wide transition-all shadow-lg shadow-red-900/20 rounded">
-                        <span className="material-icons text-sm">add</span>
-                        New Athlete
+
+                    {/* Import Button */}
+                    <button onClick={() => setShowExcelImport(true)}
+                        className="flex items-center gap-1 text-emerald-500 hover:text-emerald-400 text-xs px-2 py-1.5 rounded-lg transition-colors shrink-0"
+                        title="Importar Excel"
+                    >
+                        <span className="material-icons text-sm">upload_file</span>
+                        <span className="hidden sm:inline uppercase tracking-wider font-bold">Excel</span>
                     </button>
                 </div>
             </div>
 
+            {/* ─── Athlete List ────────────────────────────────────── */}
             {loading ? (
-                <div className="text-center text-white font-display text-2xl animate-pulse">Loading Athletes...</div>
+                <div className="flex items-center justify-center py-20">
+                    <div className="text-center">
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                        <p className="text-gray-500 font-display text-xl uppercase">Cargando...</p>
+                    </div>
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                    <span className="material-icons text-5xl text-gray-700 mb-4">
+                        {searchQuery ? 'search_off' : 'group_off'}
+                    </span>
+                    <p className="text-gray-500 font-display text-xl uppercase mb-2">
+                        {searchQuery ? 'Sin resultados' : 'Sin atletas'}
+                    </p>
+                    <p className="text-gray-600 text-sm">
+                        {searchQuery ? `No se encontró "${searchQuery}"` : 'Agrega tu primer atleta con el botón +'}
+                    </p>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="px-4 pt-4 space-y-3">
                     <AnimatePresence>
-                        {sortedAthletes.map((athlete, index) => {
-                            const todayLog = getTodayLog(athlete.id);
-                            const energyHistory = getEnergyHistory(athlete.id);
+                        {filtered.map((athlete, i) => {
+                            const accent = getAccent(athlete.name);
+                            const filledPRs = prCount(athlete);
+                            const totalPRs = LIFTS.length + BENCHMARKS.length;
 
                             return (
                                 <motion.div
                                     key={athlete.id}
                                     layout
-                                    initial={{ opacity: 0, y: 50 }}
+                                    initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                                    className={`group relative bg-surface-light dark:bg-surface-dark border-l-[12px] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-visible rounded-r ${athlete.payment_status === 'pending'
-                                        ? 'border-primary'
-                                        : 'border-gray-300 dark:border-gray-800'
-                                        }`}
+                                    exit={{ opacity: 0, x: -100 }}
+                                    transition={{ duration: 0.25, delay: i * 0.03 }}
+                                    className={`relative bg-surface-dark border border-gray-800 rounded-xl overflow-hidden active:scale-[0.98] transition-transform`}
+                                    onClick={() => { vibrate(5); setEditingAthlete(athlete); }}
                                 >
-                                    <div className="absolute top-0 right-0 p-2 opacity-50 text-[100px] leading-none font-display text-gray-200 dark:text-gray-800 pointer-events-none -mr-4 -mt-4 z-0">
-                                        {(index + 1).toString().padStart(2, '0')}
-                                    </div>
+                                    {/* Subtle accent gradient */}
+                                    <div className={`absolute inset-0 bg-gradient-to-r ${accent.gradient} to-transparent opacity-60 pointer-events-none`} />
 
-                                    <div className="p-5 relative z-10 flex flex-col h-full">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-3 w-full">
-                                                {/* Avatar with DiceBear fallback */}
-                                                <div className="relative group/avatar">
-                                                    <div className="w-12 h-12 rounded shrink-0 overflow-hidden">
-                                                        <img
-                                                            alt="Avatar"
-                                                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
-                                                            src={athlete.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${athlete.name}`}
-                                                        />
-                                                    </div>
-                                                    {/* FIRE INDICATOR (Now outside overflow-hidden) */}
-                                                    {todayLog && (
-                                                        <div
-                                                            tabIndex={0}
-                                                            className="absolute -bottom-1 -right-1 bg-surface-light dark:bg-surface-dark rounded-full p-0.5 border border-primary group/tooltip cursor-help z-50 focus:outline-none"
-                                                        >
-                                                            <span className="text-sm shadow-sm relative z-10">🔥</span>
-                                                            {/* Tooltip */}
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 backdrop-blur border border-primary p-3 rounded shadow-2xl opacity-0 group-hover/tooltip:opacity-100 group-focus/tooltip:opacity-100 transition-opacity pointer-events-none z-50">
-                                                                <div className="text-xs text-white space-y-1 font-mono">
-                                                                    <div className="flex justify-between border-b border-gray-700 pb-1 mb-1">
-                                                                        <span className="text-gray-400">ENERGY</span>
-                                                                        <span className="text-primary font-bold">{todayLog.energy}/5</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between border-b border-gray-700 pb-1 mb-1">
-                                                                        <span className="text-gray-400">RPE</span>
-                                                                        <span className="text-primary font-bold">{todayLog.rpe}/10</span>
-                                                                    </div>
-                                                                    {todayLog.notes && <p className="italic text-gray-300 text-[10px] mt-2">"{todayLog.notes}"</p>}
-                                                                </div>
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-primary"></div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex-grow min-w-0">
-                                                    {/* Editable Name Input */}
-                                                    <input
-                                                        className="font-display text-2xl tracking-wide text-black dark:text-white group-hover:text-primary transition-colors uppercase bg-transparent border-b border-transparent hover:border-gray-600 focus:border-primary focus:outline-none w-full"
-                                                        defaultValue={athlete.name}
-                                                        onBlur={(e) => handleBlur(athlete.id, 'name', e.target.value)}
-                                                    />
-                                                    {/* Sparkline */}
-                                                    <div className="h-6 w-full mt-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                        <Sparkline data={energyHistory} />
-                                                    </div>
-                                                    <button
-                                                        onClick={() => togglePaymentStatus(athlete.id, athlete.payment_status)}
-                                                        className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded cursor-pointer hover:opacity-80 transition-opacity mt-1 ${athlete.payment_status === 'pending'
-                                                            ? 'text-primary bg-primary/10'
-                                                            : 'text-green-600 dark:text-green-500'
-                                                            }`}
-                                                    >
-                                                        {athlete.payment_status === 'pending' ? 'Payment Pending' : 'Active Member'}
-                                                    </button>
-                                                </div>
+                                    <div className="relative p-4 flex items-center gap-3">
+                                        {/* Avatar */}
+                                        <div className="relative shrink-0">
+                                            <div className={`w-12 h-12 rounded-xl overflow-hidden ring-1 ${accent.ring} ring-offset-1 ring-offset-surface-dark`}>
+                                                <img
+                                                    alt={athlete.name}
+                                                    className="w-full h-full object-cover"
+                                                    src={athlete.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(athlete.name)}&backgroundColor=1a1a1a&textColor=ffffff`}
+                                                />
                                             </div>
+                                            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-surface-dark ${athlete.payment_status === 'active' ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
+                                        </div>
 
-                                            {/* Action Menu */}
-                                            <div className="relative">
+                                        {/* Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-display text-lg text-white truncate leading-tight">{athlete.name}</h3>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                {/* Payment status pill */}
                                                 <button
-                                                    className="text-gray-400 hover:text-white p-2 -mr-2 rounded-full hover:bg-white/10 transition-colors"
-                                                    title="Opciones"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setMenuOpenId(menuOpenId === athlete.id ? null : athlete.id);
-                                                    }}
+                                                    onClick={(e) => { e.stopPropagation(); togglePayment(athlete.id, athlete.payment_status); }}
+                                                    className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full transition-all ${athlete.payment_status === 'pending'
+                                                        ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+                                                        : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                                        }`}
                                                 >
-                                                    <span className="material-icons text-2xl">more_vert</span>
+                                                    {athlete.payment_status === 'pending' ? '⚠ Pendiente' : '✓ Activo'}
                                                 </button>
-
-                                                {menuOpenId === athlete.id && (
-                                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-stone-900 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700 py-1">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                deleteAthlete(athlete.id);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
-                                                        >
-                                                            <span className="material-icons text-sm">delete</span>
-                                                            Eliminar Atleta
-                                                        </button>
-                                                    </div>
+                                                {athlete.cut_day && (
+                                                    <span className="text-[10px] text-gray-500">
+                                                        Corte: <span className="text-gray-400">{athlete.cut_day}</span>
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="mb-6">
-                                            <label className="block text-[10px] uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1 font-bold">
-                                                Día de Corte
-                                            </label>
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="text-gray-400 font-display text-xl">DAY</span>
-                                                <input
-                                                    className="bg-transparent border-b-2 border-gray-300 dark:border-gray-700 text-2xl font-bold font-display text-black dark:text-white w-16 text-center focus:outline-none focus:border-primary transition-colors p-0"
-                                                    type="number"
-                                                    defaultValue={athlete.cut_day}
-                                                    onBlur={(e) => handleBlur(athlete.id, 'cut_day', e.target.value)}
-                                                />
-                                            </div>
+                                        {/* Quick PRs Preview */}
+                                        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                                            {[
+                                                { k: 'back_squat', l: 'SQ' },
+                                                { k: 'deadlift', l: 'DL' },
+                                                { k: 'clean_rm', l: 'CL' },
+                                            ].map(pr => (
+                                                <div key={pr.k} className="text-center px-2">
+                                                    <span className="block text-[8px] text-gray-600 uppercase font-bold">{pr.l}</span>
+                                                    <span className="font-display text-sm text-white">{(athlete as any)[pr.k] || '—'}</span>
+                                                </div>
+                                            ))}
                                         </div>
 
-                                        <div className="mt-auto bg-gray-800 dark:bg-chalkboard border-4 border-gray-700 dark:border-gray-900 p-3 shadow-inner rounded-sm relative overflow-hidden">
-                                            <div className="absolute inset-0 bg-noise opacity-20 pointer-events-none"></div>
-                                            <div className="grid grid-cols-2 gap-4 relative z-10">
-                                                <div className="text-center border-r border-gray-600/50">
-                                                    <span className="block text-[10px] text-gray-400 uppercase tracking-widest mb-1">
-                                                        SNATCH RM
-                                                    </span>
-                                                    <div className="flex items-center justify-center gap-1 font-chalk text-2xl text-white chalk-text rotate-1">
-                                                        <input
-                                                            className="bg-transparent w-12 text-center focus:outline-none border-b border-transparent focus:border-white/50"
-                                                            defaultValue={athlete.snatch_rm}
-                                                            onBlur={(e) => handleBlur(athlete.id, 'snatch_rm', e.target.value)}
-                                                        />
-                                                        <span className="text-sm font-sans text-gray-400">KG</span>
-                                                    </div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <span className="block text-[10px] text-gray-400 uppercase tracking-widest mb-1">
-                                                        CLEAN RM
-                                                    </span>
-                                                    <div className="flex items-center justify-center gap-1 font-chalk text-2xl text-white chalk-text -rotate-1">
-                                                        <input
-                                                            className="bg-transparent w-12 text-center focus:outline-none border-b border-transparent focus:border-white/50"
-                                                            defaultValue={athlete.clean_rm}
-                                                            onBlur={(e) => handleBlur(athlete.id, 'clean_rm', e.target.value)}
-                                                        />
-                                                        <span className="text-sm font-sans text-gray-400">KG</span>
-                                                    </div>
-                                                </div>
+                                        {/* PR completion indicator + chevron */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {/* Mini progress bar */}
+                                            <div className="w-7 h-7 relative" title={`${filledPRs}/${totalPRs} PRs`}>
+                                                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                                                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-800" />
+                                                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3"
+                                                        className={filledPRs === totalPRs ? 'text-emerald-500' : 'text-primary'}
+                                                        strokeDasharray={`${(filledPRs / totalPRs) * 94.25} 94.25`}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-gray-400">{filledPRs}</span>
                                             </div>
+                                            <span className="material-icons text-gray-700 text-lg">chevron_right</span>
                                         </div>
                                     </div>
                                 </motion.div>
                             );
                         })}
                     </AnimatePresence>
-
-                    <motion.div
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        onClick={addAthlete}
-                        className="min-h-[300px] border-2 border-dashed border-gray-400 dark:border-gray-800 rounded flex flex-col items-center justify-center cursor-pointer hover:border-primary group transition-colors bg-surface-light dark:bg-surface-dark bg-opacity-50"
-                    >
-                        <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
-                            <span className="material-icons text-3xl text-gray-400 group-hover:text-white">
-                                add
-                            </span>
-                        </div>
-                        <h3 className="font-display text-xl text-gray-500 dark:text-gray-400 group-hover:text-primary">
-                            ADD ATHLETE
-                        </h3>
-                    </motion.div>
                 </div>
+            )}
+
+            {/* ─── FAB (Floating Action Button) ───────────────────── */}
+            <motion.button
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, type: 'spring' }}
+                onClick={addAthlete}
+                className="fixed bottom-6 right-6 w-14 h-14 bg-primary hover:bg-red-700 rounded-full shadow-xl shadow-red-900/40 flex items-center justify-center text-white active:scale-90 transition-transform z-50"
+            >
+                <span className="material-icons text-2xl">add</span>
+            </motion.button>
+
+            {/* ─── Edit Drawer ────────────────────────────────────── */}
+            <AnimatePresence>
+                {editingAthlete && (
+                    <EditDrawer
+                        key={editingAthlete.id}
+                        athlete={editingAthlete}
+                        accent={getAccent(editingAthlete.name)}
+                        onSave={(updates) => updateAthlete(editingAthlete.id, updates)}
+                        onClose={() => setEditingAthlete(null)}
+                        onDelete={() => deleteAthlete(editingAthlete.id)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* ─── Excel Import Modal ─────────────────────────────── */}
+            {showExcelImport && (
+                <ExcelImport onImport={handleExcelImport} onClose={() => setShowExcelImport(false)} />
             )}
         </div>
     );

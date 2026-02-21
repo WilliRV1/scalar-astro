@@ -6,8 +6,17 @@ create table if not exists athletes (
   avatar_url text,
   payment_status text default 'pending',
   cut_day text,
-  snatch_rm text,
+  referral_source text,
+  back_squat text,
+  bench_press text,
+  deadlift text,
+  shoulder_press text,
+  front_squat text,
   clean_rm text,
+  push_press text,
+  karen text,
+  burpees_100 text,
+  snatch_rm text,
   access_code text
 );
 
