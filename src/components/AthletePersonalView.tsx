@@ -15,6 +15,7 @@ const PR_FIELDS = [
     { key: 'shoulder_press', label: 'Shoulder Press', icon: '🔥', unit: 'KG' },
     { key: 'front_squat', label: 'Front Squat', icon: '🦵', unit: 'KG' },
     { key: 'clean_rm', label: 'Clean', icon: '🏅', unit: 'KG' },
+    { key: 'snatch_rm', label: 'Snatch', icon: '🏋️‍♀️', unit: 'KG' },
     { key: 'push_press', label: 'Push Press', icon: '🚀', unit: 'KG' },
 ];
 
@@ -28,6 +29,10 @@ export default function AthletePersonalView({ athlete, onLogout }: AthletePerson
     const [rpe, setRpe] = useState(5);
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
+
+    const vibrate = (ms: number) => {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms);
+    };
 
     const handleCheckIn = async () => {
         setSaving(true);
@@ -164,7 +169,7 @@ export default function AthletePersonalView({ athlete, onLogout }: AthletePerson
                                 {[1, 2, 3, 4, 5].map(lvl => (
                                     <button
                                         key={lvl}
-                                        onClick={() => setEnergy(lvl)}
+                                        onClick={() => { vibrate(5); setEnergy(lvl); }}
                                         className={`w-14 h-14 flex items-center justify-center rounded-xl transition-all transform ${energy === lvl
                                             ? 'scale-110 bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20'
                                             : 'opacity-40 grayscale hover:opacity-80 hover:grayscale-0 border-2 border-transparent'
@@ -207,7 +212,7 @@ export default function AthletePersonalView({ athlete, onLogout }: AthletePerson
                         </div>
 
                         <button
-                            onClick={handleCheckIn}
+                            onClick={() => { vibrate(20); handleCheckIn(); }}
                             disabled={saving}
                             className="w-full bg-primary hover:bg-red-700 text-white font-display text-xl py-4 rounded-xl shadow-lg shadow-red-900/30 transition-all hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-50"
                         >

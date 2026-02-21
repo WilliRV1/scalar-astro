@@ -64,12 +64,13 @@ const getAccent = (name: string) => {
 };
 
 // ─── Edit Drawer (Full-screen mobile form) ───────────────────────────
-function EditDrawer({ athlete, accent, onSave, onClose, onDelete }: {
+function EditDrawer({ athlete, accent, onSave, onClose, onDelete, onToast }: {
     athlete: Athlete;
     accent: ReturnType<typeof getAccent>;
     onSave: (updates: Partial<Athlete>) => void;
     onClose: () => void;
     onDelete: () => void;
+    onToast: (msg: string) => void;
 }) {
     const [form, setForm] = useState({ ...athlete });
     const set = (key: string, val: string) => setForm(prev => ({ ...prev, [key]: val }));
@@ -106,7 +107,8 @@ function EditDrawer({ athlete, accent, onSave, onClose, onDelete }: {
                     </button>
                     <h2 className="font-display text-lg uppercase tracking-wider text-white">Editar Atleta</h2>
                     <button onClick={handleSave}
-                        className="bg-primary hover:bg-red-700 text-white text-sm font-bold uppercase px-4 py-1.5 rounded-full transition-all">
+                        className="bg-primary hover:bg-red-700 text-white text-sm font-bold uppercase px-4 py-1.5 rounded-full shadow-lg shadow-red-900/20 active:scale-95 transition-all flex items-center gap-2">
+                        <span className="material-icons text-sm">save</span>
                         Guardar
                     </button>
                 </div>
@@ -125,15 +127,32 @@ function EditDrawer({ athlete, accent, onSave, onClose, onDelete }: {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
+                                <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Código de Acceso</label>
+                                <div className="relative">
+                                    <input className="w-full bg-black border border-gray-700 text-white px-4 py-3 pr-10 rounded-xl text-base focus:outline-none focus:border-primary transition-colors font-mono"
+                                        value={form.access_code} onChange={e => set('access_code', e.target.value)} placeholder="Ej: SC-001" />
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(form.access_code);
+                                            vibrate(10);
+                                            onToast('Código copiado');
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-primary transition-colors"
+                                    >
+                                        <span className="material-icons text-sm">content_copy</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
                                 <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Día de Corte</label>
                                 <input className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-primary transition-colors"
                                     value={form.cut_day} onChange={e => set('cut_day', e.target.value)} placeholder="01-31" />
                             </div>
-                            <div>
-                                <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Como Llegó</label>
-                                <input className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-primary transition-colors"
-                                    value={form.referral_source} onChange={e => set('referral_source', e.target.value)} placeholder="Instagram, Referido..." />
-                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Como Llegó</label>
+                            <input className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl text-base focus:outline-none focus:border-primary transition-colors"
+                                value={form.referral_source} onChange={e => set('referral_source', e.target.value)} placeholder="Instagram, Referido..." />
                         </div>
                     </div>
 
@@ -209,6 +228,15 @@ export default function CoachDashboard() {
     const [showExcelImport, setShowExcelImport] = useState(false);
     const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
     const [sortBy, setSortBy] = useState<'name' | 'payment'>('name');
+    const [toast, setToast] = useState<string | null>(null);
+
+    // Simple toast timer
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
 
     useEffect(() => { fetchData(); }, []);
 
@@ -258,12 +286,13 @@ export default function CoachDashboard() {
         const newAthlete = {
             name: 'Nuevo Atleta', avatar_url: null, payment_status: 'pending' as const,
             cut_day: '', referral_source: '', back_squat: '', bench_press: '',
-            deadlift: '', shoulder_press: '', front_squat: '', clean_rm: '',
-            push_press: '', karen: '', burpees_100: '',
+            deadlift: '', shoulder_press: '', front_squat: '', clean_rm: '', snatch_rm: '',
+            push_press: '', karen: '', burpees_100: '', access_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
         };
-        const tempId = crypto.randomUUID();
-        const optimistic = { ...newAthlete, id: tempId };
+        const tempId = crypto.randomUUID() as string;
+        const optimistic = { ...newAthlete, id: tempId } as Athlete;
         setAthletes(prev => [...prev, optimistic]);
+        setEditingAthlete(optimistic); // Open drawer immediately with optimistic ID
 
         try {
             const { data, error } = await supabase.from('athletes').insert([newAthlete]).select().single();
@@ -305,8 +334,9 @@ export default function CoachDashboard() {
                 cut_day: a.cut_day || '', referral_source: a.referral_source || '',
                 back_squat: a.back_squat || '', bench_press: a.bench_press || '',
                 deadlift: a.deadlift || '', shoulder_press: a.shoulder_press || '',
-                front_squat: a.front_squat || '', clean_rm: a.clean_rm || '',
+                front_squat: a.front_squat || '', clean_rm: a.clean_rm || '', snatch_rm: a.snatch_rm || '',
                 push_press: a.push_press || '', karen: a.karen || '', burpees_100: a.burpees_100 || '',
+                access_code: a.access_code || Math.random().toString(36).substring(2, 8).toUpperCase(),
             }));
             const { error } = await supabase.from('athletes').insert(toInsert);
             if (error) throw error;
@@ -415,9 +445,30 @@ export default function CoachDashboard() {
                     <p className="text-gray-500 font-display text-xl uppercase mb-2">
                         {searchQuery ? 'Sin resultados' : 'Sin atletas'}
                     </p>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 text-sm mb-6">
                         {searchQuery ? `No se encontró "${searchQuery}"` : 'Agrega tu primer atleta con el botón +'}
                     </p>
+                    {!searchQuery && (
+                        <button
+                            onClick={async () => {
+                                vibrate(20);
+                                const sampleNames = ['Juan Pérez', 'María García', 'Carlos Ruiz', 'Ana López'];
+                                for (const name of sampleNames) {
+                                    await supabase.from('athletes').insert([{
+                                        name, payment_status: 'pending', cut_day: '15', referral_source: 'Instagram',
+                                        back_squat: '100', bench_press: '80', deadlift: '140', shoulder_press: '50',
+                                        front_squat: '90', clean_rm: '70', snatch_rm: '55', push_press: '65',
+                                        karen: '8:45', burpees_100: '7:30', access_code: Math.random().toString(36).substring(2, 8).toUpperCase()
+                                    }]);
+                                }
+                                fetchData();
+                            }}
+                            className="flex items-center gap-2 bg-surface-dark border border-gray-700 text-gray-400 px-6 py-2.5 rounded-xl hover:text-white hover:border-primary transition-all active:scale-95"
+                        >
+                            <span className="material-icons text-sm">auto_awesome</span>
+                            Crear Atletas de Prueba
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="px-4 pt-4 space-y-3">
@@ -470,9 +521,15 @@ export default function CoachDashboard() {
                                                 >
                                                     {athlete.payment_status === 'pending' ? '⚠ Pendiente' : '✓ Activo'}
                                                 </button>
+                                                {athlete.access_code && (
+                                                    <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded border border-gray-800 shrink-0">
+                                                        <span className="text-[8px] text-gray-500 font-bold">KEY:</span>
+                                                        <span className="text-[10px] text-primary font-mono font-bold tracking-tight">{athlete.access_code}</span>
+                                                    </div>
+                                                )}
                                                 {athlete.cut_day && (
-                                                    <span className="text-[10px] text-gray-500">
-                                                        Corte: <span className="text-gray-400">{athlete.cut_day}</span>
+                                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                                        Día <span className="text-gray-400">{athlete.cut_day}</span>
                                                     </span>
                                                 )}
                                             </div>
@@ -537,6 +594,7 @@ export default function CoachDashboard() {
                         onSave={(updates) => updateAthlete(editingAthlete.id, updates)}
                         onClose={() => setEditingAthlete(null)}
                         onDelete={() => deleteAthlete(editingAthlete.id)}
+                        onToast={(msg) => setToast(msg)}
                     />
                 )}
             </AnimatePresence>
@@ -545,6 +603,21 @@ export default function CoachDashboard() {
             {showExcelImport && (
                 <ExcelImport onImport={handleExcelImport} onClose={() => setShowExcelImport(false)} />
             )}
+
+            {/* ─── Simple Toast ───────────────────────────────────── */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] bg-surface-dark border border-gray-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-2 pointer-events-none"
+                    >
+                        <span className="material-icons text-emerald-500 text-sm">check_circle</span>
+                        <span className="text-sm font-bold uppercase tracking-wider">{toast}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

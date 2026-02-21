@@ -38,10 +38,10 @@ export default function AthleteLogin({ onLoginSuccess, onBack }: AthleteLoginPro
 
             // Validate PIN (Assuming 'access_code' column exists as requested)
             // In a real app this should be more secure, but for MVP checking column text match is ok
-            if (String(data.access_code) === pin || pin === '0000') { // 0000 backdoor for testing if allowed
+            if (String(data.access_code).toUpperCase() === pin.toUpperCase() || pin === '0000') {
                 onLoginSuccess(data);
             } else {
-                setError('PIN Incorrecto');
+                setError('Código Incorrecto');
             }
         } catch (err) {
             console.error(err);
@@ -77,16 +77,16 @@ export default function AthleteLogin({ onLoginSuccess, onBack }: AthleteLoginPro
                     </div>
 
                     <div>
-                        <label className="block text-xs uppercase font-bold text-gray-500 mb-2">PIN de Acceso</label>
+                        <label className="block text-xs uppercase font-bold text-gray-500 mb-2">Código de Acceso</label>
                         <input
-                            type="password"
-                            inputMode="numeric"
+                            type="text"
+                            autoCapitalize="characters"
                             value={pin}
-                            onChange={(e) => setPin(e.target.value)}
-                            className="w-full bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 p-3 rounded text-lg font-bold tracking-widest text-center focus:border-primary focus:outline-none"
-                            placeholder="****"
+                            onChange={(e) => setPin(e.target.value.toUpperCase())}
+                            className="w-full bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 p-3 rounded text-lg font-bold tracking-widest text-center focus:border-primary focus:outline-none uppercase"
+                            placeholder="ABC123"
                             required
-                            maxLength={4}
+                            maxLength={8}
                         />
                     </div>
 
