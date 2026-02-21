@@ -227,7 +227,7 @@ export default function CoachDashboard() {
     const [filter, setFilter] = useState<FilterMode>('all');
     const [showExcelImport, setShowExcelImport] = useState(false);
     const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
-    const [sortBy, setSortBy] = useState<'name' | 'payment'>('name');
+    const [sortBy, setSortBy] = useState<'name' | 'payment' | 'cut_day'>('name');
     const [toast, setToast] = useState<string | null>(null);
 
     // Simple toast timer
@@ -265,6 +265,15 @@ export default function CoachDashboard() {
             if (sortBy === 'payment') {
                 if (a.payment_status !== b.payment_status) return a.payment_status === 'pending' ? -1 : 1;
             }
+            if (sortBy === 'cut_day') {
+                const dayA = parseInt(a.cut_day) || 99;
+                const dayB = parseInt(b.cut_day) || 99;
+                const today = new Date().getDate();
+
+                // Calculate distance to next occurrence of that day
+                const dist = (d: number) => d >= today ? d - today : (d + 30) - today;
+                return dist(dayA) - dist(dayB);
+            }
             return a.name.localeCompare(b.name);
         });
 
@@ -272,9 +281,25 @@ export default function CoachDashboard() {
     const updateAthlete = useCallback(async (id: string, updates: Partial<Athlete>) => {
         const prev = [...athletes];
         setAthletes(c => c.map(a => a.id === id ? { ...a, ...updates } : a));
+
         try {
-            const { error } = await supabase.from('athletes').update(updates).eq('id', id);
-            if (error) throw error;
+            // Update the main athlete record
+            const { error: updateError } = await supabase.from('athletes').update(updates).eq('id', id);
+            if (updateError) throw updateError;
+
+            // Log PR/Benchmark changes for history tracking
+            const trackableKeys = [...LIFTS.map(l => l.key), ...BENCHMARKS.map(b => b.key)];
+            const historyToLog = Object.entries(updates)
+                .filter(([key, value]) => trackableKeys.includes(key as any) && value !== undefined)
+                .map(([key, value]) => ({
+                    athlete_id: id,
+                    field_name: key,
+                    value: String(value)
+                }));
+
+            if (historyToLog.length > 0) {
+                await supabase.from('athlete_progress').insert(historyToLog);
+            }
         } catch (error) {
             console.error('Error updating:', error);
             setAthletes(prev);
@@ -410,12 +435,14 @@ export default function CoachDashboard() {
 
                     {/* Sort Toggle */}
                     <button
-                        onClick={() => setSortBy(s => s === 'name' ? 'payment' : 'name')}
+                        onClick={() => setSortBy(s => s === 'name' ? 'payment' : s === 'payment' ? 'cut_day' : 'name')}
                         className="flex items-center gap-1 text-gray-500 hover:text-gray-300 text-xs px-2 py-1.5 rounded-lg transition-colors shrink-0"
                         title="Ordenar"
                     >
                         <span className="material-icons text-sm">sort</span>
-                        <span className="hidden sm:inline uppercase tracking-wider font-bold">{sortBy === 'name' ? 'A-Z' : 'Pago'}</span>
+                        <span className="hidden sm:inline uppercase tracking-wider font-bold">
+                            {sortBy === 'name' ? 'A-Z' : sortBy === 'payment' ? 'Pago' : 'Corte'}
+                        </span>
                     </button>
 
                     {/* Import Button */}
@@ -527,11 +554,20 @@ export default function CoachDashboard() {
                                                         <span className="text-[10px] text-primary font-mono font-bold tracking-tight">{athlete.access_code}</span>
                                                     </div>
                                                 )}
-                                                {athlete.cut_day && (
-                                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                                                        Día <span className="text-gray-400">{athlete.cut_day}</span>
-                                                    </span>
-                                                )}
+                                                {athlete.cut_day && (() => {
+                                                    const d = parseInt(athlete.cut_day);
+                                                    const today = new Date().getDate();
+                                                    const dist = d >= today ? d - today : (d + 30) - today;
+                                                    const isNear = dist <= 3 && athlete.payment_status === 'active';
+
+                                                    return (
+                                                        <span className={`text-[10px] whitespace-nowrap px-1.5 py-0.5 rounded transition-colors ${isNear ? 'bg-red-500/20 text-red-400 font-bold animate-pulse ring-1 ring-red-500/30' : 'text-gray-500'
+                                                            }`}>
+                                                            {isNear && <span className="material-icons text-[10px] mr-1 align-middle">error_outline</span>}
+                                                            Día <span className={isNear ? 'text-red-300' : 'text-gray-400'}>{athlete.cut_day}</span>
+                                                        </span>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
 

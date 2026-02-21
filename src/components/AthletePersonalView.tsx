@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
@@ -24,11 +24,71 @@ const BENCHMARK_FIELDS = [
     { key: 'burpees_100', label: '100 Burpees', icon: '🔥' },
 ];
 
+// ─── Sparkline Component ─────────────────────────────────────────────
+function Sparkline({ data }: { data: string[] }) {
+    if (data.length < 2) return null;
+
+    // Parse values (times like 8:30 need special handling, but numbers are fine)
+    const values = data.map(v => {
+        if (v.includes(':')) {
+            const [min, sec] = v.split(':').map(Number);
+            return (min * 60) + sec;
+        }
+        return parseFloat(v) || 0;
+    }).slice(-10); // Last 10 points
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const padding = 2;
+
+    // Create points for SVG polyline
+    const width = 80;
+    const height = 20;
+    const points = values.map((v, i) => {
+        const x = (i / (values.length - 1)) * width;
+        // Invert Y because SVG coordinates
+        const y = height - padding - ((v - min) / range) * (height - 2 * padding);
+        return `${x},${y}`;
+    }).join(' ');
+
+    const trend = values[values.length - 1] > values[0] ? 'up' : 'down';
+    // For times (benchmarks), down is usually good. For lifts, up is good.
+    // Simplifying: emerald for recent > first, otherwise red (basic visual cue)
+    const color = trend === 'up' ? '#10b981' : '#ef4444';
+
+    return (
+        <svg width={width} height={height} className="mt-2 opacity-60">
+            <polyline
+                fill="none"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={points}
+            />
+        </svg>
+    );
+}
+
 export default function AthletePersonalView({ athlete, onLogout }: AthletePersonalViewProps) {
     const [energy, setEnergy] = useState(3);
     const [rpe, setRpe] = useState(5);
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
+    const [history, setHistory] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            const { data } = await supabase
+                .from('athlete_progress')
+                .select('*')
+                .eq('athlete_id', athlete.id)
+                .order('created_at', { ascending: true });
+            if (data) setHistory(data);
+        };
+        fetchHistory();
+    }, [athlete.id]);
 
     const vibrate = (ms: number) => {
         if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms);
@@ -119,6 +179,7 @@ export default function AthletePersonalView({ athlete, onLogout }: AthletePerson
                                         <span className="font-display text-2xl text-white">{value || '—'}</span>
                                         {value && <span className="text-[10px] text-gray-500">{field.unit}</span>}
                                     </div>
+                                    <Sparkline data={history.filter(h => h.field_name === field.key).map(h => h.value)} />
                                 </motion.div>
                             );
                         })}
@@ -147,6 +208,7 @@ export default function AthletePersonalView({ athlete, onLogout }: AthletePerson
                                     <span className="text-lg mb-1">{field.icon}</span>
                                     <span className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">{field.label}</span>
                                     <span className="font-display text-2xl text-white">{value || '—'}</span>
+                                    <Sparkline data={history.filter(h => h.field_name === field.key).map(h => h.value)} />
                                 </motion.div>
                             );
                         })}
