@@ -300,6 +300,7 @@ export default function CoachDashboard() {
             if (historyToLog.length > 0) {
                 await supabase.from('athlete_progress').insert(historyToLog);
             }
+            setToast('Cambios guardados');
         } catch (error) {
             console.error('Error updating:', error);
             setAthletes(prev);
@@ -339,6 +340,7 @@ export default function CoachDashboard() {
         try {
             const { error } = await supabase.from('athletes').delete().eq('id', id);
             if (error) throw error;
+            setToast('Atleta eliminado');
         } catch (error) {
             console.error('Error deleting:', error);
             setAthletes(prev);
@@ -489,6 +491,7 @@ export default function CoachDashboard() {
                                     }]);
                                 }
                                 fetchData();
+                                setToast('Atletas demo creados');
                             }}
                             className="flex items-center gap-2 bg-surface-dark border border-gray-700 text-gray-400 px-6 py-2.5 rounded-xl hover:text-white hover:border-primary transition-all active:scale-95"
                         >
