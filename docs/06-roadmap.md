@@ -15,26 +15,51 @@ cobrar.** No hay que terminar el producto para empezar a vender.
 
 ---
 
-## F0 — Cimientos (2 semanas) · *bloquea todo lo demás*
+## F0 — Cimientos (2 semanas) · **en gran parte hecho (2026-09-16)**
 
-Sin esto no se puede vender ni un box, porque hoy los datos están abiertos.
+Sin esto no se puede vender ni un box, porque los datos estaban abiertos.
 
-- [ ] **Rotar las llaves de Supabase** y sacar `.env` del historial de Git.
-- [ ] Supabase CLI + `supabase/migrations/` versionadas. Borrar los `.sql` de la raíz.
-- [ ] Esquema multi-tenant: `organizations`, `memberships`, `org_id` en todas las tablas.
-- [ ] **RLS habilitada en todas las tablas** + `auth_org_ids()` / `has_role()`.
-- [ ] Prueba automática que falla si alguna tabla pública queda sin RLS.
-- [ ] Autenticación real: correo/contraseña para el staff, OTP para el atleta. Fuera el
-      `prompt('admin123')` de `App.tsx:20` y el PIN `'0000'` de `AthleteLogin.tsx:44`.
-- [ ] `react-router-dom` de verdad, con rutas por rol y carga diferida por módulo.
-- [ ] Reestructura de carpetas (`features/`, `shared/`, `app/`).
-- [ ] Tipos generados (`supabase gen types`) y eliminación de los `any`.
-- [ ] `supabase start` local + `seed.sql` con un box demo. Eliminar el mock de
-      `supabaseClient.ts`.
-- [ ] GitHub Actions: typecheck + lint + build. Sentry. Ambientes dev/staging/prod.
-- [ ] Quitar `dist/` del control de versiones. **Renombrar el producto sin "CrossFit"**.
+**Hecho y verificado:**
 
-**Entregable:** dos boxes coexistiendo en la misma base sin verse entre sí, con login real.
+- [x] `supabase/migrations/` versionadas. Borrados los cinco `.sql` de la raíz.
+- [x] Esquema multi-tenant: `organizations`, `memberships`, `athletes`, planes,
+      suscripciones, cobros, pagos, bitácora y `job_runs`. Todo con `org_id`.
+- [x] **RLS habilitada en todas las tablas** + `auth_org_ids()`, `has_role()`,
+      `is_staff()`, `can_view_finances()`, `current_athlete_id()`.
+- [x] Datos sensibles y notas del coach en tablas aparte (RLS es por fila, no por columna).
+- [x] Idempotencia del cobro por índice único `(subscription_id, period_start)`.
+- [x] Trigger que concilia el saldo de la factura con sus pagos confirmados.
+- [x] **Guarda de RLS**: `assert_rls_enabled()` corre al final de cada migración, más
+      `supabase/tests/rls_guard.sql` en CI. Verificada con prueba negativa.
+- [x] **18 aserciones de aislamiento entre boxes** (`supabase/tests/rls_isolation.sql`).
+- [x] `scripts/db-test.sh`: Postgres efímero, sin Docker. Es lo que corre en CI.
+- [x] Autenticación real: correo/contraseña para staff, código al celular para el atleta.
+      Fuera el `prompt('admin123')` y el PIN `'0000'`.
+- [x] `react-router-dom` con rutas por rol y carga diferida por módulo.
+- [x] Reestructura de carpetas (`app/`, `features/`, `shared/`, `types/`).
+- [x] Eliminado el mock de 163 líneas que reimplementaba el SDK de Supabase.
+- [x] 18 pruebas unitarias (normalización E.164, dinero en centavos, días de mora).
+- [x] GitHub Actions: lint, tipos, pruebas, build y pruebas de base de datos.
+- [x] `.env` y `dist/` fuera del control de versiones. `.env.example` añadido.
+- [x] El prototipo queda en `src/legacy/`, sin enrutar y documentado.
+
+**Escrito pero sin verificar (necesita Docker, que no había en el entorno de desarrollo):**
+
+- [ ] `supabase/seed.sql` y `supabase/config.toml`: comprobar en el primer `supabase start`.
+- [ ] `npm run types:gen`: los tipos de `src/types/database.ts` están escritos a mano;
+      se reemplazan por los generados en cuanto haya un proyecto enlazado.
+
+**Pendiente, y algunas son tuyas, no del código:**
+
+- [ ] **Rotar las llaves de Supabase.** Siguen expuestas en el historial de git. Mientras
+      no se roten, la base vieja sigue accesible. Es lo más urgente de toda esta lista.
+- [ ] Purgar `.env` del historial (`git filter-repo`) o migrar a un repositorio limpio.
+- [ ] Renombrar el repositorio sin "CrossFit" (ver [08](./08-mercado-cali.md)).
+- [ ] Sentry y ambientes de staging/producción separados.
+- [ ] Vincular el proyecto de Supabase y aplicar las migraciones a la nube.
+
+**Entregable:** dos boxes coexisten en la misma base sin verse entre sí, con login real y
+una prueba automática que lo demuestra en cada push.
 
 ---
 
