@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  frontend:
+    name: Lint · tipos · pruebas · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx vite build
+        env:
+          # Valores de relleno: el build no se conecta a nada.
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder
+
+  database:
+    name: Migraciones · RLS · aislamiento
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Aplica las migraciones a un Postgres limpio y corre la guarda de RLS y
+      # las pruebas de aislamiento. Si alguna tabla queda sin RLS, o si un box
+      # alcanza a ver los datos de otro, este job falla y el PR no entra.
+      - run: ./scripts/db-test.sh
