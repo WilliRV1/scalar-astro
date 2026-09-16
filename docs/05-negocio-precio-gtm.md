@@ -45,7 +45,10 @@ cierra ventas; "40.000 pesitos" genera la sospecha de que no sirve. **Un precio 
 bajo comunica que el producto es un favor, no una herramienta**, y los clientes que llegan
 por barato son los que más soporte piden y los primeros que se van.
 
-## Precio recomendado
+## Precio recomendado · **DECIDIDO 2026-09-16**
+
+> Estructura adoptada: **precio de fundador para los primeros 3–5 boxes + tarifa objetivo
+> a partir del cliente 4–6**. Las cifras de abajo son las que van al contrato.
 
 ### Precio de fundador (los primeros 3–5 boxes)
 

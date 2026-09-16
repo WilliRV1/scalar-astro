@@ -63,11 +63,34 @@ Ya reemplaza el Excel.
 
 ---
 
+## F2.5 — Horarios y reservas (2 semanas) · *decidido el 2026-09-16*
+
+- [ ] Plantilla semanal de horarios (`class_templates`) + generación automática de las
+      clases de las próximas 4 semanas, con calendario de festivos colombianos.
+- [ ] Reserva desde el celular del atleta, con cupos en tiempo real.
+- [ ] **Función `book_class()` en la base con bloqueo de fila**: el último cupo no se puede
+      vender dos veces. Con prueba de concurrencia.
+- [ ] Reglas configurables por box: antelación de apertura, cierre de reservas,
+      límite de cancelación sin penalización.
+- [ ] **Bloqueo de reserva por mora** (interruptor por box). Es la palanca de cobro más
+      efectiva del producto.
+- [ ] Lista de espera con promoción automática y aviso al atleta.
+- [ ] Descuento de créditos para planes por bonos de clases.
+- [ ] Política de no-show configurable.
+- [ ] Cancelación de clase completa con aviso masivo y devolución de créditos.
+- [ ] Lista de la clase y check-in masivo desde el celular del coach.
+
+**Entregable:** el box apaga el grupo de WhatsApp de "anoten quién viene a las 6".
+Con esto ya se compite de frente con Boxmagic y similares.
+
+---
+
 ## F3 — Automatización (2 semanas) · **aquí empieza a venderse**
 
 - [ ] Motor de reglas (`automation_rules`) con disparadores por horario y por evento.
 - [ ] `message_outbox` con idempotencia, reintentos, horario silencioso y antifatiga.
-- [ ] Las 10 reglas de fábrica de [04](./04-automatizaciones.md).
+- [ ] Las 14 reglas de fábrica de [04](./04-automatizaciones.md), incluidas las de
+      reservas (cupo liberado, recordatorio de clase, clase cancelada, no-show reiterado).
 - [ ] **Etapa 0 de WhatsApp**: lista de destinatarios + mensaje redactado + enlace `wa.me`
       de un clic. Sin trámites con Meta.
 - [ ] Cálculo de riesgo de fuga + tablero de "atletas en riesgo".
@@ -124,20 +147,26 @@ Ya reemplaza el Excel.
 | F0 Cimientos | 2 | 2 | Multi-tenant seguro |
 | F1 Núcleo | 3 | 5 | Box 0 operando |
 | F2 Entrenamiento | 2 | 7 | Reemplaza la pizarra |
-| F3 Automatización | 2 | 9 | **Primera venta** |
-| F4 Finanzas | 2 | 11 | Producto completo para el dueño |
-| F5 Atleta | 2 | 13 | Pagos en línea |
-| F6 SaaS | 2 | 15 | Escalable sin ti |
+| F2.5 Reservas | 2 | 9 | Reemplaza el grupo de WhatsApp |
+| F3 Automatización | 2 | 11 | **Primera venta** |
+| F4 Finanzas | 2 | 13 | Producto completo para el dueño |
+| F5 Atleta | 2 | 15 | Pagos en línea |
+| F6 SaaS | 2 | 17 | Escalable sin ti |
 
-≈ **15 semanas efectivas**. A 20 h/semana: ~4 meses. A 10 h/semana: ~7 meses, con la
-primera venta alrededor del mes 4.
+≈ **17 semanas efectivas**. A 20 h/semana: ~4,5 meses. A 10 h/semana: ~8 meses, con la
+primera venta alrededor del mes 5.
+
+> **Atajo posible si el tiempo aprieta**: F2.5 puede adelantarse antes de F2 y salir a
+> vender con reservas + cobros pero sin WOD ni resultados. Un box paga por resolver
+> horarios y plata; el WOD digital es deseable, no urgente. Depende de lo que digan las
+> entrevistas.
 
 ## Trabajo comercial en paralelo (no esperar a terminar)
 
 | Mientras va | Hacer |
 |---|---|
 | F0–F1 | 5 entrevistas con dueños de box. Resolver la decisión sobre reserva de clases |
-| F2 | Redactar contrato, política de datos y acuerdo de tratamiento ([07](./07-legal-colombia.md)) |
+| F2–F2.5 | Redactar contrato, política de datos y acuerdo de tratamiento ([07](./07-legal-colombia.md)) |
 | F3 | Migrar el box 0. Grabar el testimonio. Armar el box demo |
 | F4 | Vender a 3 boxes a precio de fundador |
 | F5–F6 | Subir a la tarifa objetivo con los clientes nuevos |

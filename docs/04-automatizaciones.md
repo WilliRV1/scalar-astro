@@ -35,9 +35,18 @@ Cada box nuevo arranca con estas activas (o desactivadas, según se indique). Es
 | 8 | **Cumpleaños** | 08:00 del día | Felicitación (y opcionalmente un beneficio) | marketing |
 | 9 | **Insumo en mínimo** | Diario, `current_stock <= min_stock` | Aviso al dueño: "Queda poco magnesio. La última compra fue el {{fecha}} a {{proveedor}} por {{valor}}" | interna |
 | 10 | **Reporte semanal del box** | Lunes 07:00 | Al dueño: ingresos de la semana, cartera pendiente, altas y bajas, asistencia promedio, 3 atletas en mayor riesgo | interna |
+| 11 | **Cupo liberado** | Evento: alguien cancela y hay lista de espera | WhatsApp inmediato al primero de la lista: "Se liberó un cupo para las 6:00 pm, ya quedaste dentro" | utility |
+| 12 | **Recordatorio de clase** | 2 h antes de la clase reservada | Recordatorio con opción de cancelar. **Baja el no-show de forma medible** | utility |
+| 13 | **Clase cancelada** | Evento: el box cancela una clase | Aviso a todos los reservados + devolución del crédito | utility |
+| 14 | **No-show reiterado** | 3 faltas sin cancelar en 30 días | Aviso al atleta y alerta al coach (es señal temprana de fuga) | utility |
 
 Extras configurables: recordatorio de compromisos recurrentes (arriendo, seguro,
 mantenimiento), aviso de cierre de mes, y recordatorio de retomar a quien está congelado.
+
+> Las reglas 11 a 14 nacen del módulo de reservas y son las que más se notan en el día a
+> día: el aviso de cupo liberado es instantáneo y "mágico" para el atleta, y el
+> recordatorio de clase baja el no-show, que es plata perdida para el box (cupo ocupado que
+> nadie usó). Son el mejor argumento para justificar que las reservas entren en v1.
 
 ## Detección de fuga (el "qué atletas no volvieron")
 
@@ -49,6 +58,7 @@ señales:
   caída de frecuencia: visitas 30d vs 30d anteriores   (peso alto)
   días de mora                            (peso medio)
   nunca registró un resultado             (peso medio — nunca se enganchó)
+  no-shows recientes                      (peso medio — reserva y no va: ya se está yendo)
   antigüedad < 60 días                    (peso medio — los primeros 2 meses son los que se caen)
 
 bandas:

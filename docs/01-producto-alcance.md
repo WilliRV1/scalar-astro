@@ -51,6 +51,9 @@ El módulo del día a día en el piso del box.
 | Tablero del día | Quién viene hoy, quién cumple años, quién está vencido, quién no viene hace 2 semanas | F3 |
 | Atletas en riesgo | Lista priorizada de quién se está por ir, con el motivo y un botón para escribirle | F3 |
 | Leaderboard | Resultado del WOD del día ordenado, con RX / Scaled separados | F2 |
+| Horarios y clases | Plantilla semanal de horarios, cupo por clase, coach asignado, festivos y cierres | F2.5 |
+| Lista de la clase | Quién reservó, quién llegó, quién no llegó. Check-in de toda la clase desde el celular | F2.5 |
+| Control de no-show | Ver quién reserva y no va; política configurable (aviso, bloqueo temporal) | F2.5 |
 
 ### Módulo Atleta
 
@@ -68,6 +71,9 @@ El módulo que hace que el atleta *quiera* abrirlo. Es una PWA, se instala en el
 | Mis recibos | Historial descargable | F5 |
 | Mi asistencia | Cuántas veces vino este mes | F5 |
 | Check-in diario | Energía, RPE, notas (ya existe en el prototipo) | F2 |
+| Reservar clase | Ver horarios con cupos disponibles y reservar desde el celular | F2.5 |
+| Cancelar y lista de espera | Cancelar con antelación configurable; entrar a lista de espera y recibir aviso automático si se libera un cupo | F2.5 |
+| Mis reservas | Próximas clases reservadas, con recordatorio | F2.5 |
 
 ## Qué NO vamos a ofrecer (y por qué)
 
@@ -83,17 +89,18 @@ es "todavía no, y esto es lo que sí tenemos".
 | **Nómina de coaches** | Legislación laboral colombiana. Que usen su contador | No |
 | **Tienda / POS completo con inventario de retail** | Suplementos, ropa, bebidas. Se puede hacer simple en v2 (venta suelta), no un POS | v2 parcial |
 | **Débito automático recurrente** | Requiere convenio y tokenización con la pasarela. Empezamos con link de pago por cobro | v2 |
-| **Reserva de clases con cupo** | Es *table stakes* para boxes grandes, pero es un módulo pesado (horarios, cupos, lista de espera, cancelación, no-show). Los boxes de <80 atletas normalmente no lo necesitan | **v1.5 — decisión abierta, ver abajo** |
 | **Programación de ciclos de fuerza con porcentajes** | Periodización avanzada (5/3/1, Conjugate). Nicho | v3 |
 | **Integración con relojes / wearables** | Ruido, poco valor para el dueño | No |
 | **Chat interno** | Nadie lo va a usar teniendo WhatsApp | No |
 | **Multi-sede** | Un box, una sede. Cuando llegue una cadena, se cobra distinto | v2 |
 | **Traducción a otros idiomas** | Español Colombia primero. La arquitectura queda lista para i18n, pero no se traduce | v2 |
 
-> **Decisión abierta #1 — Reserva de clases.** Si los boxes de tu ciudad tienen horarios
-> con cupo limitado y hoy lo manejan por grupo de WhatsApp, esto pasa a ser obligatorio
-> en v1 y suma ~2 semanas al roadmap. Si el box es de entrada libre por franja horaria,
-> se queda en v1.5. **Hay que preguntarle esto a 3 boxes antes de decidir.**
+> **Decisión tomada (2026-09-16) — Reserva de clases entra en v1.** Es *table stakes*
+> frente a Boxmagic y similares: si un box maneja horarios con cupo, sin esto la venta no
+> arranca. Suma ~2 semanas al roadmap (fase F2.5) y obliga a modelar horarios, cupos, lista
+> de espera, cancelación y no-show desde el principio. A cambio, habilita dos cosas que
+> valen plata: **control de acceso por membresía** (quien está en mora no puede reservar) y
+> **datos de asistencia mucho más limpios**, que es lo que alimenta la detección de fuga.
 
 ## Regla para decidir qué entra
 

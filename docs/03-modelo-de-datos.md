@@ -23,6 +23,9 @@ erDiagram
     subscriptions ||--o{ invoices : genera
     invoices ||--o{ payments : recibe
     athletes ||--o{ attendances : registra
+    class_templates ||--o{ classes : genera
+    classes ||--o{ reservations : recibe
+    athletes ||--o{ reservations : hace
     classes ||--o{ attendances : agrupa
     wods ||--o{ wod_blocks : contiene
     wods ||--o{ results : recibe
@@ -314,15 +317,55 @@ create table results (
   unique (wod_block_id, athlete_id)
 );
 
-create table classes (                          -- v1.5, solo si se hace reserva de cupos
-  id          uuid primary key default gen_random_uuid(),
-  org_id      uuid not null references organizations(id) on delete cascade,
-  starts_at   timestamptz not null,
-  ends_at     timestamptz not null,
-  capacity    int,
-  coach_id    uuid references auth.users(id),
-  wod_id      uuid references wods(id)
+-- Horarios y reservas (v1, fase F2.5)
+
+create table class_templates (                  -- la parrilla semanal: "Lunes 6:00 am, cupo 14"
+  id           uuid primary key default gen_random_uuid(),
+  org_id       uuid not null references organizations(id) on delete cascade,
+  name         text not null default 'CrossFit',
+  weekday      int not null check (weekday between 0 and 6),
+  start_time   time not null,
+  duration_min int not null default 60,
+  capacity     int not null,
+  coach_id     uuid references auth.users(id),
+  valid_from   date not null default current_date,
+  valid_until  date,
+  is_active    boolean not null default true
 );
+
+create table classes (                          -- instancias concretas, generadas desde la plantilla
+  id             uuid primary key default gen_random_uuid(),
+  org_id         uuid not null references organizations(id) on delete cascade,
+  template_id    uuid references class_templates(id),
+  name           text not null default 'CrossFit',
+  starts_at      timestamptz not null,
+  ends_at        timestamptz not null,
+  capacity       int not null,
+  reserved_count int not null default 0,        -- desnormalizado, mantenido por trigger
+  coach_id       uuid references auth.users(id),
+  wod_id         uuid references wods(id),
+  status         text not null default 'scheduled', -- scheduled | cancelled
+  cancel_reason  text,                          -- festivo, cierre, coach enfermo
+  created_at     timestamptz not null default now(),
+  unique (org_id, template_id, starts_at)
+);
+create index on classes (org_id, starts_at);
+
+create table reservations (
+  id            uuid primary key default gen_random_uuid(),
+  org_id        uuid not null references organizations(id) on delete cascade,
+  class_id      uuid not null references classes(id) on delete cascade,
+  athlete_id    uuid not null references athletes(id) on delete cascade,
+  status        text not null default 'booked', -- booked | waitlisted | attended | no_show | cancelled
+  waitlist_pos  int,
+  booked_at     timestamptz not null default now(),
+  cancelled_at  timestamptz,
+  checked_in_at timestamptz,
+  consumed_credit boolean not null default false, -- descuenta del bono de clases
+  unique (class_id, athlete_id)
+);
+create index on reservations (org_id, athlete_id, booked_at desc);
+create index on reservations (class_id, status);
 
 create table attendances (
   id          uuid primary key default gen_random_uuid(),
@@ -337,6 +380,34 @@ create table attendances (
 create index on attendances (org_id, date desc);
 create index on attendances (org_id, athlete_id, date desc);
 ```
+
+### Reglas de reserva (las que hay que acertar)
+
+Este módulo parece simple y no lo es. Las reglas que producen reclamos si están mal:
+
+1. **Concurrencia del último cupo.** Dos atletas reservando el mismo cupo al tiempo. Se
+   resuelve en la base, no en el cliente: la reserva se hace dentro de una función
+   `book_class()` con `select … for update` sobre la clase. Nunca leyendo el cupo y
+   escribiendo después.
+2. **Quién puede reservar.** Membresía `active` (no vencida ni congelada), con cupo de
+   clases disponible si el plan es por bonos. **El box decide si un atleta en mora puede
+   reservar**: es la palanca de cobro más efectiva que existe, y es configurable.
+3. **Ventanas de tiempo**, todas por box: con cuánta antelación se abre la reserva
+   (ej. 48 h), hasta cuándo se puede reservar (ej. 30 min antes), y hasta cuándo se puede
+   cancelar sin penalización (ej. 2 h antes).
+4. **Lista de espera automática.** Al cancelar alguien, el primero de la lista pasa a
+   reservado y **recibe el aviso por WhatsApp** sin que nadie haga nada. Esta es
+   exactamente la clase de detalle que hace que un box cambie de software.
+5. **No-show.** Reservó y no llegó. Política configurable: solo registrar, avisar, o
+   bloquear la reserva por N días tras M faltas. Y **el no-show consume o no el bono de
+   clases**, según lo defina el box.
+6. **Cancelación de una clase entera** (festivo, coach enfermo): avisa a todos los
+   reservados y devuelve los créditos consumidos.
+7. **Generación de instancias**: un job semanal crea las `classes` de las próximas 2–4
+   semanas desde `class_templates`, respetando el calendario de festivos colombianos.
+8. **La asistencia sale de la reserva.** `reservations.status = 'attended'` alimenta
+   `attendances`; el check-in manual sigue existiendo para quien llega sin reservar (si el
+   box lo permite).
 
 ## Logística y finanzas del box
 
