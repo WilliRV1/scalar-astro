@@ -40,6 +40,26 @@ Cada box nuevo arranca con estas activas (o desactivadas, según se indique). Es
 | 13 | **Clase cancelada** | Evento: el box cancela una clase | Aviso a todos los reservados + devolución del crédito | utility |
 | 14 | **No-show reiterado** | 3 faltas sin cancelar en 30 días | Aviso al atleta y alerta al coach (es señal temprana de fuga) | utility |
 
+### Reserva por WhatsApp (F3) — el atleta no instala nada
+
+Más allá de las reglas salientes, el canal es **de doble vía**: el atleta escribe al número
+del box y reserva sin abrir ninguna aplicación.
+
+```
+Atleta: "voy mañana 6am"
+  → el bot resuelve la clase, verifica membresía y cupo
+  → si hay cupo: confirma y queda reservado
+  → si no hay: ofrece lista de espera o el horario más cercano
+  → si está en mora: responde con el link de pago (si el box activó el bloqueo por mora)
+```
+
+Se implementa con **mensajes de plantilla con botones** (respuestas rápidas del propio
+WhatsApp), no con interpretación de texto libre: menos ambigüedad, menos soporte, y las
+respuestas del atleta caen dentro de la ventana de servicio de 24 horas, que **es gratis**.
+
+Justificación de mercado: 14 de los 21 boxes caleños identificados no tienen ni página web
+([08](./08-mercado-cali.md)). Toda la competencia asume que el atleta instalará una app.
+
 Extras configurables: recordatorio de compromisos recurrentes (arriendo, seguro,
 mantenimiento), aviso de cierre de mes, y recordatorio de retomar a quien está congelado.
 
@@ -76,14 +96,14 @@ la cabeza del dueño y se le olvida.
 
 ### El camino en tres etapas
 
-**Etapa 0 — "un clic" (va en F3, sin costo ni trámites).**
+**Etapa 0 — "un clic" (va en F4, sin costo ni trámites).**
 El sistema arma la lista de a quién hay que escribirle y el texto ya redactado; el coach
 toca un botón y se abre WhatsApp con el mensaje escrito hacia ese número
 (`https://wa.me/57300…?text=…`). No es automático, pero **elimina el 90% del trabajo**
 (decidir a quién, buscar el chat, redactar) y funciona desde el día uno, sin API, sin
 verificación de Meta y sin riesgo. Muchos clientes se quedan felices aquí.
 
-**Etapa 1 — Cloud API oficial de Meta (F3/F4).**
+**Etapa 1 — Cloud API oficial de Meta (F4/F6).**
 Envío realmente automático. Requiere: cuenta de WhatsApp Business, verificación del negocio
 en Meta Business Manager, un número dedicado (que no esté en uso en la app de WhatsApp), y
 plantillas aprobadas por Meta para mensajes iniciados por el negocio.

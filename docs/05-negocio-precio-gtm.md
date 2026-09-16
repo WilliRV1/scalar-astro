@@ -70,9 +70,21 @@ contraprestación**:
 | Plan | Atletas activos | Mensual | Para quién |
 |---|---|---|---|
 | **Starter** | hasta 40 | 99.000 COP | Box nuevo, entrenador personal, estudio pequeño |
-| **Box** | hasta 120 | 189.000 COP | El box típico. **Este es el plan que se vende** |
+| **Box** | hasta 120 | **179.000 COP** | El box típico. **Este es el plan que se vende** |
 | **Pro** | hasta 300 | 329.000 COP | Box grande o con dos salones |
 | **Cadena** | +300 / multi-sede | Cotización | v2 |
+
+> **Ajuste tras la investigación de mercado** ([08](./08-mercado-cali.md)): el plan Box baja
+> de 189.000 a **179.000 COP** por una razón de discurso, no de costo. $179.000 es
+> aproximadamente **la misma cifra que la mensualidad de un atleta** en Cali (mediana
+> estimada ~$180.000, y el único dato local verificado —Mundo Fitness, Jamundí— es $178.000).
+> Eso da una frase que se recuerda sola:
+>
+> > **"Te cuesta lo mismo que un socio. Con que retengas uno al año, ya lo pagaste."**
+>
+> La investigación además confirma que la franja real de la competencia convertida a pesos
+> es **$150.000–$310.000 COP/mes**, así que 179.000 no es barato: es la mediana. Y que el
+> precio de fundador de 40.000 estaba **4 a 7 veces por debajo de todo lo que existe**.
 
 - **Implementación: 450.000 COP** por única vez — migración del Excel, carga de atletas y
   marcas, configuración de planes y fechas de corte, plantillas de WhatsApp, capacitación
@@ -92,6 +104,38 @@ contraprestación**:
 | Capacitación extra (más de 2 horas) | 120.000 COP/hora |
 | Automatización o reporte a la medida | 300.000 COP por regla, con acuerdo escrito |
 | Personalización de marca (dominio propio, logo en los mensajes) | 80.000 COP/mes |
+
+### Tensión a resolver: la competencia no cobra implementación
+
+La investigación encontró que **Crossfy y WodBuster declaran explícitamente "sin costo de
+implementación"**, y Fitco tampoco lo cobra. Solo Wodify menciona un *"small onboarding
+fee"* cuyo monto no publica. Esto choca de frente con los 450.000 COP que propongo.
+
+**Recomendación: mantenerlo, pero cambiándole el nombre y el contenido.** Ellos no cobran
+setup porque **no hacen nada**: el cliente se configura solo. Lo que tú cobras no es
+"activar la cuenta", es:
+
+> **Migración asistida presencial**: recibimos tu Excel y lo cargamos nosotros, creamos tus
+> planes y fechas de corte, dejamos las plantillas de WhatsApp escritas, y vamos al box a
+> capacitar al equipo.
+
+Eso ningún competidor extranjero lo puede replicar, y es justo lo que un dueño que **nunca
+ha comprado software** necesita para atreverse. Dos palancas de cierre cuando el prospecto
+dude: **se condona con pago anual anticipado**, o se difiere a 3 cuotas. Lo que no debe
+hacerse es regalarlo por defecto — es el trabajo más pesado de todos y es lo que hace que el
+cliente no se vaya después.
+
+### Ingreso variable: comisión sobre los pagos
+
+Con Wompi integrado (ver [08 §7.3](./08-mercado-cali.md)), existe una segunda línea de
+ingreso: un pequeño diferencial sobre la tarifa de la pasarela. Si Wompi cobra
+2,65% + $700 y tú facturas 3,2% + $700 al box, un box que mueva $18M COP/mes en pagos en
+línea deja ~$100.000 COP/mes adicionales, **sin trabajo marginal**. Con eso, el umbral para
+llegar a 2 millones de ingreso recurrente baja de 12 boxes a 7–8.
+
+Condición innegociable: **publicar la tarifa y el diferencial**. La queja más repetida
+contra la competencia es el precio opaco; cobrar un margen escondido sobre los pagos sería
+exactamente el error que estamos atacando.
 
 > **Regla de oro contra la trampa de la consultoría**: si un cliente pide algo que no está
 > en el producto, hay dos respuestas válidas — "no lo tenemos" o "lo construimos como
@@ -146,7 +190,7 @@ Tu instinto de cobrar instalación es correcto, pero el nombre importa:
 
 | Indicador | Meta año 1 | Alarma |
 |---|---|---|
-| Boxes pagando | 10–15 | < 5 al mes 9 |
+| Boxes pagando | 10–12 (≈34% del mercado de Cali, ver [08](./08-mercado-cali.md)) | < 5 al mes 9 |
 | Ingreso recurrente mensual | 2.000.000+ COP | — |
 | Fuga mensual de boxes | < 2% | 2 cancelaciones seguidas = problema de producto, no de precio |
 | Horas de soporte por box al mes | < 1 h | > 3 h = falta documentación o hay un bug recurrente |
@@ -156,7 +200,9 @@ Tu instinto de cobrar instalación es correcto, pero el nombre importa:
 
 | Riesgo | Mitigación |
 |---|---|
-| **Competencia establecida** (Boxmagic, Fitco, Wodify, SugarWOD…) | Competir por cercanía y por automatización en WhatsApp en español colombiano, no por cantidad de funciones. Tú contestas el teléfono; ellos no |
+| **El prospecto no está buscando software** (riesgo #1 según [08](./08-mercado-cali.md)): ningún box caleño usa un sistema hoy, así que no está comparando alternativas — ya normalizó el dolor | La demo no muestra funcionalidades: muestra **sus propios atletas perdidos y su propia cartera**. Primero se hace visible el problema, después se ofrece la solución |
+| **Cali sola no sostiene el negocio** (TAM ~$84M COP/año) | Cali es cabeza de playa para validar y vender presencialmente; el mercado real es nacional (~225 boxes estimados) |
+| **Competencia establecida** (Boxmagic, Fitco, Wodify, CrossHero, WodBuster) | Boxmagic ni siquiera vende en Colombia. Competir por rieles de pago locales, WhatsApp y cercanía, no por cantidad de funciones. Tú contestas el teléfono; ellos no |
 | **Un cliente grande te secuestra el roadmap** | La regla de oro de arriba: sin ramas exclusivas |
 | **El soporte te consume** | Horario, base de conocimiento, modo simulación, panel de superadministrador con suplantación |
 | **Tú eres el único punto de falla** | Documentar todo (este directorio), infraestructura reproducible, y desde el cliente 8 contratar apoyo de soporte por horas |
