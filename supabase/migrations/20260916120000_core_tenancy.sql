@@ -93,13 +93,23 @@ create trigger memberships_touch
 -- -----------------------------------------------------------------------------
 -- Helpers de permisos
 -- -----------------------------------------------------------------------------
--- SECURITY DEFINER a propósito: estas funciones consultan memberships desde
--- dentro de las políticas RLS de memberships. Sin SECURITY DEFINER la política
--- se llamaría a sí misma y Postgres entraría en recursión infinita.
--- `set search_path = ''` + nombres calificados: evita secuestro de search_path.
+-- Viven en el esquema `private`, que NO está expuesto por la API: nadie puede
+-- invocarlos desde el cliente, solo las políticas RLS.
+--
+-- SECURITY DEFINER a propósito: consultan memberships desde dentro de las
+-- políticas de memberships. Sin eso, la política se llamaría a sí misma y
+-- Postgres entraría en recursión infinita. Como SECURITY DEFINER salta la RLS
+-- de las tablas que toca, cada función filtra SIEMPRE por auth.uid() en su
+-- cuerpo: nunca reciben "de quién" como parámetro.
+--
+-- Devuelven CONJUNTOS de org_id en vez de un booleano por fila. Así la política
+-- se escribe `org_id in (select private.…)`, que Postgres evalúa UNA vez por
+-- consulta en lugar de una vez por fila.
 -- -----------------------------------------------------------------------------
 
-create or replace function public.auth_org_ids()
+create schema if not exists private;
+
+create or replace function private.auth_org_ids()
 returns setof uuid
 language sql
 stable
@@ -112,60 +122,57 @@ as $$
     and m.status = 'active'
 $$;
 
-comment on function public.auth_org_ids is
+comment on function private.auth_org_ids is
   'Boxes a los que pertenece el usuario autenticado. Base de toda política RLS.';
 
-create or replace function public.has_role(target_org uuid, roles text[])
-returns boolean
+create or replace function private.auth_org_ids_with_role(roles text[])
+returns setof uuid
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select exists (
-    select 1
-    from public.memberships m
-    where m.user_id = (select auth.uid())
-      and m.org_id = target_org
-      and m.status = 'active'
-      and m.role = any(roles)
-  )
+  select m.org_id
+  from public.memberships m
+  where m.user_id = (select auth.uid())
+    and m.status = 'active'
+    and m.role = any(roles)
 $$;
 
-create or replace function public.is_staff(target_org uuid)
-returns boolean
+/** Boxes donde el usuario es parte del equipo (dueño, administrador o coach). */
+create or replace function private.auth_staff_org_ids()
+returns setof uuid
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select public.has_role(target_org, array['owner','admin','coach'])
+  select private.auth_org_ids_with_role(array['owner','admin','coach'])
 $$;
 
--- Acceso financiero: dueños y administradores siempre; un coach solo si el box
--- se lo concedió explícitamente.
-create or replace function public.can_view_finances(target_org uuid)
-returns boolean
+/**
+ * Boxes donde el usuario puede ver la plata.
+ * Dueño y administrador siempre; un coach solo si el box se lo concedió.
+ */
+create or replace function private.auth_finance_org_ids()
+returns setof uuid
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select exists (
-    select 1
-    from public.memberships m
-    where m.user_id = (select auth.uid())
-      and m.org_id = target_org
-      and m.status = 'active'
-      and (
-        m.role in ('owner','admin')
-        or (m.role = 'coach' and coalesce((m.permissions->>'can_view_finances')::boolean, false))
-      )
-  )
+  select m.org_id
+  from public.memberships m
+  where m.user_id = (select auth.uid())
+    and m.status = 'active'
+    and (
+      m.role in ('owner','admin')
+      or (m.role = 'coach' and coalesce((m.permissions->>'can_view_finances')::boolean, false))
+    )
 $$;
 
--- El atleta vinculado al usuario actual dentro de un box concreto.
-create or replace function public.current_athlete_id(target_org uuid)
+/** El atleta vinculado al usuario actual dentro de un box concreto. */
+create or replace function private.current_athlete_id(target_org uuid)
 returns uuid
 language sql
 stable
@@ -181,6 +188,24 @@ as $$
   limit 1
 $$;
 
+-- Permisos de los helpers.
+--
+-- OJO, esto es contraintuitivo y cuesta una tarde si se hace mal: las
+-- expresiones de una política RLS se evalúan con los privilegios de QUIEN
+-- CONSULTA, no del dueño de la tabla. Si se le revoca EXECUTE a `authenticated`,
+-- toda consulta falla con "permission denied for function". Las pruebas de
+-- aislamiento lo detectan de inmediato.
+--
+-- Lo que de verdad protege estos helpers es que el esquema `private` NO está
+-- en la lista de esquemas expuestos por PostgREST (ver supabase/config.toml),
+-- así que no se pueden invocar desde el cliente. Además ninguno acepta "de
+-- quién" como parámetro: todos filtran por auth.uid() en su cuerpo, de modo que
+-- no hay nada que extraer aunque se pudieran llamar.
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
+grant execute on all functions in schema private to authenticated;
+revoke all on all functions in schema private from public, anon;
+
 -- -----------------------------------------------------------------------------
 -- RLS
 -- -----------------------------------------------------------------------------
@@ -192,14 +217,14 @@ alter table public.memberships   enable row level security;
 create policy "miembros leen su box"
   on public.organizations for select
   to authenticated
-  using (id in (select public.auth_org_ids()));
+  using (id in (select private.auth_org_ids()));
 
 -- Solo dueño y administrador modifican la configuración del box.
 create policy "owner/admin actualizan su box"
   on public.organizations for update
   to authenticated
-  using (public.has_role(id, array['owner','admin']))
-  with check (public.has_role(id, array['owner','admin']));
+  using (id in (select private.auth_org_ids_with_role(array['owner','admin'])))
+  with check (id in (select private.auth_org_ids_with_role(array['owner','admin'])));
 
 -- Nadie crea ni borra boxes desde el cliente: eso pasa por una Edge Function
 -- con service_role (alta de cliente nuevo). No se define policy de insert/delete.
@@ -212,10 +237,10 @@ create policy "el usuario ve sus propias membresías"
 create policy "el staff ve las membresías de su box"
   on public.memberships for select
   to authenticated
-  using (public.is_staff(org_id));
+  using (org_id in (select private.auth_staff_org_ids()));
 
 create policy "owner/admin gestionan membresías"
   on public.memberships for all
   to authenticated
-  using (public.has_role(org_id, array['owner','admin']))
-  with check (public.has_role(org_id, array['owner','admin']));
+  using (org_id in (select private.auth_org_ids_with_role(array['owner','admin'])))
+  with check (org_id in (select private.auth_org_ids_with_role(array['owner','admin'])));

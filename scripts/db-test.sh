@@ -52,6 +52,22 @@ echo "→ Guarda de RLS"
 "${PSQL[@]}" -v ON_ERROR_STOP=1 -q -f supabase/tests/rls_guard.sql
 
 echo "→ Aislamiento entre boxes"
-"${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/rls_isolation.sql 2>&1 | grep -E "ok ·|AISLAMIENTO" || true
+# Sin `set -o pipefail` explícito aquí, un fallo de psql quedaría enmascarado por
+# el grep y CI pasaría en verde con las pruebas rotas. Se captura la salida y se
+# comprueba el código de psql, no el del grep.
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/rls_isolation.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|AISLAMIENTO" || { echo "$out"; echo "✗ La prueba no reportó ninguna aserción"; exit 1; }
+else
+  echo "$out"
+  echo "✗ Fallaron las pruebas de aislamiento"
+  exit 1
+fi
+
+echo "→ Migración del box del entrenador (datos del prototipo)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/legacy_migration.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|MIGRACIÓN" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Falló la migración del prototipo"; exit 1
+fi
 
 echo "✓ Base de datos OK"

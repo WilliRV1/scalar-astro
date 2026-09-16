@@ -6,3 +6,6 @@ dist
 # Supabase local
 supabase/.branches
 supabase/.temp
+
+# Skills de agentes instalados con `npx skills add` (symlinks a .agents/)
+.claude/skills

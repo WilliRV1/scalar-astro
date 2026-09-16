@@ -123,32 +123,32 @@ alter table public.athlete_coach_notes enable row level security;
 create policy "staff lee atletas de su box"
   on public.athletes for select
   to authenticated
-  using (public.is_staff(org_id));
+  using (org_id in (select private.auth_staff_org_ids()));
 
 create policy "staff gestiona atletas de su box"
   on public.athletes for all
   to authenticated
-  using (public.is_staff(org_id))
-  with check (public.is_staff(org_id));
+  using (org_id in (select private.auth_staff_org_ids()))
+  with check (org_id in (select private.auth_staff_org_ids()));
 
 create policy "el atleta se lee a sí mismo"
   on public.athletes for select
   to authenticated
-  using (id = public.current_athlete_id(org_id));
+  using (id = (select private.current_athlete_id(org_id)));
 
 create policy "staff gestiona la salud del atleta"
   on public.athlete_health for all
   to authenticated
-  using (public.is_staff(org_id))
-  with check (public.is_staff(org_id));
+  using (org_id in (select private.auth_staff_org_ids()))
+  with check (org_id in (select private.auth_staff_org_ids()));
 
 create policy "el atleta ve su propia salud"
   on public.athlete_health for select
   to authenticated
-  using (athlete_id = public.current_athlete_id(org_id));
+  using (athlete_id = (select private.current_athlete_id(org_id)));
 
 create policy "solo el staff toca las notas del coach"
   on public.athlete_coach_notes for all
   to authenticated
-  using (public.is_staff(org_id))
-  with check (public.is_staff(org_id));
+  using (org_id in (select private.auth_staff_org_ids()))
+  with check (org_id in (select private.auth_staff_org_ids()));

@@ -41,7 +41,7 @@ alter table public.job_runs  enable row level security;
 create policy "owner/admin leen la bitácora de su box"
   on public.audit_log for select
   to authenticated
-  using (org_id is not null and public.has_role(org_id, array['owner','admin']));
+  using (org_id in (select private.auth_org_ids_with_role(array['owner','admin'])));
 
 -- job_runs: RLS activada y SIN políticas a propósito. Resultado: nadie con la
 -- llave anónima la ve; solo service_role, que salta RLS por diseño.

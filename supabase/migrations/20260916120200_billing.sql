@@ -2,7 +2,7 @@
 -- 0003 · Planes, suscripciones, cobros y pagos
 -- =============================================================================
 -- Dinero SIEMPRE en centavos (bigint). Nunca float, nunca numeric del cliente.
--- El acceso financiero no lo da el rol sino public.can_view_finances(): un coach
+-- El acceso financiero no lo da el rol sino private.auth_finance_org_ids(): un coach
 -- solo ve la plata si el box se lo concedió.
 -- =============================================================================
 
@@ -177,37 +177,37 @@ alter table public.payments      enable row level security;
 -- Los planes son el catálogo comercial: todo el staff los lee (el coach necesita
 -- saber qué plan tiene un atleta), pero solo quien ve finanzas los edita.
 create policy "staff lee planes" on public.plans for select
-  to authenticated using (public.is_staff(org_id));
+  to authenticated using (org_id in (select private.auth_staff_org_ids()));
 create policy "finanzas gestiona planes" on public.plans for all
   to authenticated
-  using (public.can_view_finances(org_id))
-  with check (public.can_view_finances(org_id));
+  using (org_id in (select private.auth_finance_org_ids()))
+  with check (org_id in (select private.auth_finance_org_ids()));
 create policy "el atleta lee los planes activos" on public.plans for select
   to authenticated
-  using (is_active and public.current_athlete_id(org_id) is not null);
+  using (is_active and (select private.current_athlete_id(org_id)) is not null);
 
 -- El coach necesita saber si un atleta está al día (para dejarlo entrenar o
 -- reservar), pero no necesita ver importes: eso se resuelve en el cliente
 -- mostrando solo el estado. A nivel de fila, el staff puede leer.
 create policy "staff lee suscripciones" on public.subscriptions for select
-  to authenticated using (public.is_staff(org_id));
+  to authenticated using (org_id in (select private.auth_staff_org_ids()));
 create policy "finanzas gestiona suscripciones" on public.subscriptions for all
   to authenticated
-  using (public.can_view_finances(org_id))
-  with check (public.can_view_finances(org_id));
+  using (org_id in (select private.auth_finance_org_ids()))
+  with check (org_id in (select private.auth_finance_org_ids()));
 create policy "el atleta ve su suscripción" on public.subscriptions for select
-  to authenticated using (athlete_id = public.current_athlete_id(org_id));
+  to authenticated using (athlete_id = (select private.current_athlete_id(org_id)));
 
 create policy "finanzas gestiona cobros" on public.invoices for all
   to authenticated
-  using (public.can_view_finances(org_id))
-  with check (public.can_view_finances(org_id));
+  using (org_id in (select private.auth_finance_org_ids()))
+  with check (org_id in (select private.auth_finance_org_ids()));
 create policy "el atleta ve sus cobros" on public.invoices for select
-  to authenticated using (athlete_id = public.current_athlete_id(org_id));
+  to authenticated using (athlete_id = (select private.current_athlete_id(org_id)));
 
 create policy "finanzas gestiona pagos" on public.payments for all
   to authenticated
-  using (public.can_view_finances(org_id))
-  with check (public.can_view_finances(org_id));
+  using (org_id in (select private.auth_finance_org_ids()))
+  with check (org_id in (select private.auth_finance_org_ids()));
 create policy "el atleta ve sus pagos" on public.payments for select
-  to authenticated using (athlete_id = public.current_athlete_id(org_id));
+  to authenticated using (athlete_id = (select private.current_athlete_id(org_id)));
