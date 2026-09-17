@@ -44,7 +44,14 @@ values
   ('aa000000-0000-4000-8000-000000000003', '2025-01-20', 'Zulma',              'active',  '',   null,
    '  95  ',   null,    '110',  '',        '9:05',  '55',  'ZU-9012'),
   ('aa000000-0000-4000-8000-000000000004', '2025-05-10', 'Pedro Gómez',        'pending', '35', 'Google',
-   'muchos',   '70',    '150',  '-',       '6:40',  '80',  'PG-3456');
+   'muchos',   '70',    '150',  '-',       '6:40',  '80',  'PG-3456'),
+  -- Casos reales encontrados en la auditoría del box del entrenador:
+  -- casillas que alguien dejó en '0' al crear el registro y nunca llenó, y
+  -- valores tan altos que casi seguro están en libras, no en kilos.
+  ('aa000000-0000-4000-8000-000000000005', '2026-01-24', 'Nuevo Atleta',       'active',  '01', null,
+   '0',        '0',     '0',    '0',       '0',     '0',   '0000'),
+  ('aa000000-0000-4000-8000-000000000006', '2026-02-21', 'Will Libras',        'active',  '01', null,
+   '285',      '225',   '305',  null,      null,    '225', '0000');
 
 insert into legacy.athlete_progress (athlete_id, field_name, value, created_at) values
   ('aa000000-0000-4000-8000-000000000001', 'back_squat', '110', '2024-06-01'),
@@ -73,8 +80,8 @@ begin
 
   -- Nadie se queda por fuera
   perform pg_temp.chk(
-    (select count(*) from public.athletes where org_id = v_org) = 4,
-    'migran los 4 atletas, ninguno se pierde');
+    (select count(*) from public.athletes where org_id = v_org) = 6,
+    'migran los 6 atletas, ninguno se pierde');
 
   -- Nombres compuestos: "Juan Carlos Pérez Gómez" no se puede partir bien
   -- automáticamente, pero NO se puede perder el resto del nombre.
@@ -192,6 +199,25 @@ begin
        and m.legacy_key = 'karen') = 2,
     'Karen: histórico (9:10) + actual (8:30), sin duplicar');
 
+  -- Un '0' no es una marca: es una casilla vacía disfrazada. Parsea limpiamente,
+  -- así que la regla de "descartar lo ilegible" no lo atrapaba y habría entrado
+  -- como PR legítimo de 0 kg.
+  perform pg_temp.chk(
+    not exists (
+      select 1 from public.personal_records
+      where athlete_id = 'aa000000-0000-4000-8000-000000000005'),
+    'un atleta con todas las marcas en "0" no genera ni un solo PR');
+  perform pg_temp.chk(
+    not exists (
+      select 1 from public.personal_records where value_numeric = 0),
+    'no se crea ninguna marca de valor 0 en toda la migración');
+
+  -- La unidad no se adivina: es un parámetro, y lo sospechoso se reporta.
+  perform pg_temp.chk(
+    (select cantidad from resultado
+     where concepto like 'marcas de peso sospechosas%') = 4,
+    'las 4 marcas por encima de 200 se reportan para revisar la unidad');
+
   -- Y el recuento de lo ilegible se reporta para revisarlo a mano
   perform pg_temp.chk(
     (select cantidad from resultado where concepto like 'valores de marca ilegibles%') = 1,
@@ -211,7 +237,7 @@ end $$;
 -- ------------------------------------------------- nada se pierde en legacy --
 do $$ begin
   perform pg_temp.chk(
-    (select count(*) from legacy.athletes) = 4,
+    (select count(*) from legacy.athletes) = 6,
     'los datos del prototipo siguen intactos en legacy');
 end $$;
 

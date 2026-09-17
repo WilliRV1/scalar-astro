@@ -97,3 +97,77 @@ diciendo "me falta mi back squat".
 
 Lo que **no** está probado: la base real. Los datos reales siempre traen un caso que nadie
 imaginó. Por eso el paso 1 del procedimiento es el ensayo contra una copia.
+
+---
+
+## Adenda — auditoría de los datos reales (2026-09-17)
+
+Se auditó el proyecto real en solo lectura antes de migrar. **Cambia la
+recomendación de fondo.**
+
+### Lo que hay realmente
+
+| | |
+|---|---|
+| Atletas | **9** (de los cuales 3 se llaman "Nuevo Atleta", uno "will", y hay dos "William Reyes") |
+| Registros de entrenamiento | **4**, de solo 3 atletas distintos |
+| Marcas con valor real | **18 celdas de 90**, y 6 de ellas son un `'0'` de relleno |
+| Histórico de progresión | **0 filas. La tabla `athlete_progress` nunca existió** |
+| Teléfonos, correos, documentos | **Ninguno, en ninguna tabla** |
+| Usuarios de autenticación | **0** |
+| Rango de altas | 24-ene-2026 a 21-feb-2026 |
+
+`karen`, `burpees_100`, `back_squat` y `bench_press` están **vacíos en los nueve
+atletas**. Hay nombres de prueba evidentes (Mike Tyson, John Doe, Sarah Connor).
+
+### El hallazgo que hay que contarle al entrenador
+
+**El histórico de marcas nunca se guardó.** `src/legacy/CoachDashboard.tsx:301`
+inserta en `athlete_progress` **sin comprobar el error**, contra una tabla que no
+existe; `src/legacy/AthletePersonalView.tsx:84` la lee con `if (data)`, así que el
+historial siempre salía vacío y nadie lo notó. Cada edición de marcas desde enero
+falló en silencio.
+
+Esos datos **no se pierden en la migración: nunca existieron**. Si el entrenador
+daba por hecho que tenía el histórico, hay que decírselo de frente.
+
+> Lección para el código nuevo: toda escritura comprueba el error y lo propaga.
+> Un `await` sin `if (error) throw` es una pérdida de datos silenciosa esperando
+> a ocurrir.
+
+### Recomendación: no migrar, arrancar limpio
+
+Son **9 registros, la mitad de prueba, sin un solo dato de contacto**. Migrar 5
+registros dudosos cuesta más que teclear los socios reales, y arrastraría al
+modelo nuevo cuatro socios fantasma y seis marcas de cero.
+
+La maquinaria de migración **no se bota**: sirve tal cual para el primer cliente
+de verdad, y está probada con 27 aserciones. Simplemente no se usa aquí.
+
+El plan para el box del entrenador pasa a ser:
+1. Pedirle la lista real de socios con **teléfono** (lo que de verdad falta).
+2. Cargarla con el importador de Excel, que es el camino que va a usar todo
+   cliente nuevo — y así se prueba con datos reales antes de vendérselo a nadie.
+3. Descartar el proyecto viejo cuando él confirme que no falta nada.
+
+### Correcciones que la auditoría provocó en la migración
+
+- **Un `'0'` ya no se migra como marca.** Parseaba limpiamente, así que la regla
+  de "descartar lo ilegible" no lo atrapaba, y habría entrado como un PR
+  legítimo de 0 kg que ensuciaría rankings y gráficas. Nadie levanta 0 kg ni hace
+  Karen en 0 segundos: el cero se descarta en todas las métricas.
+- **La unidad de peso ya no se asume.** En la misma columna conviven valores de
+  285 y 305 (que parecen libras) con otros de 13 y 22 (que parecen kilos).
+  `migrate_box()` recibe la unidad como parámetro y el informe final cuenta
+  cuántas marcas superan 200 para que un humano las revise.
+
+### Riesgo de producción, independiente de la migración
+
+RLS sigue **desactivada** en las dos tablas del proyecto viejo, con **cero
+políticas**, y el rol `anon` conserva `DELETE` y `TRUNCATE`. Cualquiera con la
+llave anónima —que viaja en el navegador— puede vaciar el proyecto. Hay que
+asumir que los datos actuales pudieron ser alterados por terceros.
+
+Como la decisión es no migrar, la solución más limpia es **cerrar o borrar ese
+proyecto** en cuanto el entrenador confirme. Mientras siga en pie, revocar los
+permisos de `anon` es cuestión de un minuto.

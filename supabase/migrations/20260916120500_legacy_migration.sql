@@ -42,14 +42,20 @@ begin
     -- mm:ss o hh:mm:ss
     if limpio ~ '^\d{1,2}:\d{1,2}(:\d{1,2})?$' then
       partes := string_to_array(limpio, ':');
-      if array_length(partes, 1) = 2 then
-        return partes[1]::numeric * 60 + partes[2]::numeric;
-      else
-        return partes[1]::numeric * 3600 + partes[2]::numeric * 60 + partes[3]::numeric;
-      end if;
+      declare segundos numeric;
+      begin
+        if array_length(partes, 1) = 2 then
+          segundos := partes[1]::numeric * 60 + partes[2]::numeric;
+        else
+          segundos := partes[1]::numeric * 3600 + partes[2]::numeric * 60 + partes[3]::numeric;
+        end if;
+        return case when segundos = 0 then null else segundos end;
+      end;
     end if;
     -- Solo dígitos en un campo de tiempo: se asume que ya son segundos
-    if limpio ~ '^\d+$' then return limpio::numeric; end if;
+    if limpio ~ '^\d+$' then
+      return case when limpio::numeric = 0 then null else limpio::numeric end;
+    end if;
     return null;
   end if;
 
@@ -57,6 +63,15 @@ begin
   limpio := regexp_replace(limpio, '[^0-9,.]', '', 'g');
   limpio := replace(limpio, ',', '.');
   if limpio = '' or limpio !~ '^\d*\.?\d+$' then return null; end if;
+
+  -- Un '0' literal NO es una marca: es una casilla que alguien dejó en cero al
+  -- crear el registro y nunca llenó. La auditoría del box del entrenador
+  -- encontró 6 celdas así. Parsean limpiamente, así que la regla de "descartar
+  -- lo ilegible" no las atrapaba, y habrían entrado como PR de 0 kg
+  -- ensuciando rankings y gráficas. Nadie levanta 0 kg ni hace Karen en 0
+  -- segundos, de modo que el cero se descarta en todas las métricas.
+  if limpio::numeric = 0 then return null; end if;
+
   return limpio::numeric;
 end;
 $$;
@@ -65,7 +80,13 @@ $$;
 create or replace function legacy.migrate_box(
   p_slug text,
   p_name text,
-  p_plan_price_cents bigint default 18000000   -- 180.000 COP por defecto
+  p_plan_price_cents bigint default 18000000,  -- 180.000 COP por defecto
+  -- El prototipo no guardaba la unidad. La auditoría del box del entrenador
+  -- encontró valores de 285 y 305 junto a otros de 13 y 22 en la MISMA columna:
+  -- unos parecen libras y otros kilos. No se puede adivinar, así que la unidad
+  -- es un parámetro explícito y el informe final cuenta cuántas marcas resultan
+  -- sospechosas para que un humano las revise.
+  p_weight_unit text default 'kg'
 )
 returns table (concepto text, cantidad bigint)
 language plpgsql
@@ -140,7 +161,8 @@ begin
     select
       v_org_id, ap.athlete_id, m.id,
       legacy.parse_value(ap.value, m.metric),
-      m.unit, ap.created_at::date, 'legacy'
+      case when m.metric = 'weight' then p_weight_unit else m.unit end,
+      ap.created_at::date, 'legacy'
     from legacy.athlete_progress ap
     join public.movements m on m.legacy_key = ap.field_name and m.org_id is null
     join public.athletes a on a.id = ap.athlete_id
@@ -165,7 +187,8 @@ begin
     org_id, athlete_id, movement_id, value_numeric, unit, achieved_on, source, notes
   )
   select
-    v_org_id, la.id, m.id, valor.v, m.unit,
+    v_org_id, la.id, m.id, valor.v,
+    case when m.metric = 'weight' then p_weight_unit else m.unit end,
     coalesce(hist.ultima_fecha + 1, la.created_at::date),
     'legacy',
     case when hist.ultima_fecha is null
@@ -216,6 +239,11 @@ begin
     select 'atletas en el prototipo (control)',
            (select count(*) from legacy.athletes)
     union all
+    select 'marcas de peso sospechosas de estar en libras (revisar a mano)',
+           (select count(*) from public.personal_records pr
+            join public.movements m on m.id = pr.movement_id
+            where pr.org_id = v_org_id and m.metric = 'weight' and pr.value_numeric > 200)
+    union all
     select 'valores de marca ilegibles (revisar a mano)',
            (select count(*) from legacy.athlete_progress ap
             join public.movements m on m.legacy_key = ap.field_name and m.org_id is null
@@ -227,5 +255,5 @@ comment on function legacy.migrate_box is
   'Migra el box del prototipo al modelo nuevo. Idempotente. No borra nada de legacy.';
 
 -- Solo service_role, nunca desde el navegador.
-revoke all on function legacy.migrate_box(text, text, bigint) from public, anon, authenticated;
+revoke all on function legacy.migrate_box(text, text, bigint, text) from public, anon, authenticated;
 revoke all on function legacy.parse_value(text, text) from public, anon, authenticated;

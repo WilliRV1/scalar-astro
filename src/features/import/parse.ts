@@ -402,7 +402,8 @@ export function parsePrecioCents(raw: unknown): number | null {
 
   let texto = celdaATexto(raw);
   if (/^\$?\s*\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(texto)) {
-    texto = texto.replace(/,/g, '');
+    // Formato gringo ("180,000.50"): se pasa al colombiano antes de leerlo.
+    texto = texto.replace(/,/g, '').replace('.', ',');
   }
   const cents = parsePesosToCents(texto);
   if (cents === null || cents < 0) return null;
@@ -979,4 +980,51 @@ export function analizarArchivo(
     filas: conDuplicados,
     resumen: resumirFilas(conDuplicados),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Detección de la fila de encabezados
+// ---------------------------------------------------------------------------
+
+/**
+ * Encuentra en qué fila están los encabezados.
+ *
+ * Casi ningún archivo de un box empieza en A1: arriba suele haber el nombre del
+ * box, una fila en blanco o un "ACTUALIZADO A SEPTIEMBRE". Se busca, entre las
+ * primeras filas, la que más columnas conocidas reconoce; se exigen al menos
+ * dos para no confundir una fila de datos donde alguien se llama "Karen".
+ */
+export function detectarFilaEncabezado(matriz: unknown[][], maximoFilas = 10): number {
+  let mejorFila = 0;
+  let mejorPuntaje = 0;
+
+  const hasta = Math.min(matriz.length, maximoFilas);
+  for (let i = 0; i < hasta; i += 1) {
+    const fila = matriz[i] ?? [];
+    const reconocidas = fila.filter((c) => sugerirCampo(c) !== 'ignorar').length;
+    if (reconocidas < 2) continue;
+    const llenas = fila.filter((c) => !esCeldaVacia(c)).length;
+    const puntaje = reconocidas * 10 + llenas;
+    if (puntaje > mejorPuntaje) {
+      mejorPuntaje = puntaje;
+      mejorFila = i;
+    }
+  }
+
+  return mejorFila;
+}
+
+export interface HojaSeparada {
+  encabezados: string[];
+  filas: unknown[][];
+  /** Fila (base 0) donde estaban los encabezados dentro del archivo. */
+  filaEncabezado: number;
+}
+
+/** Parte la matriz cruda de la hoja en encabezados + filas de datos. */
+export function separarEncabezados(matriz: unknown[][]): HojaSeparada {
+  const filaEncabezado = detectarFilaEncabezado(matriz);
+  const encabezados = (matriz[filaEncabezado] ?? []).map((h) => celdaATexto(h));
+  const filas = matriz.slice(filaEncabezado + 1).filter((f) => !filaVacia(f));
+  return { encabezados, filas, filaEncabezado };
 }
