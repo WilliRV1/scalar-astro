@@ -94,6 +94,15 @@ export function fechaCorta(iso: string | null): string {
   return Number.isNaN(d.getTime()) ? '—' : FECHA.format(d);
 }
 
+/**
+ * Espejo de `private.auth_finance_org_ids()`: quién ve la plata del box.
+ * Dueño y administrador siempre; el coach solo si se lo concedieron.
+ */
+export function veLaPlata(role: StaffRole, permissions: Permissions): boolean {
+  if (rolConTodoIncluido(role)) return true;
+  return permissions?.can_view_finances === true;
+}
+
 /** Los permisos concedidos, en texto, para pintarlos bajo el nombre. */
 export function permisosConcedidos(role: StaffRole, permissions: Permissions): string[] {
   if (rolConTodoIncluido(role)) return ['Acceso completo'];

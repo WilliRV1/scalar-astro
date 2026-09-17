@@ -40,6 +40,8 @@ create table public.invitations (
   token       text not null unique
               default replace(gen_random_uuid()::text, '-', '')
                    || replace(gen_random_uuid()::text, '-', ''),
+  -- Quién invitó. Lo pone el trigger con auth.uid(), no el cliente: el dato
+  -- sirve para pedir cuentas y no valdría nada si se pudiera escribir a mano.
   invited_by  uuid references auth.users(id) on delete set null,
   expires_at  timestamptz not null default now() + interval '14 days',
   accepted_at timestamptz,
@@ -90,6 +92,14 @@ begin
   -- guardar para que la comparación al aceptar sea un igual y no un lower() que
   -- alguien olvide poner algún día.
   new.email := lower(btrim(new.email));
+
+  -- Quien invita es quien está autenticado, diga lo que diga el cliente. El
+  -- coalesce deja pasar las cargas con service_role (semillas, importaciones),
+  -- donde no hay auth.uid().
+  if tg_op = 'INSERT' then
+    new.invited_by := coalesce((select auth.uid()), new.invited_by);
+  end if;
+
   return new;
 end;
 $$;

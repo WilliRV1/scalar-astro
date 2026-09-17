@@ -52,10 +52,12 @@ insert into public.invitations (org_id, email, role, permissions, token, expires
   ('0e000000-0000-4000-8000-000000000001', 'intruso@coach.co', 'admin', '{}',
    'tok-revocada', now() + interval '7 days', 'revoked',  'e1000000-0000-4000-8000-000000000001');
 
+-- Mismo ayudante que en billing_engine.sql, con un coalesce: una aserción que
+-- se evalúa a NULL (comparar contra una columna vacía) pasaría en silencio.
 create or replace function pg_temp.chk(cond boolean, label text)
 returns void language plpgsql as $$
 begin
-  if not cond then raise exception 'FALLO [%]', label; end if;
+  if not coalesce(cond, false) then raise exception 'FALLO [%]', label; end if;
   raise notice '  ok · %', label;
 end $$;
 

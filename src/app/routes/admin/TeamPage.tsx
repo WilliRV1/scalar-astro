@@ -7,7 +7,7 @@ import { InvitationLink } from '../../../features/team/InvitationLink';
 import { MemberDrawer } from '../../../features/team/MemberDrawer';
 import {
   ETIQUETA_ESTADO_INVITACION, ETIQUETA_ROL, canManageTeam, fechaCorta,
-  invitacionVencida, permisosConcedidos,
+  invitacionVencida, permisosConcedidos, veLaPlata,
 } from '../../../features/team/permissions';
 import type { Invitation, TeamMember } from '../../../features/team/types';
 import { Button, Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
@@ -63,8 +63,7 @@ export default function TeamPage() {
         />
         <Stat
           label="Ven la plata"
-          value={String(activos.filter((m) => permisosConcedidos(m.role, m.permissions).length > 0
-            && (m.role !== 'coach' || m.permissions?.can_view_finances === true)).length)}
+          value={String(activos.filter((m) => veLaPlata(m.role, m.permissions)).length)}
           hint="Dueños, administradores y coaches con el permiso"
         />
       </div>
