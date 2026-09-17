@@ -26,9 +26,14 @@ export default function AppLayout() {
 
         <nav className="flex flex-1 items-center">
           {finances && (
-            <NavLink to="/admin" className={link}>
-              Administración
-            </NavLink>
+            <>
+              <NavLink to="/admin" end className={link}>
+                Cartera
+              </NavLink>
+              <NavLink to="/admin/planes" className={link}>
+                Planes
+              </NavLink>
+            </>
           )}
           {staff && (
             <NavLink to="/coach/atletas" className={link}>

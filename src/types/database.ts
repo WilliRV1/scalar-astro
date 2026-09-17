@@ -68,6 +68,43 @@ export interface Athlete {
   deleted_at: string | null;
 }
 
+export interface Plan {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  price_cents: number;
+  billing_period: 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'one_off';
+  duration_days: number | null;
+  class_quota: number | null;
+  is_active: boolean;
+}
+
+export interface Movement {
+  id: string;
+  org_id: string | null;
+  name: string;
+  category: string | null;
+  metric: 'weight' | 'time' | 'reps' | 'rounds_reps' | 'distance' | 'calories';
+  unit: string;
+  is_benchmark: boolean;
+  legacy_key: string | null;
+  sort_order: number;
+}
+
+export interface PersonalRecord {
+  id: string;
+  org_id: string;
+  athlete_id: string;
+  movement_id: string;
+  value_numeric: number;
+  unit: string;
+  reps: number;
+  achieved_on: string;
+  source: 'manual' | 'wod_result' | 'import' | 'legacy';
+  notes: string | null;
+}
+
 export interface Subscription {
   id: string;
   org_id: string;

@@ -1,3 +1,6 @@
+export { Drawer } from './Drawer';
+export { Field, TextInput, Select, Checkbox } from './Field';
+
 import type { ReactNode } from 'react';
 
 export function Spinner({ label = 'Cargando…' }: { label?: string }) {
@@ -51,6 +54,7 @@ export function Button({
   disabled,
   variant = 'primary',
   className = '',
+  form,
 }: {
   children: ReactNode;
   type?: 'button' | 'submit';
@@ -58,6 +62,8 @@ export function Button({
   disabled?: boolean;
   variant?: 'primary' | 'ghost';
   className?: string;
+  /** Id del <form> al que pertenece, para botones fuera del formulario. */
+  form?: string;
 }) {
   const base =
     'inline-flex items-center justify-center gap-2 px-4 py-3 font-display text-xl tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40';
@@ -66,7 +72,7 @@ export function Button({
       ? 'bg-primary text-white hover:bg-red-700'
       : 'grunge-border text-gray-300 hover:border-primary hover:text-primary';
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${styles} ${className}`}>
+    <button type={type} form={form} onClick={onClick} disabled={disabled} className={`${base} ${styles} ${className}`}>
       {children}
     </button>
   );

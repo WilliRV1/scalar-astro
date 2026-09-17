@@ -12,6 +12,8 @@ const AppLayout = lazy(() => import('./routes/AppLayout'));
 const Landing = lazy(() => import('./routes/Landing'));
 const AdminHome = lazy(() => import('./routes/admin/AdminHome'));
 const AthletesPage = lazy(() => import('./routes/coach/AthletesPage'));
+const AthleteDetailPage = lazy(() => import('./routes/coach/AthleteDetailPage'));
+const PlansPage = lazy(() => import('./routes/admin/PlansPage'));
 const AthleteHome = lazy(() => import('./routes/athlete/AthleteHome'));
 
 export function AppRouter() {
@@ -30,7 +32,9 @@ export function AppRouter() {
 
             <Route element={<RequireRole roles={['owner', 'admin', 'coach']} />}>
               <Route path="admin" element={<AdminHome />} />
+              <Route path="admin/planes" element={<PlansPage />} />
               <Route path="coach/atletas" element={<AthletesPage />} />
+              <Route path="coach/atletas/:id" element={<AthleteDetailPage />} />
             </Route>
 
             <Route element={<RequireRole roles={['athlete']} />}>
