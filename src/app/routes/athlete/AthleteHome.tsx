@@ -2,6 +2,7 @@ import { useAuth } from '../../../features/auth/useAuth';
 import { fullName, useAthlete } from '../../../features/athletes/queries';
 import { useMyInvoices, useMyPayments } from '../../../features/billing/queries';
 import { daysOverdue, formatCents } from '../../../shared/lib/money';
+import { PersonalRecords } from '../../../features/performance/PersonalRecords';
 import { Card, EmptyState, Spinner, Stat } from '../../../shared/ui';
 
 /**
@@ -55,6 +56,14 @@ export default function AthleteHome() {
         />
         <Stat label="Desde" value={athlete.joined_on} hint="Fecha de ingreso al box" />
       </div>
+
+      {activeMembership && (
+        <PersonalRecords
+          orgId={activeMembership.org_id}
+          athleteId={athlete.id}
+          canEdit={false}
+        />
+      )}
 
       <section>
         <h2 className="mb-3 font-display text-2xl text-black dark:text-white">Mis pagos</h2>

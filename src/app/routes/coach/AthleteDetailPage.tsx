@@ -7,6 +7,7 @@ import { AthleteForm } from '../../../features/athletes/AthleteForm';
 import { useAthleteBilling } from '../../../features/billing/queries-athlete';
 import { PaymentForm } from '../../../features/billing/PaymentForm';
 import { SubscriptionForm } from '../../../features/billing/SubscriptionForm';
+import { PersonalRecords } from '../../../features/performance/PersonalRecords';
 import { daysOverdue, formatCents } from '../../../shared/lib/money';
 import { formatPhone, whatsappLink } from '../../../shared/lib/phone';
 import { Button, Card, EmptyState, Spinner, Stat } from '../../../shared/ui';
@@ -159,6 +160,8 @@ export default function AthleteDetailPage() {
           </section>
         </>
       )}
+
+      {orgId && <PersonalRecords orgId={orgId} athleteId={athlete.id} canEdit />}
 
       {!verFinanzas && (
         <Card>
