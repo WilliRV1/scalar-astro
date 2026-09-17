@@ -8,12 +8,15 @@ import { Spinner } from '../shared/ui';
 const StaffLogin = lazy(() => import('./routes/public/StaffLogin'));
 const AthleteAccess = lazy(() => import('./routes/public/AthleteAccess'));
 const NoAccess = lazy(() => import('./routes/public/NoAccess'));
+const AcceptInvitation = lazy(() => import('./routes/public/AcceptInvitation'));
 const AppLayout = lazy(() => import('./routes/AppLayout'));
 const Landing = lazy(() => import('./routes/Landing'));
 const AdminHome = lazy(() => import('./routes/admin/AdminHome'));
 const AthletesPage = lazy(() => import('./routes/coach/AthletesPage'));
 const AthleteDetailPage = lazy(() => import('./routes/coach/AthleteDetailPage'));
 const PlansPage = lazy(() => import('./routes/admin/PlansPage'));
+const TeamPage = lazy(() => import('./routes/admin/TeamPage'));
+const ImportPage = lazy(() => import('./routes/coach/ImportPage'));
 const AthleteHome = lazy(() => import('./routes/athlete/AthleteHome'));
 
 export function AppRouter() {
@@ -24,6 +27,7 @@ export function AppRouter() {
         <Route path="/entrar" element={<StaffLogin />} />
         <Route path="/acceso" element={<AthleteAccess />} />
         <Route path="/sin-acceso" element={<NoAccess />} />
+        <Route path="/invitacion/:token" element={<AcceptInvitation />} />
 
         {/* Privadas */}
         <Route element={<RequireAuth />}>
@@ -35,6 +39,11 @@ export function AppRouter() {
               <Route path="admin/planes" element={<PlansPage />} />
               <Route path="coach/atletas" element={<AthletesPage />} />
               <Route path="coach/atletas/:id" element={<AthleteDetailPage />} />
+              <Route path="coach/importar" element={<ImportPage />} />
+            </Route>
+
+            <Route element={<RequireRole roles={['owner', 'admin']} />}>
+              <Route path="admin/equipo" element={<TeamPage />} />
             </Route>
 
             <Route element={<RequireRole roles={['athlete']} />}>

@@ -33,7 +33,12 @@ insert into public.invoices (id, org_id, athlete_id, number, period_start, perio
 create or replace function pg_temp.chk(cond boolean, label text)
 returns void language plpgsql as $$
 begin
-  if not cond then raise exception 'FALLO [%]', label; end if;
+  -- coalesce a propósito: `if not cond` con cond = NULL no entra al if, así que
+  -- una aserción que compare contra una columna vacía o una subconsulta sin
+  -- filas pasaría sin haber comprobado nada. Un NULL aquí es un fallo.
+  if not coalesce(cond, false) then
+    raise exception 'FALLO [%] (la condición dio %)', label, coalesce(cond::text, 'NULL');
+  end if;
   raise notice '  ok · %', label;
 end $$;
 

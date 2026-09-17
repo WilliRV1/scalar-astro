@@ -168,20 +168,30 @@ async function asegurarPlanes(
   return { porClave, creados: porCrear.length };
 }
 
+type ResultadoInsercion = { id: string } | { error: string };
+
 /**
- * Inserta un lote y, si el lote falla, lo reintenta fila por fila. Devuelve los
- * ids en el mismo orden en que se mandaron las filas (null donde falló).
+ * Inserta un lote y, si el lote falla, lo reintenta fila por fila. PostgREST
+ * mete el lote en una sola transacción, así que un lote fallido no dejó nada a
+ * medias: reintentar fila por fila no duplica a nadie.
+ *
+ * El reintento NO se hace cuando la base no reportó error: en ese caso las
+ * filas ya quedaron guardadas y volver a mandarlas sí duplicaría.
  */
 async function insertarLote<T extends object>(
   tabla: 'athletes' | 'subscriptions' | 'personal_records',
   registros: T[],
-): Promise<Array<{ id: string } | { error: string }>> {
+): Promise<ResultadoInsercion[]> {
   const { data, error } = await supabase.from(tabla).insert(registros).select('id');
-  const insertados = (data ?? []) as Array<{ id: string }>;
 
-  if (!error && insertados.length === registros.length) return insertados;
+  if (!error) {
+    const insertados = (data ?? []) as Array<{ id: string }>;
+    return registros.map((_r, i) => insertados[i] ?? {
+      error: 'La base aceptó la fila pero no devolvió su id: revísala a mano',
+    });
+  }
 
-  const resultados: Array<{ id: string } | { error: string }> = [];
+  const resultados: ResultadoInsercion[] = [];
   for (const registro of registros) {
     const uno = await supabase.from(tabla).insert(registro).select('id').single();
     if (uno.error) resultados.push({ error: mensajeDeError(uno.error) });

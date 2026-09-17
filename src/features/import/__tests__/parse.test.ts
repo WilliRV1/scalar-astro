@@ -15,6 +15,7 @@ import {
   parseValorMarca,
   partirNombre,
   resumirFilas,
+  separarEncabezados,
   sugerirCampo,
 } from '../parse';
 import type { AtletaExistente, MapeoColumnas } from '../parse';
@@ -471,5 +472,42 @@ describe('analizarArchivo', () => {
 
   it('resumirFilas es coherente con lo que devuelve el análisis', () => {
     expect(resumirFilas(analisis.filas)).toEqual(analisis.resumen);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encabezados que no están en la primera fila
+// ---------------------------------------------------------------------------
+
+describe('separarEncabezados', () => {
+  it('encuentra los encabezados aunque arriba haya títulos del box', () => {
+    const matriz: unknown[][] = [
+      ['BOX LA MAQUINA', '', '', ''],
+      ['Actualizado septiembre', '', '', ''],
+      ['Nombre', 'Celular', 'Fecha de corte', 'Back Squat'],
+      ['Ana Pérez', '3001234567', '5', '80'],
+    ];
+    const hoja = separarEncabezados(matriz);
+    expect(hoja.filaEncabezado).toBe(2);
+    expect(hoja.encabezados).toEqual(['Nombre', 'Celular', 'Fecha de corte', 'Back Squat']);
+    expect(hoja.filas).toHaveLength(1);
+  });
+
+  it('no confunde una fila de datos con los encabezados', () => {
+    const matriz: unknown[][] = [
+      ['Nombre', 'Celular'],
+      ['Karen', '3001234567'],
+    ];
+    expect(separarEncabezados(matriz).filaEncabezado).toBe(0);
+  });
+
+  it('descarta las filas vacías que deja Excel al final', () => {
+    const matriz: unknown[][] = [
+      ['Nombre', 'Celular'],
+      ['Ana Pérez', '3001234567'],
+      ['', ''],
+      ['-', ''],
+    ];
+    expect(separarEncabezados(matriz).filas).toHaveLength(1);
   });
 });

@@ -11,14 +11,37 @@ export const ATHLETE_STATUSES = [
   'lead', 'trial', 'active', 'frozen', 'overdue', 'churned',
 ] as const;
 
-/** Acepta lo que escribe la gente y devuelve E.164, o falla con un mensaje claro. */
+/**
+ * Acepta lo que escribe la gente y devuelve E.164, o falla con un mensaje claro.
+ *
+ * Aquí hubo un bug: el `.refine(v => v !== undefined)` de la primera versión
+ * nunca fallaba, porque `toE164()` devuelve `null`, no `undefined`. Resultado:
+ * un teléfono mal escrito se guardaba como null EN SILENCIO y ese atleta no
+ * volvía a recibir un cobro nunca. Es exactamente el fallo que este campo
+ * existía para impedir.
+ *
+ * La distinción que importa es entre "no escribió teléfono" (válido, null) y
+ * "escribió algo que no se entiende" (error). Por eso el fallo se emite dentro
+ * del transform, que es donde se conoce la diferencia.
+ */
 const phoneField = z
-  .string()
-  .trim()
+  .union([z.string(), z.null()])
+  // El .optional() va ANTES del transform: en zod 4, una unión que incluya
+  // `undefined` no basta para que la clave sea opcional en el objeto.
   .optional()
-  .nullable()
-  .transform((v) => (v ? toE164(v) : null))
-  .refine((v) => v !== undefined, { message: 'Teléfono no reconocible' });
+  .transform((v, ctx) => {
+    if (v == null || v.trim() === '') return null;
+
+    const e164 = toE164(v);
+    if (!e164) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `No se entiende el teléfono "${v.trim()}". Ejemplo: 300 123 4567`,
+      });
+      return z.NEVER;
+    }
+    return e164;
+  });
 
 export const athleteSchema = z.object({
   first_name: z.string().trim().min(1, 'El nombre es obligatorio').max(80),

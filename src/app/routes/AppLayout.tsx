@@ -40,6 +40,11 @@ export default function AppLayout() {
               Atletas
             </NavLink>
           )}
+          {(activeMembership?.role === 'owner' || activeMembership?.role === 'admin') && (
+            <NavLink to="/admin/equipo" className={link}>
+              Equipo
+            </NavLink>
+          )}
           {!staff && (
             <NavLink to="/atleta" className={link}>
               Mi perfil

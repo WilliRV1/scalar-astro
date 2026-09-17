@@ -63,7 +63,12 @@ insert into legacy.athlete_progress (athlete_id, field_name, value, created_at) 
 create or replace function pg_temp.chk(cond boolean, label text)
 returns void language plpgsql as $$
 begin
-  if not cond then raise exception 'FALLO [%]', label; end if;
+  -- coalesce a propósito: `if not cond` con cond = NULL no entra al if, así que
+  -- una aserción que compare contra una columna vacía o una subconsulta sin
+  -- filas pasaría sin haber comprobado nada. Un NULL aquí es un fallo.
+  if not coalesce(cond, false) then
+    raise exception 'FALLO [%] (la condición dio %)', label, coalesce(cond::text, 'NULL');
+  end if;
   raise notice '  ok · %', label;
 end $$;
 
@@ -113,12 +118,20 @@ begin
     'cut_day "35" -> se recorta a 31');
 
   -- Conversión de tiempos: lo que más se puede deformar
+  -- Karen de Ana: histórico '9:10' el 2024-06-01 y marca actual '8:30', que se
+  -- fecha un día después del histórico (2024-06-02).
   perform pg_temp.chk(
     (select value_numeric from public.personal_records pr
      join public.movements m on m.id = pr.movement_id
      where pr.athlete_id = 'aa000000-0000-4000-8000-000000000001'
-       and m.legacy_key = 'karen' and pr.achieved_on = '2024-10-01') = 510,
+       and m.legacy_key = 'karen' and pr.achieved_on = '2024-06-02') = 510,
     'Karen "8:30" -> 510 segundos');
+  perform pg_temp.chk(
+    (select value_numeric from public.personal_records pr
+     join public.movements m on m.id = pr.movement_id
+     where pr.athlete_id = 'aa000000-0000-4000-8000-000000000001'
+       and m.legacy_key = 'karen' and pr.achieved_on = '2024-06-01') = 550,
+    'Karen "9:10" del histórico -> 550 segundos');
   perform pg_temp.chk(
     (select value_numeric from public.personal_records pr
      join public.movements m on m.id = pr.movement_id

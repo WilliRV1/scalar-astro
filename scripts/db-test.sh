@@ -63,6 +63,20 @@ else
   exit 1
 fi
 
+echo "→ Equipo del box (invitaciones y permisos)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/team.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|EQUIPO" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de equipo"; exit 1
+fi
+
+echo "→ Cobro en línea (Wompi)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/wompi.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|WOMPI" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de Wompi"; exit 1
+fi
+
 echo "→ Motor de cobros"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/billing_engine.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|MOTOR" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
