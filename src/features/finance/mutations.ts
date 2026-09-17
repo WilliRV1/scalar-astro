@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
-import type { Recurrence } from './types';
+import type { ExpenseKind, Recurrence } from './types';
 
 /**
  * Escrituras del módulo.
@@ -144,13 +144,14 @@ export function useSaveSupply() {
   });
 }
 
+/** Alta rápida de proveedor desde el mismo formulario de compra. */
 export function useSaveSupplier() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (args: { orgId: string; name: string; phone: string | null }) => {
+    mutationFn: async (args: { orgId: string; name: string; phone?: string | null }) => {
       const { data, error } = await supabase
         .from('suppliers')
-        .insert({ org_id: args.orgId, name: args.name, phone: args.phone })
+        .insert({ org_id: args.orgId, name: args.name, phone: args.phone ?? null })
         .select('id')
         .single();
       if (error) throw error;
@@ -158,6 +159,25 @@ export function useSaveSupplier() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['proveedores'] });
+    },
+  });
+}
+
+/** Alta rápida de categoría: un box nuevo no tiene ninguna y hay que poder crearla. */
+export function useSaveCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { orgId: string; name: string; kind: ExpenseKind }) => {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .insert({ org_id: args.orgId, name: args.name, kind: args.kind })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return data as { id: string };
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['categorias-gasto'] });
     },
   });
 }

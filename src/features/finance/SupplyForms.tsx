@@ -3,11 +3,10 @@ import {
   Button, Drawer, ErrorNote, Field, Select, TextInput,
 } from '../../shared/ui';
 import { formatCents, parsePesosToCents } from '../../shared/lib/money';
+import { UNIDADES } from './catalogos';
 import { useRegisterPurchase, useSaveSupply } from './mutations';
 import { toISODate } from './pnl';
 import type { Supplier, SupplyWithSupplier } from './types';
-
-const UNIDADES = ['unidad', 'kg', 'libra', 'caja', 'bolsa', 'par', 'rollo', 'litro'];
 
 /** Lee una cantidad con coma o punto decimal: "2,5" y "2.5" son lo mismo. */
 function parseCantidad(input: string): number | null {

@@ -3,18 +3,10 @@ import {
   Button, Checkbox, Drawer, ErrorNote, Field, Select, TextInput,
 } from '../../shared/ui';
 import { formatCents, parsePesosToCents } from '../../shared/lib/money';
+import { RECURRENCIAS } from './catalogos';
 import { useSaveExpense } from './mutations';
 import { toISODate } from './pnl';
 import type { ExpenseCategory, ExpenseRow, Recurrence, Supplier } from './types';
-
-export const RECURRENCIAS: { value: Recurrence; label: string }[] = [
-  { value: 'weekly', label: 'Semanal' },
-  { value: 'biweekly', label: 'Quincenal' },
-  { value: 'monthly', label: 'Mensual' },
-  { value: 'quarterly', label: 'Trimestral' },
-  { value: 'semiannual', label: 'Semestral' },
-  { value: 'annual', label: 'Anual' },
-];
 
 /** Alta y edición de un gasto. El mismo formulario sirve para un compromiso. */
 export function ExpenseForm({

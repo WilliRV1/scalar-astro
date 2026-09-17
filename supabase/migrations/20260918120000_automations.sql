@@ -1307,7 +1307,10 @@ begin
         case when a.last_visit is null then null else v_today - a.last_visit end,
         a.visits_last_30, a.visits_prev_30, a.mora, a.no_shows_30,
         a.antiguedad, a.sin_resultado, v_score, v_band, v_motivos, p_now)
-      on conflict (org_id, athlete_id, computed_on) do update
+      -- Por el NOMBRE de la restricción y no por las columnas: `org_id` y
+      -- `computed_on` también son parámetros de salida de esta función, y
+      -- Postgres no sabría si la lista se refiere a la columna o a la variable.
+      on conflict on constraint athlete_risk_scores_pkey do update
         set days_since_last_visit = excluded.days_since_last_visit,
             visits_last_30d       = excluded.visits_last_30d,
             visits_prev_30d       = excluded.visits_prev_30d,
