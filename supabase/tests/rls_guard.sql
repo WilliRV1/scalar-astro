@@ -16,7 +16,7 @@ begin
   where n.nspname = 'public'
     and c.relkind = 'r'
     and c.relrowsecurity
-    and c.relname <> 'job_runs'  -- intencionalmente sin políticas: solo service_role
+    and c.relname not in ('job_runs', 'webhook_events')  -- intencionalmente sin políticas: solo service_role
     and not exists (
       select 1 from pg_policy p where p.polrelid = c.oid
     );
