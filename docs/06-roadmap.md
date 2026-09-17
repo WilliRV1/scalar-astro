@@ -63,21 +63,30 @@ una prueba automática que lo demuestra en cada push.
 
 ---
 
-## F1 — Núcleo: atletas y plata (3 semanas)
+## F1 — Núcleo: atletas y plata (3 semanas) · **HECHO (2026-09-17)**
 
-- [ ] CRUD de atletas con el modelo nuevo (teléfono E.164, estado, consentimientos).
-- [ ] Planes y suscripciones con fecha de corte por atleta.
-- [ ] `generate-invoices` (job diario, idempotente) + tabla de cobros.
-- [ ] Registro de pagos manuales con foto del comprobante.
-- [ ] **Link de pago Wompi** (tarjeta, PSE, Nequi, Daviplata) + webhook que concilia solo.
-- [ ] **Tablero de cartera**: quién debe, cuánto, hace cuántos días, ordenado por plata.
-- [ ] Marcas personales contra catálogo de movimientos, con valores numéricos.
-- [ ] Importador de Excel v2: reusar `ExcelImport.tsx`, agregando teléfonos, planes,
-      fechas de corte y marcas, con vista previa y validación por fila.
-- [ ] Invitación de coaches y matriz de permisos.
+- [x] CRUD de atletas con el modelo nuevo (teléfono E.164, estado, consentimientos).
+- [x] Planes y suscripciones con fecha de corte por atleta, con precio congelado.
+- [x] `generate_invoices` idempotente, consciente de la zona horaria del box y de
+      los meses cortos (corte el 31 → se cobra el 28 en febrero).
+- [x] Registro de pagos manuales con foto del comprobante en Storage privado.
+- [x] **Link de pago Wompi** (tarjeta, PSE, Nequi, Daviplata) + webhook idempotente.
+- [x] Tablero de cartera por tramos de mora.
+- [x] Marcas personales contra catálogo, con evolución y sparkline.
+- [x] Importador de Excel v2 con validación fila por fila y detección de duplicados.
+- [x] Invitación de coaches, matriz de permisos y canje del enlace.
 
-**Entregable:** el box del entrenador operando de verdad con sus datos migrados, y cobrando
-en línea. Ya reemplaza el Excel.
+**Verificado:** 92 pruebas unitarias y 147 aserciones SQL, más lint, tipos y build.
+
+**Sin verificar contra el mundo real:** ninguna transacción de Wompi, ni en
+sandbox, ha pasado por el código — falta la cuenta de comercio. Ver
+[10-wompi.md](./10-wompi.md) → "Qué queda por verificar".
+
+**Decisión abierta #2 — una cuenta de Wompi para todos los boxes, o una por box.**
+Hoy las llaves salen del entorno de la Edge Function, así que la plata de todos
+los boxes caería en la misma cuenta. Lo correcto para producción es una cuenta
+por box, lo que exige guardar sus llaves cifradas por organización. La
+trazabilidad ya está lista para cualquiera de las dos opciones.
 
 ---
 
