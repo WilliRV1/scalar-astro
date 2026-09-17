@@ -66,3 +66,30 @@ export function useMyPayments(athleteId: string | null | undefined) {
     },
   });
 }
+
+/** Recaudo del mes en curso, para el tablero del dueño. */
+export function useMonthlyCollected(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['recaudo-mes', orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<{ cents: number; count: number }> => {
+      const inicio = new Date();
+      inicio.setDate(1);
+      inicio.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('amount_cents')
+        .eq('org_id', orgId!)
+        .eq('status', 'confirmed')
+        .gte('paid_at', inicio.toISOString());
+      if (error) throw error;
+
+      const filas = (data ?? []) as { amount_cents: number }[];
+      return {
+        cents: filas.reduce((acc, p) => acc + p.amount_cents, 0),
+        count: filas.length,
+      };
+    },
+  });
+}
