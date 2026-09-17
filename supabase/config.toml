@@ -56,3 +56,17 @@ verify_jwt = false
 # Esta sí la llama un usuario autenticado desde la aplicación.
 [functions.create-payment-link]
 verify_jwt = true
+
+# Las tres funciones del motor de automatizaciones las llama un cron, no un
+# usuario con sesión. Sin `verify_jwt = false` devuelven 401 y el motor no corre
+# NUNCA: no sale un solo recordatorio de pago. Lo que las autentica es el
+# secreto AUTOMATIONS_CRON_SECRET en la cabecera x-cron-secret, comparado en
+# tiempo constante.
+[functions.run-automations]
+verify_jwt = false
+
+[functions.process-outbox]
+verify_jwt = false
+
+[functions.weekly-report]
+verify_jwt = false
