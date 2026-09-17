@@ -63,6 +63,13 @@ else
   exit 1
 fi
 
+echo "→ Motor de cobros"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/billing_engine.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|MOTOR" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Falló el motor de cobros"; exit 1
+fi
+
 echo "→ Migración del box del entrenador (datos del prototipo)"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/legacy_migration.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|MIGRACIÓN" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
