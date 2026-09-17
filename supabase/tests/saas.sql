@@ -304,8 +304,8 @@ begin
   perform pg_temp.chk(m.atletas_totales = 3, 'y los atletas de toda la plataforma');
   perform pg_temp.chk(m.mrr_cents = 35800000,
     'el ingreso recurrente son los dos boxes a 179.000 COP');
-  perform pg_temp.chk(m.mensajes_enviados >= 0,
-    'los mensajes enviados salen en cero mientras no haya módulo de automatizaciones');
+  perform pg_temp.chk(m.mensajes_enviados = 0,
+    'los mensajes enviados cuentan los que salieron, y en esta semilla no salió ninguno');
 end $$;
 
 -- ============================ 7 · Mora: suspender sin borrar ================

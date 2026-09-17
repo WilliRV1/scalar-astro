@@ -4,7 +4,8 @@ import {
 } from '../../shared/ui';
 import { formatCents, parsePesosToCents } from '../../shared/lib/money';
 import { UNIDADES } from './catalogos';
-import { useRegisterPurchase, useSaveSupply } from './mutations';
+import { useRegisterPurchase, useSaveSupplier, useSaveSupply } from './mutations';
+import { SelectorConAlta } from './SelectorConAlta';
 import { toISODate } from './pnl';
 import type { Supplier, SupplyWithSupplier } from './types';
 
@@ -27,6 +28,7 @@ export function SupplyForm({
   onClose: () => void;
 }) {
   const save = useSaveSupply();
+  const crearProveedor = useSaveSupplier();
   const [nombre, setNombre] = useState(insumo?.name ?? '');
   const [unidad, setUnidad] = useState(insumo?.unit ?? 'unidad');
   const [stock, setStock] = useState(insumo ? String(insumo.current_stock) : '0');
@@ -95,12 +97,19 @@ export function SupplyForm({
             <TextInput inputMode="decimal" value={minimo} onChange={(e) => setMinimo(e.target.value)} />
           </Field>
         </div>
-        <Field label="Proveedor habitual">
-          <Select value={proveedor} onChange={(e) => setProveedor(e.target.value)}>
-            <option value="">Sin proveedor fijo</option>
-            {proveedores.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Select>
-        </Field>
+        <SelectorConAlta
+          label="Proveedor habitual"
+          value={proveedor}
+          options={proveedores}
+          vacio="Sin proveedor fijo"
+          textoNuevo="+ Nuevo proveedor…"
+          creando={crearProveedor.isPending}
+          onChange={setProveedor}
+          onCreate={async (nombre) => {
+            const { id } = await crearProveedor.mutateAsync({ orgId, name: nombre });
+            return id;
+          }}
+        />
         <Field label="Se repone cada (días)" hint="Vacío si no tiene una frecuencia clara.">
           <TextInput inputMode="numeric" value={cadaDias}
             onChange={(e) => setCadaDias(e.target.value.replace(/\D/g, ''))} />
@@ -129,6 +138,7 @@ export function PurchaseForm({
   onClose: () => void;
 }) {
   const registrar = useRegisterPurchase();
+  const crearProveedor = useSaveSupplier();
   const [insumoId, setInsumoId] = useState(insumoInicial ?? insumos[0]?.id ?? '');
   const insumo = insumos.find((i) => i.id === insumoId) ?? null;
 
@@ -205,12 +215,19 @@ export function PurchaseForm({
           </Field>
         </div>
 
-        <Field label="Proveedor">
-          <Select value={proveedor} onChange={(e) => setProveedor(e.target.value)}>
-            <option value="">Sin proveedor</option>
-            {proveedores.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Select>
-        </Field>
+        <SelectorConAlta
+          label="Proveedor"
+          value={proveedor}
+          options={proveedores}
+          vacio="Sin proveedor"
+          textoNuevo="+ Nuevo proveedor…"
+          creando={crearProveedor.isPending}
+          onChange={setProveedor}
+          onCreate={async (nombre) => {
+            const { id } = await crearProveedor.mutateAsync({ orgId, name: nombre });
+            return id;
+          }}
+        />
 
         <Field label="Fecha de la compra">
           <TextInput type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />

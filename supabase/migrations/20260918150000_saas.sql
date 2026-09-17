@@ -916,9 +916,11 @@ declare
 begin
   perform private.require_platform_admin();
 
-  -- El módulo de automatizaciones (message_outbox) todavía no existe en el
-  -- esquema; cuando llegue, esta métrica se enciende sola. Mientras tanto
-  -- devuelve 0, que es la verdad, en vez de fallar o inventar un número.
+  -- Se pregunta por la tabla antes de contarla: el módulo de automatizaciones
+  -- es una migración aparte y esta función tiene que servir igual en una base
+  -- que todavía no lo tenga (staging recién creado, pruebas). Sin la tabla,
+  -- devuelve 0 —que es la verdad— en vez de fallar. Solo cuentan los mensajes
+  -- que de verdad salieron: los simulados y los encolados no.
   if to_regclass('public.message_outbox') is not null then
     execute 'select count(*) from public.message_outbox where status in (''sent'',''delivered'',''read'')'
       into v_msgs;

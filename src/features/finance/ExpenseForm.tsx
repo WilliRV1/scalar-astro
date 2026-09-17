@@ -3,10 +3,11 @@ import {
   Button, Checkbox, Drawer, ErrorNote, Field, Select, TextInput,
 } from '../../shared/ui';
 import { formatCents, parsePesosToCents } from '../../shared/lib/money';
-import { RECURRENCIAS } from './catalogos';
-import { useSaveExpense } from './mutations';
+import { RECURRENCIAS, TIPOS_DE_GASTO } from './catalogos';
+import { useSaveCategory, useSaveExpense, useSaveSupplier } from './mutations';
+import { SelectorConAlta } from './SelectorConAlta';
 import { toISODate } from './pnl';
-import type { ExpenseCategory, ExpenseRow, Recurrence, Supplier } from './types';
+import type { ExpenseCategory, ExpenseKind, ExpenseRow, Recurrence, Supplier } from './types';
 
 /** Alta y edición de un gasto. El mismo formulario sirve para un compromiso. */
 export function ExpenseForm({
@@ -19,6 +20,8 @@ export function ExpenseForm({
   onClose: () => void;
 }) {
   const save = useSaveExpense();
+  const crearCategoria = useSaveCategory();
+  const crearProveedor = useSaveSupplier();
   const hoy = toISODate(new Date());
 
   const [descripcion, setDescripcion] = useState(gasto?.description ?? '');
@@ -31,6 +34,7 @@ export function ExpenseForm({
   const [recurrencia, setRecurrencia] = useState<Recurrence>(gasto?.recurrence ?? 'monthly');
   const [vence, setVence] = useState(gasto?.next_due_on ?? hoy);
   const [factura, setFactura] = useState<File | null>(null);
+  const [tipoNuevo, setTipoNuevo] = useState<ExpenseKind>('operational');
   const [error, setError] = useState('');
 
   const centavos = parsePesosToCents(monto);
@@ -89,19 +93,37 @@ export function ExpenseForm({
             onChange={(e) => setMonto(e.target.value)} />
         </Field>
 
-        <Field label="Categoría">
-          <Select value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-            <option value="">Sin categoría</option>
-            {categorias.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        <SelectorConAlta
+          label="Categoría"
+          value={categoria}
+          options={categorias}
+          vacio="Sin categoría"
+          textoNuevo="+ Nueva categoría…"
+          creando={crearCategoria.isPending}
+          onChange={setCategoria}
+          onCreate={async (nombre) => {
+            const { id } = await crearCategoria.mutateAsync({ orgId, name: nombre, kind: tipoNuevo });
+            return id;
+          }}
+        >
+          <Select value={tipoNuevo} onChange={(e) => setTipoNuevo(e.target.value as ExpenseKind)}>
+            {TIPOS_DE_GASTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </Select>
-        </Field>
+        </SelectorConAlta>
 
-        <Field label="Proveedor">
-          <Select value={proveedor} onChange={(e) => setProveedor(e.target.value)}>
-            <option value="">Sin proveedor</option>
-            {proveedores.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Select>
-        </Field>
+        <SelectorConAlta
+          label="Proveedor"
+          value={proveedor}
+          options={proveedores}
+          vacio="Sin proveedor"
+          textoNuevo="+ Nuevo proveedor…"
+          creando={crearProveedor.isPending}
+          onChange={setProveedor}
+          onCreate={async (nombre) => {
+            const { id } = await crearProveedor.mutateAsync({ orgId, name: nombre });
+            return id;
+          }}
+        />
 
         <Field label="Fecha del gasto">
           <TextInput type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />

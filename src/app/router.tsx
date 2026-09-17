@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { RequireAuth, RequireRole } from '../features/auth/guards';
+import { RequireAuth, RequireFinance, RequireRole } from '../features/auth/guards';
 import { Spinner } from '../shared/ui';
 
 // Cada módulo se carga solo cuando hace falta: el atleta no descarga el panel
@@ -16,6 +16,9 @@ const AthletesPage = lazy(() => import('./routes/coach/AthletesPage'));
 const AthleteDetailPage = lazy(() => import('./routes/coach/AthleteDetailPage'));
 const PlansPage = lazy(() => import('./routes/admin/PlansPage'));
 const TeamPage = lazy(() => import('./routes/admin/TeamPage'));
+const ExpensesPage = lazy(() => import('./routes/admin/ExpensesPage'));
+const SuppliesPage = lazy(() => import('./routes/admin/SuppliesPage'));
+const ReportsPage = lazy(() => import('./routes/admin/ReportsPage'));
 const ImportPage = lazy(() => import('./routes/coach/ImportPage'));
 const WodPage = lazy(() => import('./routes/coach/WodPage'));
 const AttendancePage = lazy(() => import('./routes/coach/AttendancePage'));
@@ -49,6 +52,13 @@ export function AppRouter() {
 
             <Route element={<RequireRole roles={['owner', 'admin']} />}>
               <Route path="admin/equipo" element={<TeamPage />} />
+            </Route>
+
+            {/* Todo lo que muestra plata pasa por el permiso, no solo por el rol. */}
+            <Route element={<RequireFinance />}>
+              <Route path="admin/gastos" element={<ExpensesPage />} />
+              <Route path="admin/insumos" element={<SuppliesPage />} />
+              <Route path="admin/reportes" element={<ReportsPage />} />
             </Route>
 
             <Route element={<RequireRole roles={['athlete']} />}>

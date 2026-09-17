@@ -33,6 +33,15 @@ export default function AppLayout() {
               <NavLink to="/admin/planes" className={link}>
                 Planes
               </NavLink>
+              <NavLink to="/admin/gastos" className={link}>
+                Gastos
+              </NavLink>
+              <NavLink to="/admin/insumos" className={link}>
+                Insumos
+              </NavLink>
+              <NavLink to="/admin/reportes" className={link}>
+                Reportes
+              </NavLink>
             </>
           )}
           {staff && (

@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Spinner } from '../../shared/ui';
 import { useAuth } from './useAuth';
+import { canViewFinances } from './AuthContext';
 import type { Role } from '../../types/database';
 
 /**
@@ -24,5 +25,34 @@ export function RequireRole({ roles }: { roles: Role[] }) {
   if (loading) return <Spinner />;
   if (!activeMembership) return <Navigate to="/sin-acceso" replace />;
   if (!roles.includes(activeMembership.role)) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
+/**
+ * Rutas con información financiera.
+ *
+ * Es espejo de `private.auth_finance_org_ids()` en la base: dueño y
+ * administrador siempre, un coach solo si el box se lo concedió. La RLS ya
+ * impediría ver los datos, pero sin este guarda el coach llegaría a una
+ * pantalla vacía sin entender por qué.
+ */
+export function RequireFinance() {
+  const { activeMembership, loading } = useAuth();
+
+  if (loading) return <Spinner />;
+  if (!activeMembership) return <Navigate to="/sin-acceso" replace />;
+  if (!canViewFinances(activeMembership)) {
+    return (
+      <div className="grunge-border bg-surface-light p-6 dark:bg-surface-dark">
+        <p className="font-display text-2xl text-black dark:text-white">
+          Sin acceso a la información financiera
+        </p>
+        <p className="mt-2 text-sm text-gray-500">
+          Esta sección la ven el dueño y los administradores del box. Si necesitas entrar,
+          pídele al dueño que te active el permiso desde Equipo.
+        </p>
+      </div>
+    );
+  }
   return <Outlet />;
 }

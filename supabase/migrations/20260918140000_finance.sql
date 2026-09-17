@@ -124,7 +124,8 @@ create table public.expenses (
   receipt_url       text,               -- foto de la factura (bucket `receipts`)
   notes             text,
   parent_expense_id uuid references public.expenses(id) on delete set null,
-  created_by        uuid references auth.users(id) on delete set null,
+  -- Quién lo registró, para poder preguntar después "¿y esto qué fue?".
+  created_by        uuid references auth.users(id) on delete set null default auth.uid(),
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now(),
   -- Un compromiso sin periodicidad ni próximo vencimiento no sirve para nada:
@@ -134,6 +135,7 @@ create table public.expenses (
 );
 create index expenses_org_fecha_idx on public.expenses (org_id, incurred_on desc);
 create index expenses_org_categoria_idx on public.expenses (org_id, category_id, incurred_on desc);
+-- Índices de llave foránea: encabezados por la columna foránea a propósito.
 create index expenses_supplier_idx on public.expenses (supplier_id);
 create index expenses_parent_idx on public.expenses (parent_expense_id);
 -- El calendario de compromisos solo mira las recurrentes: índice parcial.
@@ -158,14 +160,22 @@ create table public.supply_purchases (
   notes        text,
   -- Lo llena el trigger. Se pone a null si alguien borra el gasto a mano.
   expense_id   uuid references public.expenses(id) on delete set null,
-  created_by   uuid references auth.users(id) on delete set null,
+  created_by   uuid references auth.users(id) on delete set null default auth.uid(),
   created_at   timestamptz not null default now(),
   -- Compuesta: el insumo tiene que ser del MISMO box que la compra.
   foreign key (supply_id, org_id)
     references public.supplies (id, org_id) on delete cascade
 );
-create index supply_purchases_insumo_idx on public.supply_purchases (supply_id, purchased_on desc);
+-- "Las compras de ESTE insumo, de la más reciente a la más vieja": es la
+-- consulta de la página y también la que resuelve la llave foránea compuesta
+-- (org_id, supply_id), porque las dos columnas van con igualdad.
+create index supply_purchases_insumo_idx
+  on public.supply_purchases (org_id, supply_id, purchased_on desc);
 create index supply_purchases_org_fecha_idx on public.supply_purchases (org_id, purchased_on desc);
+-- Estos dos SÍ empiezan por la columna foránea y no por org_id: son índices de
+-- llave foránea. Postgres no los crea solo, y sin ellos borrar un proveedor
+-- bloquea y escanea la tabla entera (ver la referencia schema-foreign-key-indexes
+-- de la skill de Postgres).
 create index supply_purchases_supplier_idx on public.supply_purchases (supplier_id);
 create index supply_purchases_expense_idx on public.supply_purchases (expense_id);
 
