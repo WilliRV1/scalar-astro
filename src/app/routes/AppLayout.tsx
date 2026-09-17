@@ -36,9 +36,17 @@ export default function AppLayout() {
             </>
           )}
           {staff && (
-            <NavLink to="/coach/atletas" className={link}>
-              Atletas
-            </NavLink>
+            <>
+              <NavLink to="/coach/wod" className={link}>
+                WOD
+              </NavLink>
+              <NavLink to="/coach/asistencia" className={link}>
+                Asistencia
+              </NavLink>
+              <NavLink to="/coach/atletas" className={link}>
+                Atletas
+              </NavLink>
+            </>
           )}
           {(activeMembership?.role === 'owner' || activeMembership?.role === 'admin') && (
             <NavLink to="/admin/equipo" className={link}>
@@ -46,9 +54,14 @@ export default function AppLayout() {
             </NavLink>
           )}
           {!staff && (
-            <NavLink to="/atleta" className={link}>
-              Mi perfil
-            </NavLink>
+            <>
+              <NavLink to="/atleta/hoy" className={link}>
+                Hoy
+              </NavLink>
+              <NavLink to="/atleta" end className={link}>
+                Mi perfil
+              </NavLink>
+            </>
           )}
         </nav>
 

@@ -63,6 +63,13 @@ else
   exit 1
 fi
 
+echo "→ Entrenamiento (WOD, resultados, asistencia)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/wods.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|ENTRENAMIENTO" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de entrenamiento"; exit 1
+fi
+
 echo "→ Equipo del box (invitaciones y permisos)"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/team.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|EQUIPO" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

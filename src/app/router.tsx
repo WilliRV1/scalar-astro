@@ -17,6 +17,9 @@ const AthleteDetailPage = lazy(() => import('./routes/coach/AthleteDetailPage'))
 const PlansPage = lazy(() => import('./routes/admin/PlansPage'));
 const TeamPage = lazy(() => import('./routes/admin/TeamPage'));
 const ImportPage = lazy(() => import('./routes/coach/ImportPage'));
+const WodPage = lazy(() => import('./routes/coach/WodPage'));
+const AttendancePage = lazy(() => import('./routes/coach/AttendancePage'));
+const TodayPage = lazy(() => import('./routes/athlete/TodayPage'));
 const AthleteHome = lazy(() => import('./routes/athlete/AthleteHome'));
 
 export function AppRouter() {
@@ -40,6 +43,8 @@ export function AppRouter() {
               <Route path="coach/atletas" element={<AthletesPage />} />
               <Route path="coach/atletas/:id" element={<AthleteDetailPage />} />
               <Route path="coach/importar" element={<ImportPage />} />
+              <Route path="coach/wod" element={<WodPage />} />
+              <Route path="coach/asistencia" element={<AttendancePage />} />
             </Route>
 
             <Route element={<RequireRole roles={['owner', 'admin']} />}>
@@ -48,6 +53,7 @@ export function AppRouter() {
 
             <Route element={<RequireRole roles={['athlete']} />}>
               <Route path="atleta" element={<AthleteHome />} />
+              <Route path="atleta/hoy" element={<TodayPage />} />
             </Route>
           </Route>
         </Route>
