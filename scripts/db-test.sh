@@ -84,6 +84,27 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de Wompi"; exit 1
 fi
 
+echo "→ Horarios y reservas"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/reservations.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|RESERVAS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de reservas"; exit 1
+fi
+
+echo "→ Débito automático (tokenización y cobro recurrente)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/recurring.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|RECURRENTE|DÉBITO" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de débito automático"; exit 1
+fi
+
+echo "→ Avisos de débito fallido (puente F4 ↔ F5)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/recurring_notices.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|AVISOS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Falló el puente de avisos"; exit 1
+fi
+
 echo "→ Automatizaciones (reglas, bandeja de salida, riesgo de fuga)"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/automations.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|AUTOMATIZACIONES" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

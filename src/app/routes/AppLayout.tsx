@@ -50,6 +50,9 @@ export default function AppLayout() {
               <NavLink to="/coach/wod" className={link}>
                 WOD
               </NavLink>
+              <NavLink to="/coach/horarios" className={link}>
+                Horarios
+              </NavLink>
               <NavLink to="/coach/asistencia" className={link}>
                 Asistencia
               </NavLink>
@@ -75,6 +78,12 @@ export default function AppLayout() {
             <>
               <NavLink to="/atleta/hoy" className={link}>
                 Hoy
+              </NavLink>
+              <NavLink to="/atleta/reservar" className={link}>
+                Reservar
+              </NavLink>
+              <NavLink to="/atleta/pago" className={link}>
+                Mi pago
               </NavLink>
               <NavLink to="/atleta" end className={link}>
                 Mi perfil

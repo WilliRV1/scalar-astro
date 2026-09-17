@@ -18,7 +18,7 @@ Esto permite que las reglas sean **datos, no código**: prender, apagar y ajusta
 desde la interfaz del box, sin desplegar nada. Y permite vender "automatización a la
 medida" sin escribir código nuevo cada vez.
 
-## Las 10 reglas de fábrica
+## Las 15 reglas de fábrica
 
 Cada box nuevo arranca con estas activas (o desactivadas, según se indique). Este catálogo
 **es el argumento de venta**: se muestra literalmente en la demo.
@@ -39,6 +39,7 @@ Cada box nuevo arranca con estas activas (o desactivadas, según se indique). Es
 | 12 | **Recordatorio de clase** | 2 h antes de la clase reservada | Recordatorio con opción de cancelar. **Baja el no-show de forma medible** | utility |
 | 13 | **Clase cancelada** | Evento: el box cancela una clase | Aviso a todos los reservados + devolución del crédito | utility |
 | 14 | **No-show reiterado** | 3 faltas sin cancelar en 30 días | Aviso al atleta y alerta al coach (es señal temprana de fuga) | utility |
+| 15 | **Débito automático fallido** | Evento: un cobro por Nequi no pasa | Le dice al atleta qué pasó y cuándo se reintenta; si su autorización caducó, le manda el enlace para volver a autorizar | utility |
 
 ### Reserva por WhatsApp (F3) — el atleta no instala nada
 

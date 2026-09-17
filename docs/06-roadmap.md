@@ -90,7 +90,7 @@ trazabilidad ya está lista para cualquiera de las dos opciones.
 
 ---
 
-## F2 — Entrenamiento (2 semanas)
+## F2 — Entrenamiento (2 semanas) · **HECHO (2026-09-18)**
 
 - [ ] Editor de WOD con bloques, tipos de score y escalas.
 - [ ] Calendario semanal, duplicar WOD, biblioteca de benchmarks.
@@ -109,7 +109,7 @@ trazabilidad ya está lista para cualquiera de las dos opciones.
 
 ---
 
-## F3 — Horarios y reservas (2 semanas)
+## F3 — Horarios y reservas (2 semanas) · **HECHO (2026-09-18)**
 
 - [ ] Plantilla semanal de horarios (`class_templates`) + generación automática de las
       clases de las próximas 4 semanas, con calendario de festivos colombianos.
@@ -133,7 +133,7 @@ de los tres dolores más citados (sobreventa de cupos y reservas duplicadas).
 
 ---
 
-## F4 — Automatización (2 semanas) · **aquí empieza a venderse**
+## F4 — Automatización (2 semanas) · **aquí empieza a venderse** · **HECHO (2026-09-18)**
 
 - [ ] Motor de reglas (`automation_rules`) con disparadores por horario y por evento.
 - [ ] `message_outbox` con idempotencia, reintentos, horario silencioso y antifatiga.
@@ -148,7 +148,7 @@ de los tres dolores más citados (sobreventa de cupos y reservas duplicadas).
 
 ---
 
-## F5 — Cobro automático colombiano (2 semanas) · *el mayor diferenciador*
+## F5 — Cobro automático colombiano (2 semanas) · *el mayor diferenciador* · **HECHO (2026-09-18)**
 
 Esta fase existe por un hallazgo concreto: **ningún competidor con venta local en Colombia
 tiene débito automático sobre Nequi**. Trainingym solo mueve VISA/Mastercard, Fitco usa
@@ -169,7 +169,7 @@ Es la frase que cierra ventas.
 
 ---
 
-## F6 — Finanzas y logística (2 semanas)
+## F6 — Finanzas y logística (2 semanas) · **HECHO (2026-09-18)**
 
 - [ ] Gastos con categorías y recurrencia.
 - [ ] Insumos (magnesio, tiza, cauchos): stock, mínimo, última compra, proveedor.
@@ -183,7 +183,7 @@ Es la frase que cierra ventas.
 
 ---
 
-## F7 — Módulo del atleta (2 semanas)
+## F7 — Módulo del atleta (2 semanas) · **HECHO (2026-09-18)**
 
 - [ ] PWA instalable, con notificaciones push.
 - [ ] Mi evolución, mis marcas, mi asistencia, mi historial de pagos y recibos.
@@ -194,7 +194,7 @@ todo lo esencial ya funciona por WhatsApp desde F3.)
 
 ---
 
-## F8 — Convertirlo en SaaS de verdad (2 semanas)
+## F8 — Convertirlo en SaaS de verdad (2 semanas) · **HECHO (2026-09-18)**
 
 - [ ] Alta de boxes por subdominio + asistente de configuración inicial.
 - [ ] Panel de superadministrador con suplantación registrada en bitácora.
@@ -221,6 +221,11 @@ todo lo esencial ya funciona por WhatsApp desde F3.)
 | F7 Atleta PWA | 2 | 17 | Enganche del atleta |
 | F8 SaaS | 2 | 19 | Escalable sin ti |
 
+> **Todas las fases están construidas y verificadas (2026-09-18).** El
+> calendario de abajo era la estimación original; se cumplió con agentes en
+> paralelo. Lo que queda no es código: son las cuentas, los secretos y las
+> pruebas contra los servicios reales. Ver "Lo que falta para vender" abajo.
+
 ≈ **19 semanas efectivas**. A 20 h/semana: ~5 meses. A 10 h/semana: ~9 meses, con la primera
 venta alrededor del mes 5–6.
 
@@ -239,3 +244,37 @@ venta alrededor del mes 5–6.
 | F4 | Migrar el box 0. Grabar el testimonio. Armar el box demo |
 | F5–F6 | Vender a 3 boxes a precio de fundador |
 | F7–F8 | Subir a la tarifa objetivo con los clientes nuevos |
+
+
+---
+
+## Lo que falta para vender (2026-09-18)
+
+El producto está construido: **570 aserciones de base de datos y 213 pruebas
+unitarias**, todas en verde en CI. Lo que falta **no es código**.
+
+### Bloqueantes de verdad
+
+| # | Qué | Por qué bloquea |
+|---|---|---|
+| 1 | **Rotar las llaves del proyecto viejo de Supabase** | Siguen en el historial de git, y ese proyecto tiene RLS desactivada y `anon` con DELETE y TRUNCATE |
+| 2 | **Cuenta de comercio en Wompi** (RUT + cámara de comercio) | Sin ella, ni una transacción ha pasado por el código: ni sandbox |
+| 3 | **Decidir: una cuenta de Wompi para todos los boxes, o una por box** | Hoy la plata de todos caería en la misma cuenta. Con débito automático pesa más, porque entra sola cada mes |
+| 4 | **Cuenta de WhatsApp Business + plantillas aprobadas** | El proveedor Cloud API está escrito contra la documentación pero nunca se ejecutó. Mientras tanto funciona el `wa.me` de un clic |
+| 5 | **Proyecto de Supabase nuevo, con las migraciones aplicadas** | Todo se ha probado contra Postgres efímero, nunca contra Supabase real |
+| 6 | **Los teléfonos de los atletas del box 0** | Es el dato que no existe en la base vieja y sin el cual no hay recordatorio ni acceso del atleta |
+
+### Pendientes técnicos menores
+
+- Enganchar a `pg_cron`: `generate_invoices`, `run_automations`, `process-outbox`,
+  `charge_due_subscriptions`, `generate_classes`, `run_platform_dunning`,
+  `flush_recurring_notices`, `refresh_risk_scores`.
+- Dar de alta el primer superadministrador a mano (no hay interfaz, a propósito).
+- Regenerar `src/types/database.ts` con `npm run types:gen` contra el proyecto real.
+- Sentry y los ambientes de staging y producción.
+- El widget de Wompi en el navegador para guardar **tarjeta** (hoy solo Nequi).
+
+### Trabajo comercial
+
+Las cinco tareas de campo de [08 §7.5](./08-mercado-cali.md): censo real de Cali,
+precios por DM a 10 boxes, quién ya paga software, y 5 entrevistas presenciales.

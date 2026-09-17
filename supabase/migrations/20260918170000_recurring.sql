@@ -370,7 +370,7 @@ as $$
     when upper(coalesce(p_error_code,'') || ' ' || coalesce(p_error_message,''))
          ~ '(INSUFFICIENT|FONDOS|SALDO|LIMIT_EXCEEDED|CUPO)' then 'insufficient_funds'
     when upper(coalesce(p_error_code,'') || ' ' || coalesce(p_error_message,''))
-         ~ '(REVOK|UNSUBSCRIB|DESVINCUL|CANCEL|INACTIVE|NOT_FOUND|UNAVAILABLE_SOURCE)' then 'revoked_token'
+         ~ '(REVOK|REVOC|UNSUBSCRIB|DESVINCUL|CANCEL|INACTIVE|NOT_FOUND|UNAVAILABLE_SOURCE)' then 'revoked_token'
     when upper(coalesce(p_error_code,'') || ' ' || coalesce(p_error_message,''))
          ~ '(EXPIRED|VENCID)' then 'expired_card'
     when upper(coalesce(p_error_code,'') || ' ' || coalesce(p_error_message,''))
@@ -681,21 +681,19 @@ begin
     -- 1 · Limpiar lo que ya no aplica: facturas saldadas o anuladas, métodos
     --     revocados, autorizaciones caídas. Antes de encolar nada.
     -- ---------------------------------------------------------------------
-    with limpiadas as (
-      update public.recurring_charges rc
-      set status = 'cancelled',
-          notice_pending = false,
-          cancel_reason = case
-            when i.status = 'void' then 'La factura se anuló'
-            when i.amount_cents - i.paid_cents <= 0 then 'La factura ya está saldada'
-            when ra.revoked_at is not null then 'El atleta revocó la autorización'
-            else 'El medio de pago ya no está activo'
-          end
-      from public.invoices i
+    with sobrantes as (
+      select rc.id,
+             case
+               when i.status = 'void' then 'La factura se anuló'
+               when i.amount_cents - i.paid_cents <= 0 then 'La factura ya está saldada'
+               when ra.revoked_at is not null then 'El atleta revocó la autorización'
+               else 'El medio de pago ya no está activo'
+             end as motivo
+      from public.recurring_charges rc
+      join public.invoices i on i.id = rc.invoice_id
       join public.recurring_authorizations ra on ra.id = rc.authorization_id
       join public.payment_methods pm on pm.id = rc.payment_method_id
-      where i.id = rc.invoice_id
-        and rc.org_id = org.id
+      where rc.org_id = org.id
         and rc.status in ('queued','declined')
         and (
           i.status = 'void'
@@ -703,6 +701,14 @@ begin
           or ra.revoked_at is not null
           or pm.status <> 'active'
         )
+    ),
+    limpiadas as (
+      update public.recurring_charges rc
+      set status = 'cancelled',
+          notice_pending = false,
+          cancel_reason = s.motivo
+      from sobrantes s
+      where rc.id = s.id
       returning rc.id
     )
     select count(*)::int into v_cancelados from limpiadas;
@@ -928,8 +934,11 @@ begin
     insert into public.recurring_charge_attempts (
       org_id, charge_id, attempt_no, reference, status, started_at
     )
+    -- `on conflict do nothing` a secas: el objetivo explícito no se puede
+    -- nombrar aquí porque `charge_id` es también un parámetro de salida de esta
+    -- función. La restricción única (charge_id, attempt_no) decide igual.
     values (c.org_id, c.id, c.attempt + 1, v_ref, 'sent', p_now)
-    on conflict (charge_id, attempt_no) do nothing;
+    on conflict do nothing;
 
     charge_id          := c.id;
     org_id             := c.org_id;
@@ -1104,7 +1113,7 @@ begin
       last_error_code = p_error_code,
       last_error_message = p_error_message,
       provider_transaction_id = coalesce(p_transaction_id, provider_transaction_id),
-      next_attempt_at = coalesce(v_prox, public.recurring_charges.next_attempt_at),
+      next_attempt_at = coalesce(v_prox, c.next_attempt_at),
       notice_pending = (v_aviso is not null),
       notice_kind = v_aviso
   where id = c.id;

@@ -209,7 +209,29 @@ comment on table public.reservation_settings is
 comment on column public.reservation_settings.block_when_overdue is
   'Por defecto FALSE: no se le cierra la puerta a nadie sin que el dueño lo decida.';
 
-/** Ajustes del box, con los valores por defecto si todavía no tiene fila. */
+-- Todo box tiene su fila desde el día uno. Se crea con el box, no la primera
+-- vez que alguien reserva: `reservation_settings_of` se llama desde funciones
+-- `stable` (la que le dice al atleta por qué no puede reservar), y una función
+-- stable no puede escribir — "INSERT is not allowed in a non-volatile
+-- function". Crearla aquí deja esa lectura como lo que es: una lectura.
+create or replace function public.seed_reservation_settings()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.reservation_settings (org_id) values (new.id)
+  on conflict (org_id) do nothing;
+  return new;
+end;
+$$;
+
+create trigger organizations_seed_reservation_settings
+  after insert on public.organizations
+  for each row execute function public.seed_reservation_settings();
+
+/** Ajustes de reserva del box. Lectura pura: la fila la garantiza el trigger. */
 create or replace function public.reservation_settings_of(p_org_id uuid)
 returns public.reservation_settings
 language plpgsql
@@ -221,14 +243,11 @@ declare
   v public.reservation_settings;
 begin
   select * into v from public.reservation_settings s where s.org_id = p_org_id;
-  if found then
-    return v;
+  if not found then
+    -- Ruidoso a propósito. Devolver una fila vacía dejaría `waitlist_enabled`
+    -- en NULL y la lista de espera se apagaría sin que nadie se entere.
+    raise exception 'El box % no tiene ajustes de reserva.', p_org_id;
   end if;
-  -- Una fila en memoria con los valores por defecto de la tabla. Así el box que
-  -- nunca abrió la pantalla de configuración funciona igual que el que sí.
-  insert into public.reservation_settings (org_id) values (p_org_id)
-  on conflict (org_id) do nothing;
-  select * into v from public.reservation_settings s where s.org_id = p_org_id;
   return v;
 end;
 $$;
@@ -610,13 +629,24 @@ begin
   subscription_id := v_sub.id;
 
   -- --- 2 · Mora, solo si el box encendió el interruptor ---------------------
-  if v_set.block_when_overdue then
+  -- LA SEÑAL ES LA ETIQUETA `acceso_suspendido`, la que pone la regla 3 del
+  -- motor de automatizaciones (0011) a los N días de mora. No se inventa aquí
+  -- otro criterio de mora: si hubiera dos, el atleta podría estar bloqueado
+  -- para reservar y al día para el motor de cobros al mismo tiempo.
+  --
+  -- La factura vencida se comprueba ADEMÁS de la etiqueta, y no en su lugar,
+  -- por una razón concreta: hoy nada le quita la etiqueta al atleta cuando
+  -- paga. Sin esta segunda condición, quien se pone al día seguiría bloqueado
+  -- para siempre — que es la versión de reservas del peor bug del producto
+  -- ("ya pagué y me siguen cobrando"). Cuando el motor aprenda a quitar la
+  -- etiqueta al conciliar el pago, esta comprobación sobra pero no estorba.
+  if v_set.block_when_overdue and 'acceso_suspendido' = any(v_ath.tags) then
     select min(i.due_on) into v_mora
     from public.invoices i
     where i.org_id = p_org_id
       and i.athlete_id = p_athlete_id
       and i.status in ('open','partial','overdue')
-      and i.due_on < v_hoy - v_set.overdue_grace_days;
+      and i.due_on < v_hoy;
 
     if v_mora is not null then
       reason := 'Tienes una mensualidad vencida desde el ' || to_char(v_mora, 'DD/MM/YYYY')
@@ -928,6 +958,7 @@ as $$
 declare
   v_res     public.reservations%rowtype;
   v_class   public.classes%rowtype;
+  v_class_id uuid;
   v_org     public.organizations%rowtype;
   v_set     public.reservation_settings;
   v_now     timestamptz;
@@ -944,13 +975,13 @@ declare
   v_prom    uuid;
   v_promath uuid;
 begin
-  select r.class_id into v_class.id from public.reservations r where r.id = p_reservation_id;
-  if v_class.id is null then
+  select r.class_id into v_class_id from public.reservations r where r.id = p_reservation_id;
+  if v_class_id is null then
     raise exception 'Esa reserva no existe.';
   end if;
 
   -- Candado de la clase primero, siempre.
-  select * into v_class from public.classes c where c.id = v_class.id for update;
+  select * into v_class from public.classes c where c.id = v_class_id for update;
   select * into v_res   from public.reservations r where r.id = p_reservation_id;
   select * into v_org   from public.organizations o where o.id = v_class.org_id;
 
@@ -1371,9 +1402,11 @@ begin
                 (org.id, tpl.id, tpl.name, v_ini,
                  v_ini + (tpl.duration_min || ' minutes')::interval,
                  tpl.capacity, tpl.coach_id)
-              on conflict (org_id, template_id, starts_at)
-                where template_id is not null
-                do nothing
+              -- `on conflict do nothing` sin listar columnas a propósito: el
+              -- parámetro de salida `org_id` de esta función haría ambigua la
+              -- referencia en el destino del conflicto. El índice que decide
+              -- sigue siendo `classes_no_duplica_idx`.
+              on conflict do nothing
               returning id into v_id;
 
               if v_id is not null then

@@ -70,3 +70,11 @@ verify_jwt = false
 
 [functions.weekly-report]
 verify_jwt = false
+
+# El cobro recurrente lo dispara un programador, no un usuario.
+[functions.charge-subscriptions]
+verify_jwt = false
+
+# La tokenización sí la inicia el atleta desde la aplicación.
+[functions.tokenize-payment-method]
+verify_jwt = true

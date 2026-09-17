@@ -77,12 +77,12 @@ end $$;
 do $$
 begin
   perform pg_temp.chk(
-    (select count(*) from public.automation_rules where org_id is null) = 14,
-    'el catálogo global trae las 14 reglas de fábrica');
+    (select count(*) from public.automation_rules where org_id is null) = 15,
+    'el catálogo global trae las 15 reglas de fábrica');
   perform pg_temp.chk(
     (select count(*) from public.automation_rules
-     where org_id = '0a000000-0000-4000-8000-000000000001') = 14,
-    'dar de alta un box le copia las 14 reglas');
+     where org_id = '0a000000-0000-4000-8000-000000000001') = 15,
+    'dar de alta un box le copia las 15 reglas');
   perform pg_temp.chk(
     (select count(*) from public.message_templates
      where org_id = '0a000000-0000-4000-8000-000000000001') =
@@ -96,8 +96,8 @@ begin
     'las reglas del box apuntan a SUS plantillas, no a las de fábrica');
   perform pg_temp.chk(
     (select install_automation_defaults from public.install_automation_defaults(
-       '0a000000-0000-4000-8000-000000000001')) = 14,
-    'volver a instalar el catálogo es idempotente: siguen siendo 14');
+       '0a000000-0000-4000-8000-000000000001')) = 15,
+    'volver a instalar el catálogo es idempotente: siguen siendo 15');
 end $$;
 
 -- ============================ 2 · Aviso de vencimiento ======================
@@ -689,7 +689,7 @@ begin
   select count(*) into v_catalogo from public.automation_rules where org_id is null;
   reset role;
 
-  perform pg_temp.chk(v_catalogo = 14,
+  perform pg_temp.chk(v_catalogo = 15,
     'el catálogo de fábrica sí es visible para el staff: es lo que se muestra en la demo');
 end $$;
 
