@@ -9,6 +9,11 @@ const StaffLogin = lazy(() => import('./routes/public/StaffLogin'));
 const AthleteAccess = lazy(() => import('./routes/public/AthleteAccess'));
 const NoAccess = lazy(() => import('./routes/public/NoAccess'));
 const AcceptInvitation = lazy(() => import('./routes/public/AcceptInvitation'));
+const PublicLanding = lazy(() => import('./routes/public/Landing'));
+const SuperadminHome = lazy(() => import('./routes/superadmin/SuperadminHome'));
+const ReclamarPropiedad = lazy(() =>
+  import('../features/superadmin').then((m) => ({ default: m.ReclamarPropiedad })),
+);
 const AppLayout = lazy(() => import('./routes/AppLayout'));
 const Landing = lazy(() => import('./routes/Landing'));
 const AdminHome = lazy(() => import('./routes/admin/AdminHome'));
@@ -34,9 +39,16 @@ export function AppRouter() {
         <Route path="/acceso" element={<AthleteAccess />} />
         <Route path="/sin-acceso" element={<NoAccess />} />
         <Route path="/invitacion/:token" element={<AcceptInvitation />} />
+        <Route path="/inicio" element={<PublicLanding />} />
+        {/* Canje del enlace con el que se le entrega un box nuevo a su dueño.
+            Sin esta ruta, el enlace que genera el alta no sirve de nada. */}
+        <Route path="/propiedad/:token" element={<ReclamarPropiedad />} />
 
         {/* Privadas */}
         <Route element={<RequireAuth />}>
+          {/* Panel interno, fuera del layout del box: no pertenece a ninguno. */}
+          <Route path="_admin" element={<SuperadminHome />} />
+
           <Route element={<AppLayout />}>
             <Route index element={<Landing />} />
 

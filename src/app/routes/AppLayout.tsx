@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../features/auth/useAuth';
 import { canViewFinances, isStaff } from '../../features/auth/AuthContext';
+import { AvisoNuevaVersion, InstalarApp } from '../../features/pwa';
 import { Spinner } from '../../shared/ui';
 
 export default function AppLayout() {
@@ -98,9 +99,13 @@ export default function AppLayout() {
         </button>
       </header>
 
+      <AvisoNuevaVersion />
+
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Outlet />
       </main>
+
+      <InstalarApp />
     </div>
   );
 }

@@ -14,6 +14,7 @@ export { useCrearBox, useSuspenderBox, useReactivarBox, useSuplantar, useCerrarS
 export { NuevoBoxDrawer } from './NuevoBoxDrawer';
 export { SoporteDrawer } from './SoporteDrawer';
 export { SuspenderDrawer } from './SuspenderDrawer';
+export { ReclamarPropiedad } from './ReclamarPropiedad';
 export { dominioDelBox, enlaceDePropiedad, problemaDelSlug, slugSugerido } from './altas';
 export { ETIQUETA_ESTADO, ETIQUETA_PLAN, colorDeEstado } from './types';
 export type {

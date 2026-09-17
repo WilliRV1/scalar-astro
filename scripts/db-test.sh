@@ -84,6 +84,13 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de Wompi"; exit 1
 fi
 
+echo "→ Plataforma (alta de boxes, superadmin, suspensión)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/saas.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|PLATAFORMA|SAAS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de plataforma"; exit 1
+fi
+
 echo "→ Finanzas y logística"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/finance.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|FINANZAS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

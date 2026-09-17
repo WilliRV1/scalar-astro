@@ -1810,10 +1810,16 @@ create policy "owner/admin cancelan mensajes encolados"
   using (org_id in (select private.auth_org_ids_with_role(array['owner','admin'])))
   with check (org_id in (select private.auth_org_ids_with_role(array['owner','admin'])));
 
+-- El atleta ve lo que se le mandó A ÉL, nunca las alertas internas: una fila
+-- con audience = 'staff' es una nota del equipo SOBRE él ("lleva 10 días de
+-- mora, toca llamarlo") y no puede llegarle, igual que las notas del coach.
 create policy "el atleta ve lo que se le mandó"
   on public.message_outbox for select
   to authenticated
-  using (athlete_id = (select private.current_athlete_id(org_id)));
+  using (
+    audience = 'athlete'
+    and athlete_id = (select private.current_athlete_id(org_id))
+  );
 
 create policy "staff lee el riesgo de fuga de su box"
   on public.athlete_risk_scores for select

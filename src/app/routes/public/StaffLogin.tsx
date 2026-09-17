@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../../shared/lib/supabase';
 import { useAuth } from '../../../features/auth/useAuth';
 import { Button, ErrorNote } from '../../../shared/ui';
@@ -13,12 +13,23 @@ import { Button, ErrorNote } from '../../../shared/ui';
  */
 export default function StaffLogin() {
   const { session } = useAuth();
+  const [params] = useSearchParams();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (session) return <Navigate to="/" replace />;
+  // A dónde quería ir antes de que lo mandáramos a entrar. Sin esto, quien
+  // abre un enlace de invitación o de propiedad entra y se queda mirando su
+  // panel, teniendo que volver a abrir el enlace del correo.
+  const desde = (location.state as { from?: string } | null)?.from;
+  const volver = params.get('volver') ?? desde ?? '/';
+  // Solo rutas internas: un `volver` con dominio ajeno sería un redirector
+  // abierto, que es un clásico para robar sesiones.
+  const destino = volver.startsWith('/') && !volver.startsWith('//') ? volver : '/';
+
+  if (session) return <Navigate to={destino} replace />;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

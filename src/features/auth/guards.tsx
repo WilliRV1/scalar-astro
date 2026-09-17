@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Spinner } from '../../shared/ui';
+import { slugFromHost } from '../org/subdomain';
 import { useAuth } from './useAuth';
 import { canViewFinances } from './AuthContext';
 import type { Role } from '../../types/database';
@@ -15,7 +16,13 @@ export function RequireAuth() {
   const location = useLocation();
 
   if (loading && !session) return <Spinner label="Verificando sesión" />;
-  if (!session) return <Navigate to="/entrar" replace state={{ from: location.pathname }} />;
+
+  if (!session) {
+    // En el subdominio de un box, quien llega sin sesión va a entrar. En el
+    // dominio raíz no hay box que abrir, así que ve la portada de ventas.
+    const destino = slugFromHost() ? '/entrar' : '/inicio';
+    return <Navigate to={destino} replace state={{ from: location.pathname }} />;
+  }
   return <Outlet />;
 }
 

@@ -367,6 +367,7 @@ declare
   v_token  text;
   v_precio bigint;
   v_setup  bigint;
+  v_planes int;
 begin
   perform private.require_platform_admin();
 
@@ -432,6 +433,7 @@ begin
     (v_org.id, 'Mensualidad', 'Acceso ilimitado durante un mes',        18000000, 'monthly',   null, null),
     (v_org.id, 'Trimestre',   'Tres meses con descuento',               48000000, 'quarterly', null, null),
     (v_org.id, 'Clase suelta','Una clase, para visitantes y pruebas',    2500000, 'one_off',      1,    1);
+  get diagnostics v_planes = row_count;
 
   -- ---- nuestra suscripción con el box ---------------------------------------
   v_precio := coalesce(p_price_cents, public.platform_price_cents(p_plan_tier, p_is_founder));
@@ -495,7 +497,7 @@ begin
     )
   );
 
-  return query select v_org.id, v_org.slug, v_user, v_token, 3;
+  return query select v_org.id, v_org.slug, v_user, v_token, v_planes;
 end;
 $$;
 

@@ -616,6 +616,83 @@ begin
     'el dinero se muestra en pesos con separador de miles colombiano');
 end $$;
 
+-- ============================ 17 · RLS de las tablas nuevas =================
+-- El aislamiento entre boxes no lo hace el frontend: lo hace la RLS. Aquí se
+-- comprueba con usuarios de verdad, porque una política mal escrita no falla:
+-- devuelve datos de más, en silencio.
+insert into auth.users (id, email) values
+  ('c1000000-0000-4000-8000-000000000001', 'dueno@boxauto.co'),
+  ('c1000000-0000-4000-8000-000000000002', 'coach@boxauto.co'),
+  ('c1000000-0000-4000-8000-000000000003', 'dueno@boxvecino.co'),
+  ('c1000000-0000-4000-8000-000000000004', 'atleta@boxauto.co');
+
+insert into public.memberships (org_id, user_id, role, permissions, athlete_id) values
+  ('0a000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'owner', '{}', null),
+  ('0a000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'coach', '{}', null),
+  ('0a000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000003', 'owner', '{}', null),
+  ('0a000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000004', 'athlete', '{}',
+   'aa000000-0000-4000-8000-000000000001');
+
+do $$
+declare v_dueno bigint; v_coach bigint; v_vecino bigint; v_atleta bigint;
+begin
+  set local role authenticated;
+
+  set local request.jwt.claim.sub = 'c1000000-0000-4000-8000-000000000001';
+  select count(*) into v_dueno from public.message_outbox;
+
+  set local request.jwt.claim.sub = 'c1000000-0000-4000-8000-000000000002';
+  select count(*) into v_coach from public.message_outbox;
+
+  set local request.jwt.claim.sub = 'c1000000-0000-4000-8000-000000000003';
+  select count(*) into v_vecino from public.message_outbox;
+
+  set local request.jwt.claim.sub = 'c1000000-0000-4000-8000-000000000004';
+  select count(*) into v_atleta from public.message_outbox;
+
+  reset role;
+
+  perform pg_temp.chk(v_dueno > 0, 'el dueño ve la bitácora de su box');
+  perform pg_temp.chk(v_coach = v_dueno,
+    'el coach también la ve: necesita saber qué se le escribió ya a un atleta');
+  perform pg_temp.chk(v_vecino = 1,
+    'el dueño del box vecino solo ve los mensajes de SU box');
+  perform pg_temp.chk(v_atleta > 0 and v_atleta < v_dueno,
+    'el atleta ve lo suyo, pero no toda la bitácora del box');
+  perform pg_temp.chk(
+    (select count(*) from public.message_outbox m
+     where m.athlete_id = 'aa000000-0000-4000-8000-000000000001'
+       and m.audience = 'athlete') = v_atleta,
+    'y lo que ve es exactamente lo que se le mandó a él, nunca una alerta interna');
+end $$;
+
+do $$
+declare v_reglas bigint; v_riesgo bigint;
+begin
+  set local role authenticated;
+  set local request.jwt.claim.sub = 'c1000000-0000-4000-8000-000000000003';
+  select count(*) into v_reglas from public.automation_rules
+  where org_id = '0a000000-0000-4000-8000-000000000001';
+  select count(*) into v_riesgo from public.athlete_risk_scores
+  where org_id = '0a000000-0000-4000-8000-000000000001';
+  reset role;
+
+  perform pg_temp.chk(v_reglas = 0, 'un box no ve las reglas de otro');
+  perform pg_temp.chk(v_riesgo = 0, 'ni el riesgo de fuga de los atletas de otro');
+end $$;
+
+do $$
+declare v_catalogo bigint;
+begin
+  set local role authenticated;
+  set local request.jwt.claim.sub = 'c1000000-0000-4000-8000-000000000002';
+  select count(*) into v_catalogo from public.automation_rules where org_id is null;
+  reset role;
+
+  perform pg_temp.chk(v_catalogo = 14,
+    'el catálogo de fábrica sí es visible para el staff: es lo que se muestra en la demo');
+end $$;
+
 rollback;
 
 select 'MOTOR DE AUTOMATIZACIONES OK' as resultado;
