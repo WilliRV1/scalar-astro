@@ -167,9 +167,12 @@ create table public.reservation_settings (
                           check (late_cancel_policy in ('free','consume_credit','no_show')),
 
   -- MORA (docs/03 §Reglas de reserva, 2) ---------------------------------------
+  -- El único interruptor. Cuántos días de mora se toleran NO se configura aquí:
+  -- lo decide la regla `access_cutoff` del motor de automatizaciones (0011), que
+  -- es la que marca al atleta con la etiqueta `acceso_suspendido`. Dos plazos
+  -- configurables en dos pantallas distintas para la misma decisión es cómo se
+  -- llega a "el sistema lo bloqueó y nadie sabe con qué regla".
   block_when_overdue      boolean not null default false,
-  -- Días de mora que el box tolera antes de cerrar la reserva.
-  overdue_grace_days      int not null default 0 check (overdue_grace_days >= 0),
 
   -- LISTA DE ESPERA (docs/03 §Reglas de reserva, 4) ----------------------------
   waitlist_enabled        boolean not null default true,
