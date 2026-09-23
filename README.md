@@ -8,12 +8,110 @@ El plan completo de producto, negocio y arquitectura está en **[`docs/`](./docs
 
 ---
 
-## Desplegarlo y verlo funcionando
+# 🚀 PARA QUIEN VA A HACER EL DESPLIEGUE — lee esto primero
 
-¿Solo quieres verlo en internet y enseñárselo a alguien? Está en
-**[docs/DESPLIEGUE.md](./docs/DESPLIEGUE.md)**: dos cuentas gratuitas
-(Supabase y Vercel) y unos diez minutos, con un box de demostración de ~40
-atletas ya cargado.
+Todo lo que hace falta para poner esto en internet está aquí. La guía paso a
+paso, con capturas de dónde va cada cosa, está en
+**[docs/DESPLIEGUE.md](./docs/DESPLIEGUE.md)**.
+
+## Qué es
+
+Una SPA de React + Vite que habla con Supabase. **No hay servidor propio**: el
+build es estático y va a un CDN. La lógica de negocio vive en Postgres
+(funciones y RLS) y en Edge Functions de Supabase.
+
+## ⚠️ ANTES DE TOCAR LA BASE DE DATOS — esto puede romper algo ajeno
+
+El dueño del proyecto **tiene tablas de OTRO proyecto suyo en el mismo Supabase.
+No se tocan, no se mueven, no se renombran.**
+
+Varias tablas de Scalar tienen nombres genéricos (`invoices`, `payments`,
+`expenses`, `results`, `classes`). Si alguna ya existe en esa base, aplicar las
+migraciones **falla a mitad de camino y deja la base a medias**.
+
+**Primer paso, obligatorio, y no escribe nada:**
+
+```bash
+export SUPABASE_DB_URL="postgresql://postgres:CLAVE@db.XXXX.supabase.co:5432/postgres"
+./scripts/preflight.sh
+```
+
+| Resultado | Qué hacer |
+|---|---|
+| `✓ Sin choques` | Seguir. Después de aplicar migraciones, corre `./scripts/preflight.sh --registrar` para que la guarda de RLS ignore las tablas ajenas |
+| `✗ CHOQUE DE NOMBRES` | **Parar.** Crear un proyecto de Supabase nuevo y limpio solo para Scalar. Es gratis y evita el problema para siempre |
+
+## Los tres pasos
+
+### 1 · Base de datos
+
+```bash
+export SUPABASE_DB_URL="postgresql://postgres:CLAVE@db.XXXX.supabase.co:5432/postgres"
+./scripts/setup-demo.sh     # aplica las migraciones + carga el box de demostración
+```
+
+Si prefieres hacerlo a mano, las migraciones se aplican **en orden alfabético**
+desde `supabase/migrations/`. No te saltes ninguna ni cambies el orden.
+
+### 2 · Variables de entorno en Vercel
+
+Se sacan de Supabase → **Project Settings → API**:
+
+| Variable | De dónde sale |
+|---|---|
+| `VITE_SUPABASE_URL` | Project URL |
+| `VITE_SUPABASE_ANON_KEY` | Llave `anon public` |
+
+- La llave anónima **viaja al navegador por diseño**: identifica, no autoriza.
+  Es seguro porque todas las tablas tienen RLS, verificado por 570 aserciones
+  en CI.
+- **Nunca** pongas aquí la llave `service_role`: esa salta la RLS y solo puede
+  vivir en Edge Functions.
+- Vite incrusta las variables **en el build**. Si cambias una, hay que
+  **volver a desplegar**; no se leen en caliente.
+
+### 3 · Desplegar
+
+Conectar el repositorio en Vercel y desplegar. `vercel.json` ya está en el
+repo y trae lo que suele fallar:
+
+- Reescritura catch-all: sin ella, recargar `/coach/atletas` da **404**.
+- `sw.js` sin caché: si no, el navegador se queda con el service worker viejo
+  y la app **no se actualiza nunca**.
+- Assets con caché inmutable y cabeceras de seguridad.
+
+Framework: **Vite**. Build: `npm run build`. Salida: `dist`.
+
+## Comprobar que quedó bien
+
+```bash
+npm run check    # lint + tipos + 213 pruebas unitarias + build + 570 aserciones de BD
+```
+
+Y en el sitio desplegado, la prueba de humo que importa: **entrar con los tres
+usuarios del box de demostración** (contraseña `demo1234`, ver
+`docs/13-puesta-en-marcha.md`). El coach **no** debe ver la plata; el dueño sí;
+el atleta solo lo suyo. Si eso se cumple, el aislamiento de permisos funciona.
+
+## Lo que NO está conectado — que nadie se lleve una sorpresa
+
+| Qué | Estado real |
+|---|---|
+| Cobro en línea (Wompi) | Código completo y probado contra la base, pero **ninguna transacción real ha pasado por él**, ni en sandbox. Falta cuenta de comercio |
+| WhatsApp automático | Funciona el botón de un clic (`wa.me`). El envío automático necesita cuenta de WhatsApp Business y plantillas aprobadas por Meta |
+| Tareas programadas | Cobros, avisos y generación de clases son funciones listas, pero **falta engancharlas a `pg_cron`** |
+| Correo | Sin proveedor. Las invitaciones se pasan por enlace copiable |
+
+Nada de eso impide enseñar el producto: lo que se ve funciona completo.
+
+## Secretos
+
+**No los pegues en el chat ni los subas al repo.** Las llaves de Wompi y de
+WhatsApp **no van en variables de entorno del despliegue**: cada box las mete
+desde la aplicación, y se guardan de forma que ni el dueño puede leerlas desde
+el navegador. Ver `docs/DESPLIEGUE.md`.
+
+---
 
 ## Empezar a desarrollar
 
