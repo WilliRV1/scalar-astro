@@ -21,6 +21,7 @@ const AthletesPage = lazy(() => import('./routes/coach/AthletesPage'));
 const AthleteDetailPage = lazy(() => import('./routes/coach/AthleteDetailPage'));
 const PlansPage = lazy(() => import('./routes/admin/PlansPage'));
 const TeamPage = lazy(() => import('./routes/admin/TeamPage'));
+const FieldsPage = lazy(() => import('./routes/admin/FieldsPage'));
 const ExpensesPage = lazy(() => import('./routes/admin/ExpensesPage'));
 const SuppliesPage = lazy(() => import('./routes/admin/SuppliesPage'));
 const ReportsPage = lazy(() => import('./routes/admin/ReportsPage'));
@@ -72,6 +73,7 @@ export function AppRouter() {
             <Route element={<RequireRole roles={['owner', 'admin']} />}>
               <Route path="admin/equipo" element={<TeamPage />} />
               <Route path="admin/automatizaciones" element={<AutomationsPage />} />
+              <Route path="admin/campos" element={<FieldsPage />} />
             </Route>
 
             {/* Todo lo que muestra plata pasa por el permiso, no solo por el rol. */}

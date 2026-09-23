@@ -84,6 +84,13 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de Wompi"; exit 1
 fi
 
+echo "→ Campos personalizados del box"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/custom_fields.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|CAMPOS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de campos personalizados"; exit 1
+fi
+
 echo "→ Horarios y reservas"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/reservations.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|RESERVAS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

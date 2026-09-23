@@ -3,6 +3,10 @@ import {
   Button, Checkbox, Drawer, ErrorNote, Field, Select, TextInput,
 } from '../../shared/ui';
 import { formatPhone } from '../../shared/lib/phone';
+import {
+  CamposPersonalizados, useCustomFieldDefs, validarCampos, valoresParaFormulario,
+  type ValoresCrudos,
+} from '../customfields';
 import { athleteSchema, ATHLETE_STATUSES } from './schema';
 import { useArchiveAthlete, useSaveAthlete } from './mutations';
 import type { Athlete } from '../../types/database';
@@ -30,6 +34,14 @@ export function AthleteForm({
   const archive = useArchiveAthlete();
 
   const [campos, setCampos] = useState<Campos>(() => inicial(athlete));
+
+  // Los campos que definió ESTE box. Si no definió ninguno, el componente no
+  // pinta nada: la ficha se ve igual que antes.
+  const { data: defs = [] } = useCustomFieldDefs(orgId);
+  const [extra, setExtra] = useState<ValoresCrudos>(() =>
+    valoresParaFormulario(defs, athlete?.custom, 'normales'),
+  );
+  const [erroresExtra, setErroresExtra] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(Boolean(athlete?.consent_whatsapp_at));
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [errorGeneral, setErrorGeneral] = useState('');
@@ -41,7 +53,17 @@ export function AthleteForm({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrores({});
+    setErroresExtra({});
     setErrorGeneral('');
+
+    // Los campos del box se validan con la MISMA función que usa el importador,
+    // para que lo que se puede guardar a mano y lo que entra por Excel sean lo
+    // mismo. La base vuelve a validarlo: esto es solo para dar buenos mensajes.
+    const propios = validarCampos(defs, extra, 'normales');
+    if (!propios.ok) {
+      setErroresExtra(propios.errores);
+      return;
+    }
 
     const parsed = athleteSchema.safeParse({ ...campos, consent_whatsapp: consent });
     if (!parsed.success) {
@@ -55,7 +77,12 @@ export function AthleteForm({
     }
 
     try {
-      await save.mutateAsync({ orgId, athleteId: athlete?.id, input: parsed.data });
+      await save.mutateAsync({
+        orgId,
+        athleteId: athlete?.id,
+        input: parsed.data,
+        custom: propios.valores,
+      });
       onClose();
     } catch (err) {
       setErrorGeneral(err instanceof Error ? err.message : 'No se pudo guardar');
@@ -155,6 +182,15 @@ export function AthleteForm({
             </Field>
           </div>
         </fieldset>
+
+        <CamposPersonalizados
+          defs={defs}
+          valores={extra}
+          onChange={setExtra}
+          errores={erroresExtra}
+          ambito="normales"
+          titulo="Datos de tu box"
+        />
 
         <Checkbox
           label="Autoriza recibir mensajes por WhatsApp"

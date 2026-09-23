@@ -61,6 +61,15 @@ export interface Athlete {
   joined_on: string;
   status: AthleteStatus;
   tags: string[];
+  /**
+   * Valores de los campos que definió el box. Ver `features/customfields`.
+   *
+   * Se escribe estructuralmente en vez de importar `ValoresCampos`: los tipos
+   * de la base no deben depender de un módulo de features, que es la capa de
+   * arriba. Los dos tipos tienen que coincidir, y el compilador lo comprueba
+   * en cada sitio donde se pasan el uno al otro.
+   */
+  custom: Record<string, string | number | boolean | string[]>;
   consent_data_at: string | null;
   consent_whatsapp_at: string | null;
   created_at: string;

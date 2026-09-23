@@ -7,12 +7,15 @@ interface SaveArgs {
   orgId: string;
   athleteId?: string;
   input: AthleteInput;
+  /** Valores de los campos que definió el box. Ver features/customfields. */
+  custom?: Record<string, string | number | boolean | string[]>;
 }
 
-function toRow(orgId: string, input: AthleteInput) {
+function toRow(orgId: string, input: AthleteInput, custom?: Athlete['custom']) {
   const { consent_whatsapp, ...rest } = input;
   return {
     ...rest,
+    ...(custom ? { custom } : {}),
     org_id: orgId,
     joined_on: input.joined_on || undefined,
     // La fecha del consentimiento ES la evidencia. Si se marca, se sella ahora;
@@ -24,8 +27,8 @@ function toRow(orgId: string, input: AthleteInput) {
 export function useSaveAthlete() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orgId, athleteId, input }: SaveArgs): Promise<Athlete> => {
-      const row = toRow(orgId, input);
+    mutationFn: async ({ orgId, athleteId, input, custom }: SaveArgs): Promise<Athlete> => {
+      const row = toRow(orgId, input, custom);
 
       if (athleteId) {
         const { data, error } = await supabase
