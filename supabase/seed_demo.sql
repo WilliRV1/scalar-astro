@@ -109,6 +109,22 @@ begin
             updated_at        = now()
     $ins$ using u.id, u.email, v_pass, u.nombre;
 
+    -- GoTrue lee las columnas de token como texto y NO acepta NULL: con un
+    -- NULL, el login falla con "Database error querying schema". Un usuario
+    -- creado desde el panel las trae en '', así que se dejan igual. Se mira
+    -- qué columnas existen porque cambian entre versiones de GoTrue.
+    execute (
+      select 'update auth.users set '
+             || string_agg(format('%1$I = coalesce(%1$I, %2$L)', column_name, ''), ', ')
+             || ' where id = $1'
+      from information_schema.columns
+      where table_schema = 'auth' and table_name = 'users'
+        and column_name in ('confirmation_token', 'recovery_token',
+                            'email_change_token_new', 'email_change_token_current',
+                            'email_change', 'phone_change', 'phone_change_token',
+                            'reauthentication_token')
+    ) using u.id;
+
     -- GoTrue moderno espera además una identidad por proveedor. Si la tabla no
     -- existe (arnés local) o cambia de forma, no se rompe la semilla por eso.
     select to_regclass('auth.identities') is not null into v_ident;
