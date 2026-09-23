@@ -67,11 +67,21 @@ begin
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public'
     and c.relkind = 'r'
-    and not c.relrowsecurity;
+    and not c.relrowsecurity
+    -- Tablas de otro proyecto que comparte esta base. Ver la migración
+    -- 20260916115800: se excluyen una a una, nunca por defecto.
+    and not exists (
+      select 1 from public.scalar_foreign_tables f where f.table_name = c.relname
+    );
 
   if unguarded is not null then
     raise exception
-      'RLS desactivada en: %. Toda tabla de public debe tener RLS (ver docs/02-arquitectura.md).',
+      E'RLS desactivada en: %.\n'
+      'Toda tabla de Scalar debe tener RLS (ver docs/02-arquitectura.md).\n'
+      'Si alguna de esas tablas es de OTRO proyecto que comparte esta base, '
+      'regístrala con service_role:\n'
+      '  insert into public.scalar_foreign_tables (table_name, note) '
+      'values (''<tabla>'', ''proyecto X'');',
       unguarded;
   end if;
 end;

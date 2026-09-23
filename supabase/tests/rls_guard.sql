@@ -16,7 +16,11 @@ begin
   where n.nspname = 'public'
     and c.relkind = 'r'
     and c.relrowsecurity
-    and c.relname not in ('job_runs', 'webhook_events')  -- intencionalmente sin políticas: solo service_role
+    and c.relname not in ('job_runs', 'webhook_events', 'scalar_foreign_tables')  -- intencionalmente sin políticas: solo service_role
+    -- Tablas de otro proyecto en la misma base: no son nuestras.
+    and not exists (
+      select 1 from public.scalar_foreign_tables f where f.table_name = c.relname
+    )
     and not exists (
       select 1 from pg_policy p where p.polrelid = c.oid
     );
