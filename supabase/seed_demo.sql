@@ -249,7 +249,7 @@ from (values
   (25, 'Angie Paola',    'Sánchez',   'F', 26, 133, 'active',  'estudiante',20, 3,  2, null,      0,  'Universidad Santiago',   null,                                        null),
   (26, 'David',          'Escobar',   'M', 30, 125, 'frozen',  'mensual',   25, 0, 38, null,      0,  'Instagram',              null,                                        null),
   (27, 'Yuliana',        'Valencia',  'F', 34, 118, 'active',  'mensual',    5, 3,  0, null,      0,  'Referido',               null,                                        null),
-  (28, 'Ricardo',        'Peláez',    'M', 48, 110, 'overdue', 'mensual',   15, 1, 31, 75,        0,  'Pasó por el frente',     null,                                        null),
+  (28, 'Ricardo',        'Peláez',    'M', 48, 110, 'overdue', 'mensual',   15, 1, 30, 75,        0,  'Pasó por el frente',     null,                                        null),
   (29, 'Tatiana',        'Montoya',   'F', 29, 100, 'active',  'mensual',    1, 4,  1, null,      0,  'Instagram',              null,                                        null),
   (30, 'Nicolás',        'Aguirre',   'M', 24,  92, 'active',  'bono8',     10, 2,  2, null,      0,  'Referido',               null,                                        null),
   (31, 'Sandra Milena',  'Trujillo',  'F', 40,  85, 'active',  'mensual',   20, 3,  0, null,      0,  'Google',                 null,                                        null),
@@ -522,8 +522,13 @@ where a.n = 40 and (current_date - d) > a.joined_on;
 -- -----------------------------------------------------------------------------
 -- Seis meses de check-ins. La frecuencia sale de la columna `frec` y el corte
 -- de `ultimo`: por eso hay quien viene cuatro veces por semana, quien viene una
--- y tres que dejaron de venir hace 10, 18 y 31 días. Esos tres son los que
+-- y tres que dejaron de venir hace 10, 18 y 30 días. Esos tres son los que
 -- tiene que enseñar la pantalla de riesgo de fuga, que es el argumento de venta.
+--
+-- Aquí se siembra de 14 días hacia atrás y con `class_id` nulo: es el check-in
+-- de piso, el que el coach marca en la tableta sin que nadie haya reservado. Las
+-- dos últimas semanas NO se escriben aquí — salen de las reservas de la sección
+-- siguiente, que es como las produce el sistema en el día a día.
 --
 -- La fila forzada del final garantiza que la última visita caiga EXACTAMENTE
 -- donde dice `ultimo`, incluso si ese día el módulo no le tocaba entrenar. Si
@@ -536,7 +541,7 @@ select
     + ((array[5, 6, 7, 12, 17, 18, 19])[1 + (a.n % 7)] || ' hours')::interval)
     at time zone 'America/Bogota'
 from demo_atl a
-cross join generate_series(0, 179) as g(d)
+cross join generate_series(14, 179) as g(d)
 where extract(dow from current_date - d) <> 0
   and d >= a.ultimo
   and (current_date - d) > a.joined_on
@@ -555,10 +560,200 @@ cross join lateral (
   select a.ultimo + case when extract(dow from current_date - a.ultimo) = 0 then 1 else 0 end as d
 ) v
 where (current_date - v.d) > a.joined_on
+  and v.d >= 14          -- los últimos 14 días los pone el check-in de la clase
 on conflict do nothing;
 
 -- -----------------------------------------------------------------------------
--- 9 · Entrenamientos de las últimas ocho semanas
+-- 9 · Parrilla semanal
+-- -----------------------------------------------------------------------------
+-- Las franjas típicas de un box colombiano: el pico de verdad es 5-7 a. m. y
+-- 5-7 p. m., y el mediodía es una clase pequeña. docs/08 §4.
+-- -----------------------------------------------------------------------------
+insert into public.class_templates (id, org_id, name, weekday, start_time, duration_min, capacity, coach_id, valid_from)
+select
+  ('c1a50000-0000-4000-8000-' || lpad((wd.d * 10 + h.i)::text, 12, '0'))::uuid,
+  'b0c50000-0000-4000-8000-000000000001', h.nombre, wd.d, h.hora, 60, h.cupo,
+  'd1c50000-0000-4000-8000-000000000002', (current_date - 430)::date
+from generate_series(1, 5) as wd(d)
+cross join (values
+  (1, '05:00'::time, 12, 'Entrenamiento funcional'),
+  (2, '06:00'::time, 16, 'Entrenamiento funcional'),
+  (3, '07:00'::time, 14, 'Entrenamiento funcional'),
+  (4, '12:00'::time, 10, 'Funcional mediodía'),
+  (5, '17:00'::time, 16, 'Entrenamiento funcional'),
+  (6, '18:00'::time, 18, 'Entrenamiento funcional'),
+  (7, '19:00'::time, 16, 'Entrenamiento funcional')
+) as h(i, hora, cupo, nombre);
+
+insert into public.class_templates (id, org_id, name, weekday, start_time, duration_min, capacity, coach_id, valid_from)
+values
+  ('c1a50000-0000-4000-8000-000000000601', 'b0c50000-0000-4000-8000-000000000001',
+   'Entrenamiento funcional', 6, '08:00', 60, 18, 'd1c50000-0000-4000-8000-000000000002', (current_date - 430)::date),
+  ('c1a50000-0000-4000-8000-000000000602', 'b0c50000-0000-4000-8000-000000000001',
+   'Sábado en parejas', 6, '09:00', 75, 16, 'd1c50000-0000-4000-8000-000000000002', (current_date - 430)::date);
+
+-- La parrilla real de las próximas semanas la genera la misma función del job
+-- diario: si la semilla la escribiera a mano, estaría probando otra cosa.
+do $$ begin
+  perform public.generate_classes('b0c50000-0000-4000-8000-000000000001'::uuid);
+end $$;
+
+-- Las dos semanas pasadas también tuvieron clases, y `generate_classes` no las
+-- crea hacia atrás (no tendría por qué: es un job que mira al futuro). Se
+-- siembran aquí para que la asistencia reciente cuelgue de una clase de verdad
+-- y no de un check-in suelto.
+insert into public.classes (org_id, template_id, name, starts_at, ends_at, capacity, coach_id)
+select
+  'b0c50000-0000-4000-8000-000000000001', t.id, t.name,
+  ((current_date - g.d)::timestamp + t.start_time) at time zone 'America/Bogota',
+  (((current_date - g.d)::timestamp + t.start_time) at time zone 'America/Bogota')
+    + (t.duration_min || ' minutes')::interval,
+  t.capacity, t.coach_id
+from generate_series(0, 13) as g(d)
+join public.class_templates t
+  on t.org_id = 'b0c50000-0000-4000-8000-000000000001'
+ and t.weekday = extract(dow from current_date - g.d)::int
+where (((current_date - g.d)::timestamp + t.start_time) at time zone 'America/Bogota') < now()
+on conflict do nothing;
+
+-- El check-in: la reserva marcada `attended` es la que escribe la asistencia,
+-- por trigger. Cada atleta entra a la clase de su horario (el de las 5 a. m. no
+-- aparece a las 7 p. m.), y el sábado el box parte el grupo en dos clases.
+with pasadas as (
+  select c.id, c.starts_at,
+         (current_date - (c.starts_at at time zone 'America/Bogota')::date) as d,
+         extract(hour from (c.starts_at at time zone 'America/Bogota'))::int as hora,
+         extract(dow  from (c.starts_at at time zone 'America/Bogota'))::int as dow
+  from public.classes c
+  where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
+    and c.starts_at < now()
+    and c.starts_at > now() - interval '14 days'
+)
+insert into public.reservations (
+  org_id, class_id, athlete_id, subscription_id, status, source, booked_at, checked_in_at
+)
+select
+  'b0c50000-0000-4000-8000-000000000001', p.id, a.id, s.id, 'attended',
+  (array['app','app','app','staff','walk_in'])[1 + (a.n % 5)],
+  p.starts_at - interval '20 hours',
+  p.starts_at + interval '4 minutes'
+from pasadas p
+join demo_atl a
+  on p.hora = (case when p.dow = 6
+                    then (case when a.n % 2 = 0 then 8 else 9 end)
+                    else (array[5, 6, 7, 12, 17, 18, 19])[1 + (a.n % 7)] end)
+ and p.d >= a.ultimo
+ and (current_date - p.d) > a.joined_on
+ and (((a.n + p.d) % 6) < (case when a.frec = 0 then 3 else a.frec end)
+      or p.d = a.ultimo + case when extract(dow from current_date - a.ultimo) = 0 then 1 else 0 end)
+left join public.subscriptions s on s.athlete_id = a.id and s.status = 'active'
+on conflict do nothing;
+
+-- Reservó y no apareció. No es una curiosidad: es la señal que más molesta al
+-- box (ocupó un cupo que alguien más quería) y una de las seis que suma puntos
+-- en el riesgo de fuga.
+with pasadas as (
+  select c.id, c.starts_at,
+         (current_date - (c.starts_at at time zone 'America/Bogota')::date) as d,
+         extract(hour from (c.starts_at at time zone 'America/Bogota'))::int as hora,
+         extract(dow  from (c.starts_at at time zone 'America/Bogota'))::int as dow
+  from public.classes c
+  where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
+    and c.starts_at < now()
+    and c.starts_at > now() - interval '14 days'
+)
+insert into public.reservations (
+  org_id, class_id, athlete_id, subscription_id, status, source, booked_at,
+  late_cancel, cancelled_at, cancelled_by
+)
+select
+  'b0c50000-0000-4000-8000-000000000001', p.id, a.id, s.id,
+  case when (a.n + p.d) % 3 = 0 then 'cancelled' else 'no_show' end,
+  'app', p.starts_at - interval '20 hours',
+  ((a.n + p.d) % 3 = 0),
+  case when (a.n + p.d) % 3 = 0 then p.starts_at - interval '40 minutes' end,
+  case when (a.n + p.d) % 3 = 0 then 'athlete' end
+from pasadas p
+join demo_atl a
+  on p.hora = (case when p.dow = 6
+                    then (case when a.n % 2 = 0 then 8 else 9 end)
+                    else (array[5, 6, 7, 12, 17, 18, 19])[1 + (a.n % 7)] end)
+ and a.n in (10, 12, 15, 18, 22, 28)
+ and (a.n + p.d) % 4 = 0
+ and (current_date - p.d) > a.joined_on
+left join public.subscriptions s on s.athlete_id = a.id and s.status = 'active'
+on conflict do nothing;
+
+-- -----------------------------------------------------------------------------
+-- 10 · Reservas
+-- -----------------------------------------------------------------------------
+-- Primero la clase llena: la siguiente de las 6 p. m. se llena hasta el cupo y
+-- deja tres en lista de espera. Es la pantalla que hay que enseñar, porque el
+-- box que llena las 6 p. m. es el que tiene el problema que esto resuelve.
+-- -----------------------------------------------------------------------------
+with clase as (
+  select c.id, c.capacity
+  from public.classes c
+  where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
+    and c.status = 'scheduled'
+    and c.starts_at > now()
+    and extract(hour from (c.starts_at at time zone 'America/Bogota')) = 18
+  order by c.starts_at
+  limit 1
+),
+candidatos as (
+  select cl.id as class_id, cl.capacity, a.id as athlete_id, a.n,
+         row_number() over (order by a.n) as rn
+  from clase cl
+  join demo_atl a on a.estado in ('active', 'overdue', 'trial')
+)
+insert into public.reservations (
+  org_id, class_id, athlete_id, subscription_id, status, waitlist_pos, source, booked_at
+)
+select
+  'b0c50000-0000-4000-8000-000000000001', c.class_id, c.athlete_id, s.id,
+  case when c.rn <= c.capacity then 'booked' else 'waitlisted' end,
+  case when c.rn > c.capacity then c.rn - c.capacity end,
+  (array['app','app','app','staff','whatsapp'])[1 + (c.n % 5)],
+  now() - ((30 - c.rn) || ' hours')::interval
+from candidatos c
+left join public.subscriptions s on s.athlete_id = c.athlete_id and s.status = 'active'
+where c.rn <= c.capacity + 3
+on conflict do nothing;
+
+-- Y el resto de las clases de los próximos tres días, con ocupación despareja:
+-- la de las 5 a. m. va corta y la de la tarde va llena. Ninguna se pasa del
+-- cupo, que es lo que el sistema tiene que garantizar.
+with clases as (
+  select c.id, c.capacity, c.starts_at,
+         row_number() over (order by c.starts_at) as i
+  from public.classes c
+  where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
+    and c.status = 'scheduled'
+    and c.starts_at between now() and now() + interval '3 days'
+    and not exists (select 1 from public.reservations r where r.class_id = c.id)
+),
+candidatos as (
+  select cl.id as class_id, cl.capacity, cl.i, a.id as athlete_id, a.n,
+         row_number() over (partition by cl.id order by ((a.n * 7 + cl.i) % 41)) as rn
+  from clases cl
+  join demo_atl a on a.estado in ('active', 'trial')
+    and ((a.n * 3 + cl.i) % 9) < 4
+)
+insert into public.reservations (
+  org_id, class_id, athlete_id, subscription_id, status, source, booked_at
+)
+select
+  'b0c50000-0000-4000-8000-000000000001', c.class_id, c.athlete_id, s.id, 'booked',
+  (array['app','app','app','staff','whatsapp'])[1 + (c.n % 5)],
+  now() - ((24 - (c.rn % 20)) || ' hours')::interval
+from candidatos c
+left join public.subscriptions s on s.athlete_id = c.athlete_id and s.status = 'active'
+where c.rn <= greatest(c.capacity - 2 - (c.i % 5), 1)
+on conflict do nothing;
+
+-- -----------------------------------------------------------------------------
+-- 11 · Entrenamientos de las últimas ocho semanas
 -- -----------------------------------------------------------------------------
 -- Ocho plantillas que rotan por día (el box no improvisa: tiene ciclo). Cada
 -- día lleva sus tres bloques —calentamiento, fuerza y metcon— y los que miden
@@ -692,8 +887,17 @@ from generate_series(1, 2) as g(d)
 join demo_wod t on t.k = ((g.d + 3) % 8)
 where extract(dow from current_date + g.d) <> 0;
 
+-- A cada clase se le cuelga el WOD de su día, que es como lo ve el coach cuando
+-- abre la clase en la tableta.
+update public.classes c
+   set wod_id = w.id
+  from public.wods w
+ where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
+   and w.org_id = c.org_id
+   and w.date = (c.starts_at at time zone 'America/Bogota')::date;
+
 -- -----------------------------------------------------------------------------
--- 10 · Resultados
+-- 12 · Resultados
 -- -----------------------------------------------------------------------------
 -- Solo anota resultado quien ESTUVO ese día: se cruzan con la asistencia. Y no
 -- todos anotan, porque en un box de verdad tampoco anotan todos.
@@ -771,7 +975,7 @@ cross join lateral (
 where extract(dow from current_date - g.d) <> 0;
 
 -- -----------------------------------------------------------------------------
--- 11 · Marcas personales con evolución
+-- 13 · Marcas personales con evolución
 -- -----------------------------------------------------------------------------
 -- Cuatro registros del mismo movimiento repartidos por la antigüedad de cada
 -- atleta, mejorando. Es lo que hace que la gráfica de evolución tenga forma:
@@ -815,117 +1019,6 @@ cross join lateral (
 join public.movements m on m.org_id is null and m.name = mv.nombre
 cross join (values (0.80, 0), (0.45, -45), (0.15, -85)) as p(frac, delta)
 where a.antig >= 120 and a.estado <> 'churned'
-on conflict do nothing;
-
--- -----------------------------------------------------------------------------
--- 12 · Parrilla semanal
--- -----------------------------------------------------------------------------
--- Las franjas típicas de un box colombiano: el pico de verdad es 5-7 a. m. y
--- 5-7 p. m., y el mediodía es una clase pequeña. docs/08 §4.
--- -----------------------------------------------------------------------------
-insert into public.class_templates (id, org_id, name, weekday, start_time, duration_min, capacity, coach_id, valid_from)
-select
-  ('c1a50000-0000-4000-8000-' || lpad((wd.d * 10 + h.i)::text, 12, '0'))::uuid,
-  'b0c50000-0000-4000-8000-000000000001', h.nombre, wd.d, h.hora, 60, h.cupo,
-  'd1c50000-0000-4000-8000-000000000002', (current_date - 430)::date
-from generate_series(1, 5) as wd(d)
-cross join (values
-  (1, '05:00'::time, 12, 'Entrenamiento funcional'),
-  (2, '06:00'::time, 16, 'Entrenamiento funcional'),
-  (3, '07:00'::time, 14, 'Entrenamiento funcional'),
-  (4, '12:00'::time, 10, 'Funcional mediodía'),
-  (5, '17:00'::time, 16, 'Entrenamiento funcional'),
-  (6, '18:00'::time, 18, 'Entrenamiento funcional'),
-  (7, '19:00'::time, 16, 'Entrenamiento funcional')
-) as h(i, hora, cupo, nombre);
-
-insert into public.class_templates (id, org_id, name, weekday, start_time, duration_min, capacity, coach_id, valid_from)
-values
-  ('c1a50000-0000-4000-8000-000000000601', 'b0c50000-0000-4000-8000-000000000001',
-   'Entrenamiento funcional', 6, '08:00', 60, 18, 'd1c50000-0000-4000-8000-000000000002', (current_date - 430)::date),
-  ('c1a50000-0000-4000-8000-000000000602', 'b0c50000-0000-4000-8000-000000000001',
-   'Sábado en parejas', 6, '09:00', 75, 16, 'd1c50000-0000-4000-8000-000000000002', (current_date - 430)::date);
-
--- La parrilla real de las próximas semanas la genera la misma función del job
--- diario: si la semilla la escribiera a mano, estaría probando otra cosa.
-do $$ begin
-  perform public.generate_classes('b0c50000-0000-4000-8000-000000000001'::uuid);
-end $$;
-
--- Al WOD de hoy se le cuelgan las clases de hoy, que es como lo ve el coach.
-update public.classes c
-   set wod_id = w.id
-  from public.wods w
- where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
-   and w.org_id = c.org_id
-   and w.date = (c.starts_at at time zone 'America/Bogota')::date;
-
--- -----------------------------------------------------------------------------
--- 13 · Reservas
--- -----------------------------------------------------------------------------
--- Primero la clase llena: la siguiente de las 6 p. m. se llena hasta el cupo y
--- deja tres en lista de espera. Es la pantalla que hay que enseñar, porque el
--- box que llena las 6 p. m. es el que tiene el problema que esto resuelve.
--- -----------------------------------------------------------------------------
-with clase as (
-  select c.id, c.capacity
-  from public.classes c
-  where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
-    and c.status = 'scheduled'
-    and c.starts_at > now()
-    and extract(hour from (c.starts_at at time zone 'America/Bogota')) = 18
-  order by c.starts_at
-  limit 1
-),
-candidatos as (
-  select cl.id as class_id, cl.capacity, a.id as athlete_id, a.n,
-         row_number() over (order by a.n) as rn
-  from clase cl
-  join demo_atl a on a.estado in ('active', 'overdue', 'trial')
-)
-insert into public.reservations (
-  org_id, class_id, athlete_id, subscription_id, status, waitlist_pos, source, booked_at
-)
-select
-  'b0c50000-0000-4000-8000-000000000001', c.class_id, c.athlete_id, s.id,
-  case when c.rn <= c.capacity then 'booked' else 'waitlisted' end,
-  case when c.rn > c.capacity then c.rn - c.capacity end,
-  (array['app','app','app','staff','whatsapp'])[1 + (c.n % 5)],
-  now() - ((30 - c.rn) || ' hours')::interval
-from candidatos c
-left join public.subscriptions s on s.athlete_id = c.athlete_id and s.status = 'active'
-where c.rn <= c.capacity + 3
-on conflict do nothing;
-
--- Y el resto de las clases de los próximos tres días, con ocupación despareja:
--- la de las 5 a. m. va corta y la de la tarde va llena. Ninguna se pasa del
--- cupo, que es lo que el sistema tiene que garantizar.
-with clases as (
-  select c.id, c.capacity, c.starts_at,
-         row_number() over (order by c.starts_at) as i
-  from public.classes c
-  where c.org_id = 'b0c50000-0000-4000-8000-000000000001'
-    and c.status = 'scheduled'
-    and c.starts_at between now() and now() + interval '3 days'
-    and not exists (select 1 from public.reservations r where r.class_id = c.id)
-),
-candidatos as (
-  select cl.id as class_id, cl.capacity, cl.i, a.id as athlete_id, a.n,
-         row_number() over (partition by cl.id order by ((a.n * 7 + cl.i) % 41)) as rn
-  from clases cl
-  join demo_atl a on a.estado in ('active', 'trial')
-    and ((a.n * 3 + cl.i) % 9) < 4
-)
-insert into public.reservations (
-  org_id, class_id, athlete_id, subscription_id, status, source, booked_at
-)
-select
-  'b0c50000-0000-4000-8000-000000000001', c.class_id, c.athlete_id, s.id, 'booked',
-  (array['app','app','app','staff','whatsapp'])[1 + (c.n % 5)],
-  now() - ((24 - (c.rn % 20)) || ' hours')::interval
-from candidatos c
-left join public.subscriptions s on s.athlete_id = c.athlete_id and s.status = 'active'
-where c.rn <= greatest(c.capacity - 2 - (c.i % 5), 1)
 on conflict do nothing;
 
 -- -----------------------------------------------------------------------------

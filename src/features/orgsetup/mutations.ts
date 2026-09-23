@@ -68,8 +68,10 @@ export function useGuardarAjustesReserva() {
         .upsert({ org_id: args.orgId, ...args.ajustes }, { onConflict: 'org_id' });
       if (error) throw error;
     },
-    onSuccess: (_d, v) =>
-      void qc.invalidateQueries({ queryKey: ['reservation-settings', v.orgId] }),
+    // La clave es la que usa `useReservationSettings`, que además tiene
+    // staleTime de 5 minutos: sin invalidarla exactamente, el dueño guardaría y
+    // seguiría viendo en pantalla lo de antes.
+    onSuccess: (_d, v) => void qc.invalidateQueries({ queryKey: ['ajustes-reserva', v.orgId] }),
   });
 }
 
