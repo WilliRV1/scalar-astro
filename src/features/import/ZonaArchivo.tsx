@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { ErrorNote, Spinner } from '../../shared/ui';
+import { descargarPlantilla } from './plantilla';
 
 /**
  * Subida del archivo. Se rescató del prototipo lo que funcionaba: una zona
@@ -60,6 +61,17 @@ export function ZonaArchivo({
           <li>Lo que no se reconozca se puede asignar a mano en el siguiente paso.</li>
           <li>Nada se guarda hasta que revises la vista previa.</li>
         </ul>
+        <button
+          type="button"
+          onClick={descargarPlantilla}
+          className="mt-4 text-xs font-bold uppercase tracking-widest text-primary hover:underline"
+        >
+          Descargar plantilla de Excel
+        </button>
+        <p className="mt-1 text-xs text-gray-500">
+          Trae las mismas columnas del Excel de la primera versión, más el celular. Si ya tienes
+          tu archivo de siempre, súbelo tal cual: no hace falta pasarlo a la plantilla.
+        </p>
       </div>
     </div>
   );
