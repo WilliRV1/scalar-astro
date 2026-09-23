@@ -1094,21 +1094,33 @@ where s.id = v.id;
 -- -----------------------------------------------------------------------------
 -- Los fijos, mes a mes. El P&L solo cuenta los gastos reales (los compromisos
 -- recurrentes se registran aparte, al final, y no se suman dos veces).
+--
+-- Las cifras son las de un box pequeño de Cali: local de barrio, dos coaches a
+-- medio tiempo, ~4,1 millones de costo fijo. Con 40 atletas eso deja el mes en
+-- positivo por poco, y con 25 —los que había hace un año— lo dejaba en rojo. Esa
+-- curva es el P&L que enseña la demo: el box cruzó a ganancia hace unos cinco
+-- meses. Es la verdad de un box de esta talla y es un mejor argumento que una
+-- línea plana bonita. El punto de equilibrio del sector está en ~100 socios
+-- (docs/08 §4), así que este box todavía está armándose.
+--
+-- La nómina sube a la mitad de la serie: el segundo coach entró hace medio año.
 -- -----------------------------------------------------------------------------
 insert into public.expenses (id, org_id, category_id, supplier_id, description, amount_cents, incurred_on, paid_on, created_by)
 select
   ('e0c50000-0000-4000-8000-' || lpad((m.m * 10 + c.i)::text, 12, '0'))::uuid,
   'b0c50000-0000-4000-8000-000000000001', c.categoria, c.proveedor, c.descripcion,
-  c.monto + (case c.variacion when 1 then ((m.m % 4) * 2500000) else 0 end),
+  c.monto
+    + (case c.variacion when 1 then ((m.m % 4) * 4000000) else 0 end)
+    - (case when c.variacion = 2 and m.m >= 6 then 50000000 else 0 end),
   v.fecha, v.fecha, 'd1c50000-0000-4000-8000-000000000001'
 from generate_series(0, 11) as m(m)
 cross join (values
-  (1, 'ca750000-0000-4000-8000-000000000001'::uuid, '50f50000-0000-4000-8000-000000000001'::uuid, 'Arriendo del local',        320000000::bigint, 5,  0),
-  (2, 'ca750000-0000-4000-8000-000000000003', null,                                               'Nómina de coaches',        290000000, 28, 0),
-  (3, 'ca750000-0000-4000-8000-000000000002', null,                                               'Energía y agua',            38000000, 10, 1),
+  (1, 'ca750000-0000-4000-8000-000000000001'::uuid, '50f50000-0000-4000-8000-000000000001'::uuid, 'Arriendo del local',        200000000::bigint, 5,  0),
+  (2, 'ca750000-0000-4000-8000-000000000003', null,                                               'Nómina de coaches',        140000000, 28, 2),
+  (3, 'ca750000-0000-4000-8000-000000000002', null,                                               'Energía y agua',            32000000, 10, 1),
   (4, 'ca750000-0000-4000-8000-000000000002', null,                                               'Internet y datáfono',       12990000, 10, 0),
-  (5, 'ca750000-0000-4000-8000-000000000006', null,                                               'Honorarios del contador',   30000000, 15, 0),
-  (6, 'ca750000-0000-4000-8000-000000000004', null,                                               'Pauta en Instagram',        25000000, 20, 1)
+  (5, 'ca750000-0000-4000-8000-000000000006', null,                                               'Honorarios del contador',   25000000, 15, 0),
+  (6, 'ca750000-0000-4000-8000-000000000004', null,                                               'Pauta en Instagram',        20000000, 20, 1)
 ) as c(i, categoria, proveedor, descripcion, monto, dia, variacion)
 cross join lateral (
   select ((date_trunc('month', current_date) - (m.m || ' months')::interval)
@@ -1127,14 +1139,14 @@ select
   v.fecha, v.fecha, c.nota, 'd1c50000-0000-4000-8000-000000000001'
 from (values
   (1, 'ca750000-0000-4000-8000-000000000005'::uuid, '50f50000-0000-4000-8000-000000000002'::uuid,
-      'Reposición de bumpers y dos barras olímpicas', 950000000::bigint, 5, 12,
+      'Reposición de bumpers y dos barras olímpicas', 450000000::bigint, 5, 12,
       'Se pagó de contado para no financiar. Ese mes cerró en rojo y valió la pena.'::text),
   (2, 'ca750000-0000-4000-8000-000000000005', null,
-      'Reparación del aire acondicionado', 180000000, 8, 9, null),
+      'Reparación del aire acondicionado', 120000000, 8, 9, null),
   (3, 'ca750000-0000-4000-8000-000000000004', '50f50000-0000-4000-8000-000000000002',
-      'Camisetas del box para el reto de verano', 140000000, 2, 18, null),
+      'Camisetas del box para el reto de verano', 60000000, 2, 18, null),
   (4, 'ca750000-0000-4000-8000-000000000005', '50f50000-0000-4000-8000-000000000002',
-      'Dos remos nuevos', 620000000, 10, 20, null)
+      'Dos remos de segunda', 180000000, 10, 20, null)
 ) as c(i, categoria, proveedor, descripcion, monto, mes, dia, nota)
 cross join lateral (
   select ((date_trunc('month', current_date) - (c.mes || ' months')::interval)
@@ -1148,17 +1160,17 @@ insert into public.expenses (id, org_id, category_id, supplier_id, description, 
 values
   ('e0c50000-0000-4000-8000-000000000801', 'b0c50000-0000-4000-8000-000000000001',
    'ca750000-0000-4000-8000-000000000001', '50f50000-0000-4000-8000-000000000001',
-   'Arriendo del local (compromiso mensual)', 320000000, current_date, true, 'monthly',
+   'Arriendo del local (compromiso mensual)', 200000000, current_date, true, 'monthly',
    (date_trunc('month', current_date + interval '1 month') + interval '4 days')::date,
    'd1c50000-0000-4000-8000-000000000001'),
   ('e0c50000-0000-4000-8000-000000000802', 'b0c50000-0000-4000-8000-000000000001',
    'ca750000-0000-4000-8000-000000000003', null,
-   'Nómina de coaches (compromiso mensual)', 290000000, current_date, true, 'monthly',
+   'Nómina de coaches (compromiso mensual)', 140000000, current_date, true, 'monthly',
    (date_trunc('month', current_date + interval '1 month') + interval '27 days')::date,
    'd1c50000-0000-4000-8000-000000000001'),
   ('e0c50000-0000-4000-8000-000000000803', 'b0c50000-0000-4000-8000-000000000001',
    'ca750000-0000-4000-8000-000000000006', null,
-   'Declaración de IVA (cuatrimestral)', 210000000, current_date, true, 'quarterly',
+   'Declaración de IVA (cuatrimestral)', 80000000, current_date, true, 'quarterly',
    (current_date + 40)::date, 'd1c50000-0000-4000-8000-000000000001');
 
 -- -----------------------------------------------------------------------------
@@ -1168,9 +1180,63 @@ values
 -- el mismo código que corre en producción todas las mañanas. Si la semilla los
 -- inventara, la demo estaría enseñando algo que el producto no hace.
 -- -----------------------------------------------------------------------------
-do $$ begin
-  perform public.refresh_risk_scores('b0c50000-0000-4000-8000-000000000001'::uuid);
-  perform public.run_automations('b0c50000-0000-4000-8000-000000000001'::uuid);
+do $$
+declare v_org uuid := 'b0c50000-0000-4000-8000-000000000001';
+begin
+  perform public.refresh_risk_scores(v_org);
+
+  -- Dos corridas: la de anteayer y la de hoy. La primera se "liquida" para que
+  -- la bandeja tenga historia —qué se HABRÍA enviado, que es lo que el box mira
+  -- su primera semana en modo simulación— y la de hoy se queda encolada, que es
+  -- lo que hay que hacer. Una bandeja vacía no demuestra nada y una bandeja solo
+  -- con pendientes tampoco.
+  perform public.run_automations(v_org, now() - interval '2 days');
+  perform public.settle_simulated_messages(v_org, 200, now() - interval '1 day');
+  perform public.run_automations(v_org);
+end $$;
+
+-- -----------------------------------------------------------------------------
+-- 17 · Resumen
+-- -----------------------------------------------------------------------------
+-- Lo que quedó sembrado, contado desde la base y no desde lo que uno creía que
+-- había escrito. Si un número sale en cero, algo se rompió arriba.
+-- -----------------------------------------------------------------------------
+do $$
+declare
+  v_org uuid := 'b0c50000-0000-4000-8000-000000000001';
+  v     record;
+begin
+  select
+    (select count(*) from public.athletes where org_id = v_org) as atletas,
+    (select count(*) from public.athletes where org_id = v_org and status = 'active') as activos,
+    (select count(*) from public.athletes where org_id = v_org and status = 'overdue') as en_mora,
+    (select count(*) from public.invoices where org_id = v_org) as cobros,
+    (select coalesce(sum(amount_cents - paid_cents), 0) from public.invoices
+      where org_id = v_org and status in ('open','partial','overdue')) as cartera,
+    (select count(*) from public.attendances where org_id = v_org) as asistencias,
+    (select count(*) from public.wods where org_id = v_org) as wods,
+    (select count(*) from public.results where org_id = v_org) as resultados,
+    (select count(*) from public.personal_records where org_id = v_org) as marcas,
+    (select count(*) from public.classes where org_id = v_org) as clases,
+    (select count(*) from public.reservations where org_id = v_org) as reservas,
+    (select count(*) from public.expenses where org_id = v_org and not is_recurring) as gastos,
+    (select count(*) from public.supplies where org_id = v_org and current_stock < min_stock) as insumos_bajos,
+    (select count(*) from public.athlete_risk_scores where org_id = v_org and band <> 'ok') as en_riesgo,
+    (select count(*) from public.message_outbox where org_id = v_org) as mensajes
+  into v;
+
+  raise notice 'Box La Ladera listo:';
+  raise notice '  % atletas (% activos, % en mora)', v.atletas, v.activos, v.en_mora;
+  raise notice '  % cobros · cartera pendiente: $%', v.cobros, replace(to_char(v.cartera / 100, 'FM999,999,999'), ',', '.');
+  raise notice '  % asistencias · % WOD con % resultados · % marcas', v.asistencias, v.wods, v.resultados, v.marcas;
+  raise notice '  % clases · % reservas', v.clases, v.reservas;
+  raise notice '  % gastos · % insumos bajo mínimo', v.gastos, v.insumos_bajos;
+  raise notice '  % atletas en riesgo de fuga · % mensajes en la bandeja', v.en_riesgo, v.mensajes;
+  raise notice 'Entra con dueno@boxlaladera.co / demo1234';
+
+  if v.atletas = 0 or v.cobros = 0 or v.wods = 0 then
+    raise exception 'La semilla terminó sin datos. Revisa los errores de arriba.';
+  end if;
 end $$;
 
 commit;

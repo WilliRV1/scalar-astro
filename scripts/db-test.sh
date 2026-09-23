@@ -84,6 +84,20 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de Wompi"; exit 1
 fi
 
+echo "→ Puente de credenciales hacia las Edge Functions"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/org_secret_rpc.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|PUENTE" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Falló el puente de credenciales"; exit 1
+fi
+
+echo "→ Configuración del box (ajustes, credenciales, puesta en marcha)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/org_setup.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|CONFIGURACIÓN" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de configuración"; exit 1
+fi
+
 echo "→ Campos personalizados del box"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/custom_fields.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|CAMPOS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

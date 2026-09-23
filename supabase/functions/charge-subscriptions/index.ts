@@ -30,11 +30,13 @@
 // `now` es inyectable para poder reproducir un día concreto en soporte
 // ("¿por qué no le cobró el día 1?"), igual que en el motor de cobros.
 //
-// Secretos: RECURRING_CRON_SECRET, WOMPI_PUBLIC_KEY, WOMPI_PRIVATE_KEY,
-// WOMPI_INTEGRITY_SECRET. Ninguno vive en el código. Ver docs/12-debito-recurrente.md.
+// Secretos: RECURRING_CRON_SECRET del entorno (es nuestro, no de un box).
+// Las llaves de Wompi salen del BOX que cobra (Configuración → Integraciones),
+// con respaldo en WOMPI_* para desarrollo. Ver docs/12-debito-recurrente.md.
 // =============================================================================
 
 import { env, envEntero, requiereEnv } from '../_shared/env.ts';
+import { exigeCredencial } from '../_shared/credenciales.ts';
 import { error, json, registrarFallo } from '../_shared/http.ts';
 import { clienteDeServicio } from '../_shared/supabase.ts';
 import { ambienteDeLlave, firmaDeIntegridad, igualesEnTiempoConstante } from '../_shared/wompi.ts';
@@ -124,28 +126,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   // ---------------------------------------------------------------------------
-  // 2 · Configuración de la pasarela. Si falta algo, no se toma ni un cobro:
-  //     dejarlos en `processing` sin poder cobrarlos sería peor que no empezar.
+  // 2 · Las llaves ya NO se leen aquí.
+  //
+  //     Cada box cobra a su propia cuenta de Wompi, y un lote puede traer
+  //     cobros de varios boxes. Leer un juego de llaves al arrancar habría
+  //     cobrado todo con la misma cuenta, que es exactamente el problema que
+  //     la configuración por box vino a resolver. Se resuelven por cobro,
+  //     abajo, con caché por box dentro de esta corrida.
   // ---------------------------------------------------------------------------
-  let llavePublica: string;
-  let llavePrivada: string;
-  let secretoDeIntegridad: string;
-  try {
-    llavePublica = requiereEnv('WOMPI_PUBLIC_KEY');
-    llavePrivada = requiereEnv('WOMPI_PRIVATE_KEY');
-    secretoDeIntegridad = requiereEnv('WOMPI_INTEGRITY_SECRET');
-  } catch (causa) {
-    registrarFallo('charge-subscriptions:config', causa);
-    return error(500, 'configuracion', 'La pasarela no está configurada.');
-  }
-
-  if (ambienteDeLlave(llavePublica) === 'desconocido') {
-    registrarFallo(
-      'charge-subscriptions:config',
-      new Error('WOMPI_PUBLIC_KEY no empieza por pub_test_ ni por pub_prod_'),
-    );
-    return error(500, 'configuracion', 'La pasarela no está bien configurada.');
-  }
 
   // VERIFICAR: ver wompi_recurrente.ts. Se manda la firma de integridad salvo
   // que se apague a propósito.
@@ -201,7 +189,54 @@ Deno.serve(async (req: Request): Promise<Response> => {
     //     paralelo se pierde el control de cuántas peticiones le caen encima a
     //     la pasarela.
     // -------------------------------------------------------------------------
+    // Una llamada a la base por box, no por cobro: un lote de 50 cobros de un
+    // mismo box no hace 50 consultas de credenciales.
+    const cacheLlaves = new Map<
+      string,
+      { publica: string; privada: string; integridad: string } | null
+    >();
+
+    async function llavesDelBox(orgId: string) {
+      const enCache = cacheLlaves.get(orgId);
+      if (enCache !== undefined) return enCache;
+
+      let llaves: { publica: string; privada: string; integridad: string } | null = null;
+      try {
+        llaves = {
+          publica: await exigeCredencial(db, orgId, 'wompi_public_key'),
+          privada: await exigeCredencial(db, orgId, 'wompi_private_key'),
+          integridad: await exigeCredencial(db, orgId, 'wompi_integrity_secret'),
+        };
+        if (ambienteDeLlave(llaves.publica) === 'desconocido') {
+          registrarFallo(
+            'charge-subscriptions:config',
+            new Error(`La llave pública del box ${orgId} no empieza por pub_test_ ni pub_prod_`),
+          );
+          llaves = null;
+        }
+      } catch (causa) {
+        registrarFallo('charge-subscriptions:credenciales', causa);
+      }
+
+      cacheLlaves.set(orgId, llaves);
+      return llaves;
+    }
+
     for (const cobro of tomados) {
+      // Un box sin pasarela configurada no tumba la corrida de los demás: su
+      // cobro se devuelve a la cola y el resto sigue.
+      const llaves = await llavesDelBox(cobro.org_id);
+      if (!llaves) {
+        await db.rpc('record_recurring_charge_result', {
+          p_charge_id: cobro.id,
+          p_provider_status: 'ERROR',
+          p_error_code: 'box_sin_pasarela',
+          p_error_message: 'El box no tiene configurada la pasarela de pagos',
+        }).catch(() => undefined);
+        continue;
+      }
+      const { publica: llavePublica, privada: llavePrivada, integridad: secretoDeIntegridad } =
+        llaves;
       intentados += 1;
 
       const monto = Number(cobro.amount_cents);

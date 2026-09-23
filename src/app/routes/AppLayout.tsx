@@ -79,6 +79,11 @@ export default function AppLayout() {
               Campos
             </NavLink>
           )}
+          {(activeMembership?.role === 'owner' || activeMembership?.role === 'admin') && (
+            <NavLink to="/admin/configuracion" className={link}>
+              Configuración
+            </NavLink>
+          )}
           {!staff && (
             <>
               <NavLink to="/atleta/hoy" className={link}>

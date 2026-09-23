@@ -259,7 +259,7 @@ unitarias**, todas en verde en CI. Lo que falta **no es código**.
 |---|---|---|
 | 1 | **Rotar las llaves del proyecto viejo de Supabase** | Siguen en el historial de git, y ese proyecto tiene RLS desactivada y `anon` con DELETE y TRUNCATE |
 | 2 | **Cuenta de comercio en Wompi** (RUT + cámara de comercio) | Sin ella, ni una transacción ha pasado por el código: ni sandbox |
-| 3 | **Decidir: una cuenta de Wompi para todos los boxes, o una por box** | Hoy la plata de todos caería en la misma cuenta. Con débito automático pesa más, porque entra sola cada mes |
+| 3 | ~~Decidir: una cuenta de Wompi para todos, o una por box~~ **RESUELTO**: una por box. El dueño mete sus llaves en Configuración → Integraciones, se guardan de forma que ni él puede leerlas desde el navegador, y el enlace de pago y el cobro recurrente ya usan las de cada box | — |
 | 4 | **Cuenta de WhatsApp Business + plantillas aprobadas** | El proveedor Cloud API está escrito contra la documentación pero nunca se ejecutó. Mientras tanto funciona el `wa.me` de un clic |
 | 5 | **Proyecto de Supabase nuevo, con las migraciones aplicadas** | Todo se ha probado contra Postgres efímero, nunca contra Supabase real |
 | 6 | **Los teléfonos de los atletas del box 0** | Es el dato que no existe en la base vieja y sin el cual no hay recordatorio ni acceso del atleta |

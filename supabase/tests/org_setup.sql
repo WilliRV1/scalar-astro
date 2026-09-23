@@ -444,6 +444,31 @@ begin
     'ni puede llamar a la función que las Edge Functions usan para leerlo');
 end $$;
 
+-- Ni siquiera el dueño escribe la ficha a mano: si pudiera, podría marcar una
+-- credencial como "configurada" sin secreto detrás, y el cobro fallaría el día
+-- 5 sin que nadie entienda por qué.
+do $$
+declare filas int;
+begin
+  begin
+    insert into public.org_credentials (org_id, key, provider, is_set, last4)
+    values ('0e000000-0000-4000-8000-000000000001', 'whatsapp_token', 'whatsapp_cloud', true, 'xxxx');
+    get diagnostics filas = row_count;
+  exception when others then filas := 0;
+  end;
+  perform pg_temp.chk(filas = 0,
+    'el dueño NO puede insertar una ficha de credencial a mano');
+
+  begin
+    update public.org_credentials set last4 = 'aaaa'
+    where org_id = '0e000000-0000-4000-8000-000000000001';
+    get diagnostics filas = row_count;
+  exception when others then filas := 0;
+  end;
+  perform pg_temp.chk(filas = 0,
+    'ni cambiarla por fuera de set_org_credential()');
+end $$;
+
 -- El dueño del box B: ni el suyo ni el ajeno.
 set request.jwt.claim.sub = 'e1000000-0000-4000-8000-000000000004';
 do $$

@@ -13,10 +13,12 @@
 // (saldo = amount_cents - paid_cents). Quien firma el enlace no elige cuánto
 // se cobra.
 //
-// Secretos: WOMPI_PUBLIC_KEY, WOMPI_INTEGRITY_SECRET (ver docs/10-wompi.md).
+// Credenciales: del BOX (Configuración → Integraciones), con respaldo en
+// WOMPI_PUBLIC_KEY / WOMPI_INTEGRITY_SECRET para desarrollo. Ver docs/10-wompi.md.
 // =============================================================================
 
-import { env, envEntero, requiereEnv } from '../_shared/env.ts';
+import { env, envEntero } from '../_shared/env.ts';
+import { exigeCredencial } from '../_shared/credenciales.ts';
 import { cabecerasCors, error, json, registrarFallo } from '../_shared/http.ts';
 import { clienteDeServicio, clienteDelUsuario } from '../_shared/supabase.ts';
 import {
@@ -100,13 +102,32 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // 2 · Configuración de Wompi. Se lee después de autorizar para no delatar
     //     un despliegue mal configurado a quien ni siquiera tiene acceso.
     // -----------------------------------------------------------------------
-    const llavePublica = requiereEnv('WOMPI_PUBLIC_KEY');
-    const secretoDeIntegridad = requiereEnv('WOMPI_INTEGRITY_SECRET');
+    const servicio = clienteDeServicio();
+
+    // Las llaves salen del BOX dueño de la factura, no del entorno: así el pago
+    // de cada box entra en SU cuenta de Wompi. Se leen después de autorizar,
+    // para no delatar una configuración incompleta a quien no tiene acceso.
+    let llavePublica: string;
+    let secretoDeIntegridad: string;
+    try {
+      llavePublica = await exigeCredencial(servicio, factura.org_id, 'wompi_public_key');
+      secretoDeIntegridad = await exigeCredencial(
+        servicio, factura.org_id, 'wompi_integrity_secret',
+      );
+    } catch (e) {
+      registrarFallo('create-payment-link:credenciales', e as Error);
+      return error(
+        409, 'pasarela_sin_configurar',
+        'Este box todavía no tiene configurado el cobro en línea. ' +
+          'El dueño lo activa en Configuración → Integraciones.',
+        cors,
+      );
+    }
 
     if (ambienteDeLlave(llavePublica) === 'desconocido') {
       registrarFallo(
         'create-payment-link:config',
-        new Error('WOMPI_PUBLIC_KEY no empieza por pub_test_ ni por pub_prod_'),
+        new Error('La llave pública del box no empieza por pub_test_ ni por pub_prod_'),
       );
       return error(500, 'error_interno', 'La pasarela no está bien configurada.', cors);
     }
@@ -114,7 +135,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // -----------------------------------------------------------------------
     // 3 · Abrir el intento. Monto y referencia quedan fijados en la base.
     // -----------------------------------------------------------------------
-    const servicio = clienteDeServicio();
 
     const vence = new Date(Date.now() + MINUTOS_DE_VIGENCIA() * 60_000).toISOString();
     const referencia = generarReferencia(factura.org_id, factura.number);
