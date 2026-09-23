@@ -105,6 +105,13 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de campos personalizados"; exit 1
 fi
 
+echo "→ Récords independientes del orden de llegada"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/pr_orden.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|ORDEN DE" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Falló la prueba de orden de récords"; exit 1
+fi
+
 echo "→ Horarios y reservas"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/reservations.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|RESERVAS" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

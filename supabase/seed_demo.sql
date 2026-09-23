@@ -766,7 +766,7 @@ select * from (values
       'Día de referencia. El que ya tiene Fran, que la compare con la última vez.',
       '3 rondas: 10 air squats, 10 pass through con PVC, 200 m de trote suave',
       'Thruster', 'Thruster 5-5-5, subiendo. Sin pasar del 70% del clean.', 'Thruster', 0.60::numeric,
-      'Fran', '21-15-9 · Thruster 43/30 kg + Pull-ups', 'Fran', 600, 210,
+      'Fran', '21-15-9 · Thruster 43/30 kg + Pull-ups', 'Fran', 600, 330,
       '{"rx":"43/30 kg, pull-ups","scaled":"30/20 kg, pull-ups con banda","beginner":"20/15 kg, ring rows"}'::jsonb),
   (1, 'Fuerza de piernas + remo',
       'Ojo con la profundidad del squat antes de subir kilos.',
@@ -778,7 +778,7 @@ select * from (values
       'Técnica primero. La barra pesada no arregla un jalón feo.',
       'Barra vacía: 10 deadlift, 10 hang power clean, 10 push press',
       'Clean & Jerk', 'Clean & Jerk técnico: 6x2 al 70%.', 'Clean & Jerk', 0.75,
-      'Grace', '30 Clean & Jerk 61/43 kg por tiempo', 'Grace', 720, 195,
+      'Grace', '30 Clean & Jerk 61/43 kg por tiempo', 'Grace', 720, 300,
       '{"rx":"61/43 kg","scaled":"43/30 kg","beginner":"30/20 kg"}'::jsonb),
   (3, 'Helen',
       'Salir despacio en la primera ronda. La carrera no es donde se gana.',
@@ -802,7 +802,7 @@ select * from (values
       'Prueba de cabeza más que de piernas. Se cuenta de a diez.',
       'Movilidad de hombro + 2 rondas de 8 burpees suaves y 10 hollow rocks',
       'Snatch', 'Power snatch técnico: 8x2.', 'Snatch', 0.55,
-      '100 Burpees', '100 burpees por tiempo', '100 Burpees', 900, 430,
+      '100 Burpees', '100 burpees por tiempo', '100 Burpees', 900, 540,
       '{"rx":"burpee con pecho al suelo","scaled":"burpee sin salto","beginner":"burpee en cajón"}'::jsonb),
   (7, 'Chipper del sábado',
       'Sábado en parejas: el que llega solo se empareja en la puerta.',
@@ -897,7 +897,65 @@ update public.classes c
    and w.date = (c.starts_at at time zone 'America/Bogota')::date;
 
 -- -----------------------------------------------------------------------------
--- 12 · Resultados
+-- 12 · Marcas personales con evolución
+-- -----------------------------------------------------------------------------
+-- Cuatro registros del mismo movimiento repartidos por la antigüedad de cada
+-- atleta, mejorando. Es lo que hace que la gráfica de evolución tenga forma:
+-- con dos puntos no hay nada que ver.
+--
+-- Las fechas salen de la antigüedad del atleta (85%, 60%, 33% y 10% de su
+-- tiempo en el box), no de días fijos: así el que lleva cuatro meses también
+-- tiene su serie, en vez de quedarse sin ninguna.
+--
+-- Va ANTES que los resultados de WOD a propósito: `results_detecta_pr` compara
+-- cada resultado contra el histórico que ya existe. Al revés, el primer WOD que
+-- se procesara sentaría el récord y la serie de abajo quedaría inservible.
+-- -----------------------------------------------------------------------------
+insert into public.personal_records (org_id, athlete_id, movement_id, value_numeric, unit, reps, achieved_on, source, notes)
+select
+  'b0c50000-0000-4000-8000-000000000001', a.id, m.id,
+  round((a.base_kg * mv.factor + p.mejora) / 2.5) * 2.5,
+  'kg', 1,
+  (current_date - round(least(a.antig, 350) * p.frac)::int)::date,
+  'manual', 'Test de fuerza del ciclo'
+from demo_atl a
+cross join lateral (
+  select case a.n % 3 when 0 then 'Back Squat' when 1 then 'Deadlift' else 'Clean' end as nombre,
+         case a.n % 3 when 0 then 1.00 when 1 then 1.25 else 0.75 end as factor
+) mv
+join public.movements m on m.org_id is null and m.name = mv.nombre
+cross join (values (0.85, 0.0), (0.60, 5.0), (0.33, 10.0), (0.10, 17.5)) as p(frac, mejora)
+where a.antig >= 120 and a.estado <> 'churned'
+on conflict do nothing;
+
+-- Y las de tiempo, donde MENOS ES MEJOR: la serie baja de segundos aunque la
+-- gráfica del atleta suba. Confundir las dos direcciones es felicitar al
+-- atleta justo cuando empeora.
+insert into public.personal_records (org_id, athlete_id, movement_id, value_numeric, unit, reps, achieved_on, source, notes)
+select
+  'b0c50000-0000-4000-8000-000000000001', a.id, m.id,
+  greatest(180, (mv.base + p.delta))::numeric,
+  'sec', 1,
+  (current_date - round(least(a.antig, 340) * p.frac)::int)::date,
+  'manual', 'Prueba de referencia del ciclo'
+from demo_atl a
+cross join lateral (
+  -- El día de prueba se sale un poco mejor que un día cualquiera de WOD: por eso
+  -- estos tiempos quedan por debajo de los de la sección siguiente y el trigger
+  -- de marcas no los pisa después con un resultado peor.
+  select case when a.n % 2 = 0 then 'Karen' else '100 Burpees' end as nombre,
+         case when a.n % 2 = 0
+              then 620 - a.frec * 20 + (a.n % 5) * 12
+              else 520 - a.frec * 15 + (a.n % 5) * 10
+         end as base
+) mv
+join public.movements m on m.org_id is null and m.name = mv.nombre
+cross join (values (0.80, 0), (0.45, -40), (0.15, -75)) as p(frac, delta)
+where a.antig >= 120 and a.estado <> 'churned'
+on conflict do nothing;
+
+-- -----------------------------------------------------------------------------
+-- 13 · Resultados
 -- -----------------------------------------------------------------------------
 -- Solo anota resultado quien ESTUVO ese día: se cruzan con la asistencia. Y no
 -- todos anotan, porque en un box de verdad tampoco anotan todos.
@@ -929,7 +987,12 @@ cross join lateral (
   )::int as segundos
 ) v
 where t.metcon_titulo <> 'Cindy'
-  and extract(dow from current_date - g.d) <> 0;
+  and extract(dow from current_date - g.d) <> 0
+-- Del más viejo al más nuevo, y no es cosmético: `results_detecta_pr` se dispara
+-- fila por fila y compara contra lo que ya hay. Sin este orden, un tiempo de
+-- hace dos meses entra después de uno de ayer, se guarda como marca y la gráfica
+-- de evolución termina empeorando con el tiempo.
+order by g.d desc;
 
 -- Cindy se mide en rondas + repeticiones: 14+20 se guarda 14.20 para poder
 -- ordenar el leaderboard, y se pinta "14+20", que es lo que lee el atleta.
@@ -953,7 +1016,8 @@ cross join lateral (
          ((a.n * 7 + g.d) % 25)::int as reps
 ) v
 where t.metcon_titulo = 'Cindy'
-  and extract(dow from current_date - g.d) <> 0;
+  and extract(dow from current_date - g.d) <> 0
+order by g.d desc;
 
 -- El bloque de fuerza lo anota menos gente: el que está subiendo kilos.
 insert into public.results (org_id, wod_block_id, athlete_id, value_numeric, display_value, scale, logged_by, created_at)
@@ -972,54 +1036,8 @@ cross join lateral (
   select round((a.base_kg * t.fuerza_factor
                 + (case when g.d < 28 then 2.5 else 0 end)) / 2.5) * 2.5 as kilos
 ) v
-where extract(dow from current_date - g.d) <> 0;
-
--- -----------------------------------------------------------------------------
--- 13 · Marcas personales con evolución
--- -----------------------------------------------------------------------------
--- Cuatro registros del mismo movimiento repartidos por la antigüedad de cada
--- atleta, mejorando. Es lo que hace que la gráfica de evolución tenga forma:
--- con dos puntos no hay nada que ver.
---
--- Las fechas salen de la antigüedad del atleta (85%, 60%, 33% y 10% de su
--- tiempo en el box), no de días fijos: así el que lleva cuatro meses también
--- tiene su serie, en vez de quedarse sin ninguna.
--- -----------------------------------------------------------------------------
-insert into public.personal_records (org_id, athlete_id, movement_id, value_numeric, unit, reps, achieved_on, source, notes)
-select
-  'b0c50000-0000-4000-8000-000000000001', a.id, m.id,
-  round((a.base_kg * mv.factor + p.mejora) / 2.5) * 2.5,
-  'kg', 1,
-  (current_date - round(least(a.antig, 350) * p.frac)::int)::date,
-  'manual', 'Test de fuerza del ciclo'
-from demo_atl a
-cross join lateral (
-  select case a.n % 3 when 0 then 'Back Squat' when 1 then 'Deadlift' else 'Clean' end as nombre,
-         case a.n % 3 when 0 then 1.00 when 1 then 1.25 else 0.75 end as factor
-) mv
-join public.movements m on m.org_id is null and m.name = mv.nombre
-cross join (values (0.85, 0.0), (0.60, 5.0), (0.33, 10.0), (0.10, 17.5)) as p(frac, mejora)
-where a.antig >= 120 and a.estado <> 'churned'
-on conflict do nothing;
-
--- Y las de tiempo, donde MENOS ES MEJOR: la serie baja de segundos aunque la
--- gráfica del atleta suba. Confundir las dos direcciones es felicitar al
--- atleta justo cuando empeora.
-insert into public.personal_records (org_id, athlete_id, movement_id, value_numeric, unit, reps, achieved_on, source, notes)
-select
-  'b0c50000-0000-4000-8000-000000000001', a.id, m.id,
-  greatest(180, (700 - a.frec * 25 + (a.n % 5) * 15 + p.delta))::numeric,
-  'sec', 1,
-  (current_date - round(least(a.antig, 340) * p.frac)::int)::date,
-  'manual', 'Prueba de referencia del ciclo'
-from demo_atl a
-cross join lateral (
-  select case when a.n % 2 = 0 then 'Karen' else '100 Burpees' end as nombre
-) mv
-join public.movements m on m.org_id is null and m.name = mv.nombre
-cross join (values (0.80, 0), (0.45, -45), (0.15, -85)) as p(frac, delta)
-where a.antig >= 120 and a.estado <> 'churned'
-on conflict do nothing;
+where extract(dow from current_date - g.d) <> 0
+order by g.d desc;
 
 -- -----------------------------------------------------------------------------
 -- 14 · Gastos, proveedores e insumos
