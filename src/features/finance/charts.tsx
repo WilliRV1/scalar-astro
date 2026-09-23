@@ -176,7 +176,9 @@ export function BarrasOrdenadas({
     >
       {items.map((it, i) => {
         const y = i * FILA;
-        const ancho = (it.value / max) * (ANCHO - 120);
+        // 110 de la etiqueta + barra + 40 para el número de la derecha: si la
+        // barra más larga llegara al borde, su número quedaría recortado.
+        const ancho = (it.value / max) * (ANCHO - 150);
         const pct = total > 0 ? Math.round((it.value / total) * 100) : 0;
         return (
           <g key={it.label}>
