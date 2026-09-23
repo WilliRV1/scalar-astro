@@ -8,7 +8,14 @@ El plan completo de producto, negocio y arquitectura está en **[`docs/`](./docs
 
 ---
 
-## Empezar
+## Desplegarlo y verlo funcionando
+
+¿Solo quieres verlo en internet y enseñárselo a alguien? Está en
+**[docs/DESPLIEGUE.md](./docs/DESPLIEGUE.md)**: dos cuentas gratuitas
+(Supabase y Vercel) y unos diez minutos, con un box de demostración de ~40
+atletas ya cargado.
+
+## Empezar a desarrollar
 
 Requisitos: Node 22+ y [Docker](https://docs.docker.com/get-docker/) (para el stack local
 de Supabase).
