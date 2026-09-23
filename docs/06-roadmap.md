@@ -266,6 +266,14 @@ unitarias**, todas en verde en CI. Lo que falta **no es código**.
 
 ### Pendientes técnicos menores
 
+- **El importador de Excel no mapea todavía los campos propios del box.** Un box
+  que definió "Talla de camiseta" y trae esa columna en su Excel tiene que
+  meterla a mano después de importar. La función de validación ya es compartida
+  (`validarCampos`), así que es extender el mapeo de `import/parse.ts` con
+  destinos `campo:<clave>`, no escribir una segunda validación. Los campos
+  sensibles **no** se importan por Excel: importar una lista no es una
+  autorización de esas personas.
+
 - Enganchar a `pg_cron`: `generate_invoices`, `run_automations`, `process-outbox`,
   `charge_due_subscriptions`, `generate_classes`, `run_platform_dunning`,
   `flush_recurring_notices`, `refresh_risk_scores`.
