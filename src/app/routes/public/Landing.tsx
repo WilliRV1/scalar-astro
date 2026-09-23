@@ -85,12 +85,20 @@ export default function Landing() {
         <span className="font-display text-2xl tracking-wide">
           SCALAR<span className="text-primary">.</span>
         </span>
-        <Link
-          to="/entrar"
-          className="text-xs font-bold uppercase tracking-widest text-gray-400 transition hover:text-primary"
-        >
-          Entrar
-        </Link>
+        <nav className="flex items-center gap-5">
+          <Link
+            to="/registro"
+            className="text-xs font-bold uppercase tracking-widest text-primary transition hover:text-white"
+          >
+            Registra tu box
+          </Link>
+          <Link
+            to="/entrar"
+            className="text-xs font-bold uppercase tracking-widest text-gray-400 transition hover:text-primary"
+          >
+            Entrar
+          </Link>
+        </nav>
       </header>
 
       {/* -------------------------------------------------------------- hero */}

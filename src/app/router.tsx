@@ -6,6 +6,7 @@ import { Spinner } from '../shared/ui';
 // Cada módulo se carga solo cuando hace falta: el atleta no descarga el panel
 // de administración, y el coach no descarga lo que nunca va a abrir.
 const StaffLogin = lazy(() => import('./routes/public/StaffLogin'));
+const RegisterBox = lazy(() => import('./routes/public/RegisterBox'));
 const AthleteAccess = lazy(() => import('./routes/public/AthleteAccess'));
 const NoAccess = lazy(() => import('./routes/public/NoAccess'));
 const AcceptInvitation = lazy(() => import('./routes/public/AcceptInvitation'));
@@ -44,6 +45,7 @@ export function AppRouter() {
       <Routes>
         {/* Públicas */}
         <Route path="/entrar" element={<StaffLogin />} />
+        <Route path="/registro" element={<RegisterBox />} />
         <Route path="/acceso" element={<AthleteAccess />} />
         <Route path="/sin-acceso" element={<NoAccess />} />
         <Route path="/invitacion/:token" element={<AcceptInvitation />} />

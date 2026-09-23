@@ -94,6 +94,12 @@ export default function StaffLogin() {
             Entra con tu celular
           </Link>
         </p>
+        <p className="mt-3 text-center text-sm text-gray-500">
+          ¿Tienes un box y aún no usas Scalar?{' '}
+          <Link to="/registro" className="font-bold text-primary hover:underline">
+            Regístralo
+          </Link>
+        </p>
       </div>
     </div>
   );
