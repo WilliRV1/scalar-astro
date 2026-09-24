@@ -99,7 +99,7 @@ export default function AppLayout() {
       aria-label="Cambiar de box"
       value={activeMembership?.org_id ?? ''}
       onChange={(e) => setActiveOrg(e.target.value)}
-      className="grunge-border max-w-full bg-transparent px-2 py-1 text-xs uppercase text-gray-400"
+      className="grunge-border max-w-full bg-transparent px-2 py-1 text-base uppercase text-gray-400 sm:text-xs"
     >
       {memberships.map((m) => (
         <option key={m.org_id} value={m.org_id}>

@@ -88,7 +88,7 @@ export default function ExpensesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl text-black dark:text-white">Gastos</h1>
         <div className="flex items-center gap-2">
-          <Select value={mes} onChange={(e) => setMes(e.target.value)} className="!w-auto !p-2 text-xs">
+          <Select value={mes} onChange={(e) => setMes(e.target.value)} className="!w-auto !p-2 sm:text-xs">
             {[...meses].reverse().map((m) => (
               <option key={m} value={m}>{formatMonthLong(m)}</option>
             ))}
