@@ -105,6 +105,13 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de campos personalizados"; exit 1
 fi
 
+echo "→ Permisos desde el navegador"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/permisos.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|PERMISOS OK" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Falló la prueba de permisos"; exit 1
+fi
+
 echo "→ Registro de boxes por su cuenta"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/self_signup.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|REGISTRO DE BOXES" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
