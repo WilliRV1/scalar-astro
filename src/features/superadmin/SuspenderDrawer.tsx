@@ -81,7 +81,7 @@ export function SuspenderDrawer({
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               rows={3}
-              className="w-full border border-gray-300 bg-gray-100 p-3 text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+              className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
             />
           </Field>
 

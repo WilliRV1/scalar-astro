@@ -220,6 +220,8 @@ export function NuevoBoxDrawer({ open, onClose }: { open: boolean; onClose: () =
             </Field>
             <Field label="Teléfono" hint="Con indicativo: +57…">
               <TextInput
+                type="tel"
+                inputMode="tel"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 placeholder="+573001234567"

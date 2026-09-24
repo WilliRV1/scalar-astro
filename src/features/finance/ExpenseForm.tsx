@@ -2,12 +2,16 @@ import { useState } from 'react';
 import {
   Button, Checkbox, Drawer, ErrorNote, Field, Select, TextInput,
 } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { formatCents, parsePesosToCents } from '../../shared/lib/money';
 import { RECURRENCIAS, TIPOS_DE_GASTO } from './catalogos';
 import { useSaveCategory, useSaveExpense, useSaveSupplier } from './mutations';
 import { SelectorConAlta } from './SelectorConAlta';
 import { toISODate } from './pnl';
 import type { ExpenseCategory, ExpenseKind, ExpenseRow, Recurrence, Supplier } from './types';
+
+/** Tope de la factura, el mismo del bucket: así el error sale antes de subir nada. */
+const TAMANO_MAXIMO = 5 * 1024 * 1024;
 
 /** Alta y edición de un gasto. El mismo formulario sirve para un compromiso. */
 export function ExpenseForm({
@@ -62,7 +66,7 @@ export function ExpenseForm({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el gasto');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -100,15 +104,18 @@ export function ExpenseForm({
           vacio="Sin categoría"
           textoNuevo="+ Nueva categoría…"
           creando={crearCategoria.isPending}
+          error={crearCategoria.error}
           onChange={setCategoria}
           onCreate={async (nombre) => {
             const { id } = await crearCategoria.mutateAsync({ orgId, name: nombre, kind: tipoNuevo });
             return id;
           }}
         >
-          <Select value={tipoNuevo} onChange={(e) => setTipoNuevo(e.target.value as ExpenseKind)}>
-            {TIPOS_DE_GASTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </Select>
+          <Field label="Tipo de gasto">
+            <Select value={tipoNuevo} onChange={(e) => setTipoNuevo(e.target.value as ExpenseKind)}>
+              {TIPOS_DE_GASTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </Select>
+          </Field>
         </SelectorConAlta>
 
         <SelectorConAlta
@@ -118,6 +125,7 @@ export function ExpenseForm({
           vacio="Sin proveedor"
           textoNuevo="+ Nuevo proveedor…"
           creando={crearProveedor.isPending}
+          error={crearProveedor.error}
           onChange={setProveedor}
           onCreate={async (nombre) => {
             const { id } = await crearProveedor.mutateAsync({ orgId, name: nombre });
@@ -156,7 +164,17 @@ export function ExpenseForm({
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,application/pdf"
-            onChange={(e) => setFactura(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              const archivo = e.target.files?.[0] ?? null;
+              if (archivo && archivo.size > TAMANO_MAXIMO) {
+                setFactura(null);
+                e.target.value = '';
+                setError('La foto de la factura pesa más de 5 MB. Toma una más liviana o recórtala.');
+                return;
+              }
+              setError('');
+              setFactura(archivo);
+            }}
             className="w-full text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:text-white"
           />
         </Field>

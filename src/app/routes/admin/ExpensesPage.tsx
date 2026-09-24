@@ -8,11 +8,16 @@ import {
   finDeMes, formatMonthLong, toISODate, ultimosMeses,
 } from '../../../features/finance/pnl';
 import {
-  useCommitments, useExpenseCategories, useExpenses, useSuppliers,
+  LIMITE_GASTOS,
+  useCommitments, useExpenseCategories, useExpenses, useRecurringExpenses, useSuppliers,
 } from '../../../features/finance/queries';
 import type { Commitment, ExpenseRow } from '../../../features/finance/types';
+import { mensajeAmigable } from '../../../shared/lib/errores';
+import { fechaCorta } from '../../../shared/lib/fechas';
 import { formatCents } from '../../../shared/lib/money';
-import { Button, Card, EmptyState, ErrorNote, Select, Spinner } from '../../../shared/ui';
+import {
+  Button, Card, ConfirmarBoton, EmptyState, ErrorNote, Select, Spinner,
+} from '../../../shared/ui';
 
 /**
  * Gastos del box.
@@ -36,7 +41,14 @@ export default function ExpensesPage() {
   const { data: gastos, isLoading, error } = useExpenses(orgId, mes, hasta);
   const { data: categorias } = useExpenseCategories(orgId);
   const { data: proveedores } = useSuppliers(orgId);
-  const { data: compromisos } = useCommitments(orgId, mes, hasta);
+  const {
+    data: compromisos,
+    isLoading: cargandoCompromisos,
+    error: errorCompromisos,
+  } = useCommitments(orgId, mes, hasta);
+  // Los recurrentes se traen aparte: son los que están detrás de cada
+  // compromiso y son los que se editan o borran desde el calendario.
+  const { data: recurrentes } = useRecurringExpenses(orgId);
   const pagar = usePayExpense();
   const borrar = useDeleteExpense();
 
@@ -46,6 +58,7 @@ export default function ExpensesPage() {
   const filas = useMemo(() => gastos ?? [], [gastos]);
   const total = filas.reduce((acc, g) => acc + g.amount_cents, 0);
   const sinPagar = filas.filter((g) => !g.paid_on);
+  const listaIncompleta = filas.length >= LIMITE_GASTOS;
 
   // Gasto por categoría del mes, de mayor a menor: el dueño quiere saber en qué
   // se le va la plata, no la lista alfabética de sus categorías.
@@ -63,8 +76,12 @@ export default function ExpensesPage() {
   const pendientes = (compromisos ?? []).filter((c) => c.kind === 'expense');
   const totalCompromisos = (compromisos ?? []).reduce((a, c) => a + (c.amount_cents ?? 0), 0);
 
-  if (isLoading) return <Spinner label="Cargando gastos" />;
-  if (error) return <ErrorNote>No se pudieron cargar los gastos: {String(error)}</ErrorNote>;
+  if (isLoading && !gastos) return <Spinner label="Cargando gastos" />;
+  // Sin datos no hay nada que pintar. Con datos (un mes anterior en pantalla o
+  // un formulario abierto) el error va arriba y no desmonta nada.
+  if (error && !gastos) {
+    return <ErrorNote>No se pudieron cargar los gastos: {mensajeAmigable(error)}</ErrorNote>;
+  }
 
   return (
     <div className="space-y-6">
@@ -80,11 +97,20 @@ export default function ExpensesPage() {
         </div>
       </div>
 
+      {error && (
+        <ErrorNote>No se pudieron actualizar los gastos: {mensajeAmigable(error)}</ErrorNote>
+      )}
+      {listaIncompleta && (
+        <ErrorNote>
+          Mostrando los primeros {LIMITE_GASTOS} gastos del mes; el total puede ser mayor.
+        </ErrorNote>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <CasillaDato
           label={`Gastado en ${formatMonthLong(mes).toLowerCase()}`}
           value={formatCents(total)}
-          hint={`${filas.length} gasto(s)`}
+          hint={`${filas.length} gasto(s)${listaIncompleta ? ' o más' : ''}`}
         />
         <CasillaDato
           label="Sin pagar"
@@ -93,28 +119,52 @@ export default function ExpensesPage() {
         />
         <CasillaDato
           label="Compromisos del mes"
-          value={formatCents(totalCompromisos)}
-          hint={`${(compromisos ?? []).length} vencimiento(s)`}
+          value={errorCompromisos ? '—' : formatCents(totalCompromisos)}
+          hint={
+            errorCompromisos
+              ? 'No se pudieron leer'
+              : cargandoCompromisos
+                ? 'Cargando…'
+                : `${(compromisos ?? []).length} vencimiento(s)`
+          }
         />
       </div>
 
       {/* ------------------------------------------------ calendario ------ */}
       <Seccion title="Qué vence este mes">
-        {(compromisos ?? []).length === 0 ? (
+        {errorCompromisos && (
+          <ErrorNote>
+            No se pudieron cargar los compromisos: {mensajeAmigable(errorCompromisos)}
+          </ErrorNote>
+        )}
+        {pagar.isError && (
+          <ErrorNote>No se pudo marcar pagado: {mensajeAmigable(pagar.error)}</ErrorNote>
+        )}
+        {cargandoCompromisos && !compromisos && <Spinner label="Cargando compromisos" />}
+        {!cargandoCompromisos && !errorCompromisos && (compromisos ?? []).length === 0 && (
           <EmptyState
             title="Nada pendiente este mes"
             hint="Marca un gasto como recurrente (arriendo, seguro, mantenimiento) y aparecerá aquí cada periodo."
           />
-        ) : (
+        )}
+        {(compromisos ?? []).length > 0 && (
           <div className="space-y-2">
-            {(compromisos ?? []).map((c) => (
-              <FilaCompromiso
-                key={`${c.kind}-${c.ref_id}`}
-                compromiso={c}
-                pagando={pagar.isPending}
-                onPagar={() => pagar.mutate({ expenseId: c.ref_id, paidOn: toISODate(new Date()) })}
-              />
-            ))}
+            {(compromisos ?? []).map((c) => {
+              const gasto = c.kind === 'expense'
+                ? (recurrentes ?? []).find((r) => r.id === c.ref_id) ?? null
+                : null;
+              return (
+                <FilaCompromiso
+                  key={`${c.kind}-${c.ref_id}`}
+                  compromiso={c}
+                  pagando={pagar.isPending && pagar.variables?.expenseId === c.ref_id}
+                  borrando={borrar.isPending && borrar.variables === c.ref_id}
+                  onPagar={() => pagar.mutate({ expenseId: c.ref_id, paidOn: toISODate(new Date()) })}
+                  onEditar={gasto ? () => setEditando(gasto) : undefined}
+                  onBorrar={gasto ? () => borrar.mutate(gasto.id) : undefined}
+                />
+              );
+            })}
           </div>
         )}
         {pendientes.length > 0 && (
@@ -154,6 +204,9 @@ export default function ExpensesPage() {
 
       {/* ------------------------------------------------ gastos ---------- */}
       <Seccion title={`Gastos de ${formatMonthLong(mes).toLowerCase()}`}>
+        {borrar.isError && (
+          <ErrorNote>No se pudo borrar: {mensajeAmigable(borrar.error)}</ErrorNote>
+        )}
         {filas.length === 0 ? (
           <EmptyState
             title="Ningún gasto registrado este mes"
@@ -166,30 +219,32 @@ export default function ExpensesPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold text-black dark:text-white">{g.description}</p>
                   <p className="text-xs text-gray-500">
-                    {g.incurred_on}
+                    {fechaCorta(g.incurred_on)}
                     {g.expense_categories?.name ? ` · ${g.expense_categories.name}` : ''}
                     {g.suppliers?.name ? ` · ${g.suppliers.name}` : ''}
                     {!g.paid_on && <span className="ml-2 font-bold text-primary">Sin pagar</span>}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-4">
                   <span className="font-display text-2xl text-black dark:text-white">
                     {formatCents(g.amount_cents)}
                   </span>
                   <ReceiptLink path={g.receipt_url} />
                   <button
+                    type="button"
                     onClick={() => setEditando(g)}
-                    className="text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+                    aria-label={`Editar ${g.description}`}
+                    className="min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
                   >
                     Editar
                   </button>
-                  <button
-                    onClick={() => borrar.mutate(g.id)}
+                  <ConfirmarBoton
+                    onConfirm={() => borrar.mutate(g.id)}
                     disabled={borrar.isPending}
-                    className="text-[11px] font-bold uppercase tracking-widest text-gray-600 hover:text-primary"
+                    ariaLabel={`Borrar ${g.description}`}
                   >
                     Borrar
-                  </button>
+                  </ConfirmarBoton>
                 </div>
               </Card>
             ))}
@@ -212,11 +267,15 @@ export default function ExpensesPage() {
 }
 
 function FilaCompromiso({
-  compromiso, pagando, onPagar,
+  compromiso, pagando, borrando, onPagar, onEditar, onBorrar,
 }: {
   compromiso: Commitment;
   pagando: boolean;
+  borrando: boolean;
   onPagar: () => void;
+  /** Solo para compromisos de gasto: abre el formulario con el gasto recurrente. */
+  onEditar?: () => void;
+  onBorrar?: () => void;
 }) {
   const hoy = toISODate(new Date());
   const vencido = compromiso.due_on < hoy;
@@ -228,20 +287,46 @@ function FilaCompromiso({
       <div className="min-w-0 flex-1">
         <p className="truncate font-bold text-black dark:text-white">{compromiso.label}</p>
         <p className="text-xs text-gray-500">
-          Vence {compromiso.due_on}
+          Vence {fechaCorta(compromiso.due_on)}
           {compromiso.category ? ` · ${compromiso.category}` : ''}
           {compromiso.supplier ? ` · ${compromiso.supplier}` : ''}
           {vencido && <span className="ml-2 font-bold text-primary">Vencido</span>}
         </p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
         <span className="font-display text-2xl text-black dark:text-white">
           {compromiso.amount_cents === null ? '—' : formatCents(compromiso.amount_cents)}
         </span>
         {compromiso.kind === 'expense' ? (
-          <Button variant="ghost" onClick={onPagar} disabled={pagando} className="!py-2 !text-sm">
-            Marcar pagado
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              onClick={onPagar}
+              disabled={pagando || borrando}
+              className="min-h-11 !py-2 !text-sm"
+            >
+              {pagando ? 'Marcando…' : 'Marcar pagado'}
+            </Button>
+            {onEditar && (
+              <button
+                type="button"
+                onClick={onEditar}
+                aria-label={`Editar ${compromiso.label}`}
+                className="min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+              >
+                Editar
+              </button>
+            )}
+            {onBorrar && (
+              <ConfirmarBoton
+                onConfirm={onBorrar}
+                disabled={pagando || borrando}
+                ariaLabel={`Borrar ${compromiso.label}`}
+              >
+                {borrando ? 'Borrando…' : 'Borrar'}
+              </ConfirmarBoton>
+            )}
+          </>
         ) : (
           <span className="text-[11px] uppercase tracking-widest text-gray-600">Reponer</span>
         )}

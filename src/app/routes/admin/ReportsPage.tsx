@@ -8,13 +8,14 @@ import {
 import {
   useAthleteSources, useMembershipReport, useMonthlyPnl, useMrr,
 } from '../../../features/finance/queries';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 import { formatCents } from '../../../shared/lib/money';
 import { Card, EmptyState, ErrorNote, Spinner } from '../../../shared/ui';
 
 /**
  * Reportes del dueño.
  *
- * El P&L manda: ingresos menos egresos, este mes contra el anterior. Debajo, lo
+ * El reporte de ganancias y pérdidas manda: ingresos menos egresos, este mes contra el anterior. Debajo, lo
  * que explica ese número: cuánto entra todos los meses pase lo que pase (el
  * ingreso recurrente), quién entró y quién se fue, y de dónde están llegando
  * los atletas.
@@ -32,9 +33,17 @@ export default function ReportsPage() {
   const [meses, setMeses] = useState(6);
 
   const { data: pnl, isLoading, error } = useMonthlyPnl(orgId, meses);
-  const { data: mrr } = useMrr(orgId);
-  const { data: membresias } = useMembershipReport(orgId, meses);
-  const { data: origenes } = useAthleteSources(orgId);
+  const { data: mrr, isLoading: cargandoMrr, error: errorMrr } = useMrr(orgId);
+  const {
+    data: membresias,
+    isLoading: cargandoMembresias,
+    error: errorMembresias,
+  } = useMembershipReport(orgId, meses);
+  const {
+    data: origenes,
+    isLoading: cargandoOrigenes,
+    error: errorOrigenes,
+  } = useAthleteSources(orgId);
 
   const filas = useMemo(() => pnl ?? [], [pnl]);
   const resumen = useMemo(() => resumirPnl(filas), [filas]);
@@ -47,14 +56,16 @@ export default function ReportsPage() {
 
   const totalAtletas = (origenes ?? []).reduce((a, o) => a + o.total, 0);
 
-  if (isLoading) return <Spinner label="Cargando reportes" />;
-  if (error) return <ErrorNote>No se pudieron cargar los reportes: {String(error)}</ErrorNote>;
+  if (isLoading && !pnl) return <Spinner label="Cargando reportes" />;
+  if (error && !pnl) {
+    return <ErrorNote>No se pudieron cargar los reportes: {mensajeAmigable(error)}</ErrorNote>;
+  }
 
   if (filas.length === 0) {
     return (
       <EmptyState
         title="Todavía no hay nada que reportar"
-        hint="Cuando entren pagos y se registren gastos, aquí aparece el P&L del box."
+        hint="Cuando entren pagos y se registren gastos, aquí aparece el reporte de ganancias y pérdidas del box."
       />
     );
   }
@@ -69,8 +80,10 @@ export default function ReportsPage() {
           {RANGOS.map((r) => (
             <button
               key={r}
+              type="button"
+              aria-pressed={meses === r}
               onClick={() => setMeses(r)}
-              className={`grunge-border px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition ${
+              className={`grunge-border min-h-11 px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition ${
                 meses === r ? 'border-primary text-primary' : 'text-gray-500 hover:text-primary'
               }`}
             >
@@ -79,6 +92,16 @@ export default function ReportsPage() {
           ))}
         </div>
       </div>
+
+      {error && (
+        <ErrorNote>No se pudieron actualizar los reportes: {mensajeAmigable(error)}</ErrorNote>
+      )}
+      {errorMrr && (
+        <ErrorNote>No se pudo leer el ingreso recurrente: {mensajeAmigable(errorMrr)}</ErrorNote>
+      )}
+      {errorMembresias && (
+        <ErrorNote>No se pudieron leer las altas y bajas: {mensajeAmigable(errorMembresias)}</ErrorNote>
+      )}
 
       <p className="text-sm text-gray-500">
         {actual ? formatMonthLong(actual.month) : ''} comparado con{' '}
@@ -113,8 +136,14 @@ export default function ReportsPage() {
         />
         <CasillaDato
           label="Ingreso recurrente"
-          value={formatCents(mrr?.mrr_cents ?? 0)}
-          hint={`${mrr?.active_subscriptions ?? 0} suscripción(es) activa(s)`}
+          value={errorMrr ? '—' : cargandoMrr ? '…' : formatCents(mrr?.mrr_cents ?? 0)}
+          hint={
+            errorMrr
+              ? 'No se pudo leer'
+              : cargandoMrr
+                ? 'Cargando…'
+                : `${mrr?.active_subscriptions ?? 0} suscripción(es) activa(s)`
+          }
         />
       </div>
 
@@ -176,6 +205,8 @@ export default function ReportsPage() {
 
       {/* ------------------------------------------------- membresías ----- */}
       <Seccion title="Altas, bajas y retención">
+        {cargandoMembresias && !membresias && <Spinner label="Cargando altas y bajas" />}
+        {!errorMembresias && !(cargandoMembresias && !membresias) && (
         <div className="grid gap-3 sm:grid-cols-3">
           <CasillaDato
             label="Altas del mes"
@@ -203,6 +234,7 @@ export default function ReportsPage() {
               : `Periodo: ${formatPct(retencion).replace('+', '')}`}
           />
         </div>
+        )}
         <p className="text-xs text-gray-500">
           La retención del periodo pondera por el tamaño del box cada mes: un mes con 4
           atletas no puede pesar igual que uno con 80.
@@ -211,12 +243,17 @@ export default function ReportsPage() {
 
       {/* ------------------------------------------------- origen --------- */}
       <Seccion title="De dónde salen los atletas">
-        {(origenes ?? []).length === 0 ? (
+        {errorOrigenes && (
+          <ErrorNote>No se pudo leer el origen de los atletas: {mensajeAmigable(errorOrigenes)}</ErrorNote>
+        )}
+        {cargandoOrigenes && !origenes && <Spinner label="Cargando orígenes" />}
+        {!cargandoOrigenes && !errorOrigenes && (origenes ?? []).length === 0 && (
           <EmptyState
             title="Sin datos de origen"
             hint="Anota de dónde llegó cada atleta en su ficha y aquí verás qué canal funciona."
           />
-        ) : (
+        )}
+        {(origenes ?? []).length > 0 && (
           <Card className="space-y-3">
             <BarrasOrdenadas
               items={(origenes ?? []).map((o) => ({ label: o.source, value: o.total }))}

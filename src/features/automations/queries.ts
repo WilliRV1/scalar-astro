@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
 import type {
   AjustesAutomatizacion,
@@ -64,6 +64,9 @@ export function useBitacora(orgId: string | undefined, filtro: FiltroBitacora = 
   return useQuery({
     queryKey: ['message-outbox', orgId, filtro.estado ?? 'todos', filtro.atletaId ?? '', filtro.busqueda ?? ''],
     enabled: Boolean(orgId),
+    // Al cambiar filtro o búsqueda se conserva la lista anterior: sin esto la
+    // pantalla parpadea a un spinner con cada tecla.
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<MensajeEnBitacora[]> => {
       let consulta = supabase
         .from('message_outbox')

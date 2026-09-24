@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Button, Drawer, ErrorNote, Field, Select, TextInput } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
+import { fechaCorta } from '../../shared/lib/fechas';
 import { formatCents, parsePesosToCents } from '../../shared/lib/money';
 import { useRecordPayment } from './mutations';
 import type { Invoice, PaymentMethod } from '../../types/database';
@@ -59,7 +61,7 @@ export function PaymentForm({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar el pago');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -85,7 +87,7 @@ export function PaymentForm({
             </p>
             <p className="font-display text-3xl text-black dark:text-white">{formatCents(saldo)}</p>
             <p className="text-xs text-gray-500">
-              Periodo {invoice.period_start} a {invoice.period_end} · vence {invoice.due_on}
+              Periodo {fechaCorta(invoice.period_start)} a {fechaCorta(invoice.period_end)} · vence {fechaCorta(invoice.due_on)}
             </p>
           </div>
         )}
@@ -114,10 +116,11 @@ export function PaymentForm({
           label="Comprobante"
           hint="Foto de la transferencia. Queda guardada y deja de perderse en el WhatsApp."
         >
+          {/* Sin `capture`: con él, iOS abre la cámara directo y no deja
+              adjuntar el pantallazo de Nequi que ya está en la galería. */}
           <input
             type="file"
             accept="image/*,application/pdf"
-            capture="environment"
             onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
             className="w-full text-sm text-gray-500 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white"
           />

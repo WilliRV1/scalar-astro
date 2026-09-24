@@ -2,12 +2,16 @@ import { useState } from 'react';
 import {
   Button, Drawer, ErrorNote, Field, Select, TextInput,
 } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { formatCents, parsePesosToCents } from '../../shared/lib/money';
 import { UNIDADES } from './catalogos';
 import { useRegisterPurchase, useSaveSupplier, useSaveSupply } from './mutations';
 import { SelectorConAlta } from './SelectorConAlta';
 import { toISODate } from './pnl';
 import type { Supplier, SupplyWithSupplier } from './types';
+
+/** Tope de la factura, el mismo del bucket: así el error sale antes de subir nada. */
+const TAMANO_MAXIMO = 5 * 1024 * 1024;
 
 /** Lee una cantidad con coma o punto decimal: "2,5" y "2.5" son lo mismo. */
 function parseCantidad(input: string): number | null {
@@ -62,7 +66,7 @@ export function SupplyForm({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el insumo');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -104,6 +108,7 @@ export function SupplyForm({
           vacio="Sin proveedor fijo"
           textoNuevo="+ Nuevo proveedor…"
           creando={crearProveedor.isPending}
+          error={crearProveedor.error}
           onChange={setProveedor}
           onCreate={async (nombre) => {
             const { id } = await crearProveedor.mutateAsync({ orgId, name: nombre });
@@ -172,7 +177,7 @@ export function PurchaseForm({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar la compra');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -222,6 +227,7 @@ export function PurchaseForm({
           vacio="Sin proveedor"
           textoNuevo="+ Nuevo proveedor…"
           creando={crearProveedor.isPending}
+          error={crearProveedor.error}
           onChange={setProveedor}
           onCreate={async (nombre) => {
             const { id } = await crearProveedor.mutateAsync({ orgId, name: nombre });
@@ -233,11 +239,21 @@ export function PurchaseForm({
           <TextInput type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </Field>
 
-        <Field label="Foto de la factura" hint="Queda guardada con la compra y con el gasto.">
+        <Field label="Foto de la factura" hint="Queda guardada con la compra y con el gasto. Hasta 5 MB.">
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,application/pdf"
-            onChange={(e) => setFactura(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              const archivo = e.target.files?.[0] ?? null;
+              if (archivo && archivo.size > TAMANO_MAXIMO) {
+                setFactura(null);
+                e.target.value = '';
+                setError('La foto de la factura pesa más de 5 MB. Toma una más liviana o recórtala.');
+                return;
+              }
+              setError('');
+              setFactura(archivo);
+            }}
             className="w-full text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:text-white"
           />
         </Field>

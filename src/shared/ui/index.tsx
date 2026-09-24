@@ -1,6 +1,7 @@
 export { Drawer } from './Drawer';
 export { Field, TextInput, Select, Checkbox } from './Field';
 
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 
 export function Spinner({ label = 'Cargando…' }: { label?: string }) {
@@ -41,9 +42,73 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
 
 export function ErrorNote({ children }: { children: ReactNode }) {
   return (
-    <p className="border-l-4 border-primary bg-primary/10 px-4 py-3 text-sm font-bold text-primary">
+    <p role="alert" className="border-l-4 border-primary bg-primary/10 px-4 py-3 text-sm font-bold text-primary">
       {children}
     </p>
+  );
+}
+
+/**
+ * Botón de acción destructiva con confirmación de dos toques.
+ *
+ * El primer toque no hace nada más que preguntar; el segundo ejecuta. Es lo
+ * que evita borrar un gasto por rozar la pantalla del celular, sin el diálogo
+ * del navegador que en iOS se ve como un error del sistema.
+ */
+export function ConfirmarBoton({
+  children,
+  pregunta = '¿Seguro?',
+  confirmar = 'Sí, borrar',
+  onConfirm,
+  disabled,
+  ariaLabel,
+  className = '',
+}: {
+  children: ReactNode;
+  pregunta?: string;
+  confirmar?: string;
+  onConfirm: () => void;
+  disabled?: boolean;
+  ariaLabel?: string;
+  className?: string;
+}) {
+  const [preguntando, setPreguntando] = useState(false);
+  const base = 'min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest transition disabled:cursor-not-allowed disabled:opacity-40';
+
+  if (!preguntando) {
+    return (
+      <button
+        type="button"
+        onClick={() => setPreguntando(true)}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        className={`${base} text-gray-600 hover:text-primary ${className}`}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-2" role="group" aria-label={ariaLabel}>
+      <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">{pregunta}</span>
+      <button
+        type="button"
+        onClick={() => { setPreguntando(false); onConfirm(); }}
+        disabled={disabled}
+        className={`${base} bg-primary text-white hover:bg-red-700`}
+      >
+        {confirmar}
+      </button>
+      <button
+        type="button"
+        onClick={() => setPreguntando(false)}
+        disabled={disabled}
+        className={`${base} text-gray-500 hover:text-gray-300`}
+      >
+        No
+      </button>
+    </span>
   );
 }
 

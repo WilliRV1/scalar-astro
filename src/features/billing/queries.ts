@@ -2,6 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
 import type { Invoice, Payment } from '../../types/database';
 
+/**
+ * Tope de cobros abiertos que se traen. Los totales se suman en el cliente,
+ * así que si llegan exactamente este número el tablero avisa que puede haber más.
+ */
+export const LIMITE_CARTERA = 200;
+
 export interface CarteraRow extends Invoice {
   athletes: { first_name: string; last_name: string | null; phone: string | null } | null;
 }
@@ -24,7 +30,7 @@ export function useCartera(orgId: string | undefined) {
         .eq('org_id', orgId!)
         .in('status', ['open', 'partial', 'overdue'])
         .order('due_on', { ascending: true })
-        .limit(200);
+        .limit(LIMITE_CARTERA);
       if (error) throw error;
       return (data ?? []) as unknown as CarteraRow[];
     },

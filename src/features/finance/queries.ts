@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
 import { monthRange } from './pnl';
 import type {
@@ -15,10 +15,18 @@ import type {
  * que es como se terminan escapando los datos.
  */
 
+/**
+ * Tope de gastos que se traen por mes. Los totales se suman en el cliente,
+ * así que si llegan exactamente este número la página avisa que puede haber más.
+ */
+export const LIMITE_GASTOS = 300;
+
 export function useExpenses(orgId: string | undefined, desde: string, hasta: string) {
   return useQuery({
     queryKey: ['gastos', orgId, desde, hasta],
     enabled: Boolean(orgId),
+    // Al cambiar de mes se conserva el anterior en pantalla en vez de un spinner.
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<ExpenseRow[]> => {
       const { data, error } = await supabase
         .from('expenses')
@@ -28,7 +36,7 @@ export function useExpenses(orgId: string | undefined, desde: string, hasta: str
         .gte('incurred_on', desde)
         .lte('incurred_on', hasta)
         .order('incurred_on', { ascending: false })
-        .limit(300);
+        .limit(LIMITE_GASTOS);
       if (error) throw error;
       return (data ?? []) as unknown as ExpenseRow[];
     },
@@ -142,6 +150,7 @@ export function useMonthlyPnl(orgId: string | undefined, meses = 6) {
   return useQuery({
     queryKey: ['pnl', orgId, desde, hasta],
     enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<PnlMonth[]> => {
       const { data, error } = await supabase.rpc('monthly_pnl', {
         p_org_id: orgId!, p_desde: desde, p_hasta: hasta,

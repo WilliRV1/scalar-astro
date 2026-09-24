@@ -41,7 +41,7 @@ export const EJEMPLO: Record<string, string> = {
   link: 'https://pagar.tubox.co/f-000123',
   movimiento: 'Back Squat',
   marca: '120 kg',
-  clase: 'CrossFit',
+  clase: 'Funcional',
   hora: '06:00 AM',
   motivo: 'festivo',
   faltas: '3',

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Button, Drawer, ErrorNote, Field, Select,
 } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import type { Permissions } from '../../types/database';
 import { useSetMemberStatus, useUpdateMember } from './mutations';
 import { PermissionSwitches } from './PermissionSwitches';
@@ -37,7 +38,7 @@ export function MemberDrawer({
     } catch (err) {
       // Aquí llega, entre otros, el "no puedes quitarle la propiedad al único
       // dueño del box". Se muestra literal: el servidor ya lo explicó bien.
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el cambio');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -49,7 +50,7 @@ export function MemberDrawer({
       await cambiarEstado.mutateAsync({ orgId, membershipId: member.membership_id, status: siguiente });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cambiar el estado');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -105,7 +106,7 @@ export function MemberDrawer({
           type="button"
           onClick={() => void alternarEstado()}
           disabled={cambiarEstado.isPending}
-          className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary disabled:opacity-40"
+          className="min-h-11 px-3 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary disabled:opacity-40"
         >
           {activo ? 'Desactivar del equipo' : 'Reactivar en el equipo'}
         </button>

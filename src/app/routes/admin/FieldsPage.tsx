@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '../../../features/auth/useAuth';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 import {
   Button, Card, Drawer, EmptyState, ErrorNote, Field, Select, Spinner, TextInput,
 } from '../../../shared/ui';
@@ -39,7 +40,7 @@ export default function FieldsPage() {
   const puedeConfigurar =
     activeMembership?.role === 'owner' || activeMembership?.role === 'admin';
 
-  const { data: defs, isLoading } = useCustomFieldDefs(orgId, true);
+  const { data: defs, isLoading, error: errorCarga } = useCustomFieldDefs(orgId, true);
   const reordenar = useReorderFieldDefs();
   const alternar = useToggleFieldDef();
 
@@ -58,6 +59,9 @@ export default function FieldsPage() {
   }
 
   if (isLoading) return <Spinner label="Cargando los campos" />;
+  if (errorCarga && !defs) {
+    return <ErrorNote>No se pudieron cargar los campos: {mensajeAmigable(errorCarga)}</ErrorNote>;
+  }
 
   const todos = defs ?? [];
   const activos = todos.filter((d) => d.is_active);
@@ -65,14 +69,16 @@ export default function FieldsPage() {
 
   async function mover(indice: number, direccion: -1 | 1) {
     const destino = indice + direccion;
-    if (!orgId || destino < 0 || destino >= activos.length) return;
+    // Dos toques seguidos mandarían dos reordenes con la misma foto de la
+    // lista y el segundo desharía el primero.
+    if (!orgId || reordenar.isPending || destino < 0 || destino >= activos.length) return;
     const ids = activos.map((d) => d.id);
     [ids[indice], ids[destino]] = [ids[destino], ids[indice]];
     setError('');
     try {
       await reordenar.mutateAsync({ orgId, ids });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo reordenar');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -82,7 +88,7 @@ export default function FieldsPage() {
     try {
       await alternar.mutateAsync({ orgId, defId: def.id, isActive: activo });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cambiar el campo');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -102,8 +108,11 @@ export default function FieldsPage() {
       </p>
 
       {error && <ErrorNote>{error}</ErrorNote>}
+      {errorCarga && (
+        <ErrorNote>No se pudieron actualizar los campos: {mensajeAmigable(errorCarga)}</ErrorNote>
+      )}
 
-      {activos.length === 0 && (
+      {!errorCarga && activos.length === 0 && (
         <EmptyState
           title="La ficha está como viene de fábrica"
           hint="Agrega lo que tu box sí anota: talla de camiseta, acudiente, EPS, si firmó el consentimiento en papel."
@@ -117,6 +126,7 @@ export default function FieldsPage() {
             def={def}
             primero={i === 0}
             ultimo={i === activos.length - 1}
+            moviendo={reordenar.isPending}
             onSubir={() => void mover(i, -1)}
             onBajar={() => void mover(i, 1)}
             onEditar={() => setEditando(def)}
@@ -139,8 +149,11 @@ export default function FieldsPage() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => void cambiarActivo(def, true)}
-                className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+                disabled={alternar.isPending}
+                aria-label={`Reactivar ${def.label}`}
+                className="min-h-11 px-3 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary disabled:opacity-40"
               >
                 Reactivar
               </button>
@@ -183,11 +196,12 @@ export default function FieldsPage() {
 // ---------------------------------------------------------------------------
 
 function FilaCampo({
-  def, primero, ultimo, onSubir, onBajar, onEditar, onDesactivar,
+  def, primero, ultimo, moviendo, onSubir, onBajar, onEditar, onDesactivar,
 }: {
   def: DefinicionCampo;
   primero: boolean;
   ultimo: boolean;
+  moviendo: boolean;
   onSubir: () => void;
   onBajar: () => void;
   onEditar: () => void;
@@ -208,17 +222,31 @@ function FilaCampo({
       </div>
 
       <div className="flex items-center gap-1">
-        <BotonOrden etiqueta="Subir" simbolo="↑" onClick={onSubir} disabled={primero} />
-        <BotonOrden etiqueta="Bajar" simbolo="↓" onClick={onBajar} disabled={ultimo} />
+        <BotonOrden
+          etiqueta={`Subir ${def.label}`}
+          simbolo="↑"
+          onClick={onSubir}
+          disabled={primero || moviendo}
+        />
+        <BotonOrden
+          etiqueta={`Bajar ${def.label}`}
+          simbolo="↓"
+          onClick={onBajar}
+          disabled={ultimo || moviendo}
+        />
         <button
+          type="button"
           onClick={onEditar}
-          className="px-2 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+          aria-label={`Editar ${def.label}`}
+          className="min-h-11 px-3 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
         >
           Editar
         </button>
         <button
+          type="button"
           onClick={onDesactivar}
-          className="px-2 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+          aria-label={`Desactivar ${def.label}`}
+          className="min-h-11 px-3 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
         >
           Desactivar
         </button>
@@ -232,11 +260,12 @@ function BotonOrden({
 }: { etiqueta: string; simbolo: string; onClick: () => void; disabled: boolean }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       aria-label={etiqueta}
       title={etiqueta}
-      className="grunge-border h-9 w-9 text-lg leading-none text-gray-400 hover:border-primary hover:text-primary disabled:opacity-25"
+      className="grunge-border min-h-11 min-w-11 text-lg leading-none text-gray-400 hover:border-primary hover:text-primary disabled:opacity-25"
     >
       {simbolo}
     </button>
@@ -334,7 +363,7 @@ function CampoForm({
       onClose();
     } catch (err) {
       // El mensaje viene de la base, en español y explicando qué pasó.
-      setError(err instanceof Error ? err.message : 'No se pudo guardar');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -394,7 +423,7 @@ function CampoForm({
               onChange={(e) => setOpciones(e.target.value)}
               rows={5}
               placeholder={'XS\nS\nM\nL\nXL'}
-              className="w-full border border-gray-300 bg-gray-100 p-3 text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+              className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
             />
           </Field>
         )}
@@ -429,10 +458,11 @@ function CampoForm({
                 await borrar.mutateAsync({ orgId, defId: def.id });
                 onClose();
               } catch (err) {
-                setError(err instanceof Error ? err.message : 'No se pudo borrar');
+                setError(mensajeAmigable(err));
               }
             }}
-            className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+            disabled={borrar.isPending}
+            className="min-h-11 px-3 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary disabled:opacity-40"
           >
             Borrar el campo
           </button>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { Field, Select, TextInput } from '../../shared/ui';
 
 const NUEVO = '__nuevo__';
@@ -12,7 +13,7 @@ const NUEVO = '__nuevo__';
  * rápida de que nunca registre el primer gasto.
  */
 export function SelectorConAlta({
-  label, hint, value, options, vacio, textoNuevo, creando, onChange, onCreate, children,
+  label, hint, value, options, vacio, textoNuevo, creando, error, onChange, onCreate, children,
 }: {
   label: string;
   hint?: string;
@@ -22,6 +23,8 @@ export function SelectorConAlta({
   vacio?: string;
   textoNuevo: string;
   creando: boolean;
+  /** Error de la mutación de alta, por si el padre quiere pintarlo aquí. */
+  error?: unknown;
   onChange: (id: string) => void;
   onCreate: (nombre: string) => Promise<string>;
   /** Campos extra del alta (por ejemplo el tipo de la categoría). */
@@ -29,15 +32,24 @@ export function SelectorConAlta({
 }) {
   const [abierto, setAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
+  const [errorLocal, setErrorLocal] = useState('');
 
   async function crear() {
     const limpio = nombre.trim();
     if (!limpio) return;
-    const id = await onCreate(limpio);
-    onChange(id);
-    setNombre('');
-    setAbierto(false);
+    setErrorLocal('');
+    try {
+      const id = await onCreate(limpio);
+      onChange(id);
+      setNombre('');
+      setAbierto(false);
+    } catch (err) {
+      // Se queda abierto con el nombre escrito: la persona corrige y reintenta.
+      setErrorLocal(mensajeAmigable(err));
+    }
   }
+
+  const mensajeError = errorLocal || (error ? mensajeAmigable(error) : '');
 
   return (
     <div className="space-y-2">
@@ -67,19 +79,22 @@ export function SelectorConAlta({
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void crear(); } }}
           />
           {children}
+          {mensajeError && (
+            <p role="alert" className="text-xs font-bold text-primary">{mensajeError}</p>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => void crear()}
               disabled={creando || !nombre.trim()}
-              className="bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-white disabled:opacity-40"
+              className="min-h-11 bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-white disabled:opacity-40"
             >
               {creando ? 'Creando…' : 'Crear'}
             </button>
             <button
               type="button"
-              onClick={() => { setAbierto(false); setNombre(''); }}
-              className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+              onClick={() => { setAbierto(false); setNombre(''); setErrorLocal(''); }}
+              className="min-h-11 px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
             >
               Cancelar
             </button>

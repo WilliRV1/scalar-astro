@@ -10,6 +10,7 @@ import {
   invitacionVencida, permisosConcedidos, veLaPlata,
 } from '../../../features/team/permissions';
 import type { Invitation, TeamMember } from '../../../features/team/types';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 import { Button, Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
 
 /**
@@ -74,7 +75,7 @@ export default function TeamPage() {
 
         {equipo.error && (
           <ErrorNote>
-            No se pudo cargar el equipo: {equipo.error instanceof Error ? equipo.error.message : String(equipo.error)}
+            No se pudo cargar el equipo: {mensajeAmigable(equipo.error)}
           </ErrorNote>
         )}
         {equipo.isLoading && <Spinner label="Cargando equipo" />}
@@ -99,12 +100,12 @@ export default function TeamPage() {
 
         {invitaciones.error && (
           <ErrorNote>
-            No se pudieron cargar las invitaciones:{' '}
-            {invitaciones.error instanceof Error ? invitaciones.error.message : String(invitaciones.error)}
+            No se pudieron cargar las invitaciones: {mensajeAmigable(invitaciones.error)}
           </ErrorNote>
         )}
 
-        {!invitaciones.isLoading && pendientes.length === 0 && (
+        {invitaciones.isLoading && <Spinner label="Cargando invitaciones" />}
+        {!invitaciones.isLoading && !invitaciones.error && pendientes.length === 0 && (
           <EmptyState
             title="Nada pendiente"
             hint="Cuando invites a alguien, aquí queda su enlace para volverlo a mandar por WhatsApp."
@@ -168,9 +169,10 @@ function MemberRow({
           {ETIQUETA_ROL[member.role]}
         </span>
         <button
+          type="button"
           onClick={onEdit}
           aria-label={`Editar a ${member.display_name ?? member.email}`}
-          className="text-xs font-bold uppercase text-gray-500 hover:text-primary"
+          className="min-h-11 px-3 text-xs font-bold uppercase text-gray-500 hover:text-primary"
         >
           Editar
         </button>
@@ -190,7 +192,7 @@ function InvitationRow({ invitacion, orgId }: { invitacion: Invitation; orgId: s
     try {
       await revocar.mutateAsync({ orgId, invitationId: invitacion.id });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cancelar la invitación');
+      setError(mensajeAmigable(err));
     }
   }
 
@@ -206,15 +208,20 @@ function InvitationRow({ invitacion, orgId }: { invitacion: Invitation; orgId: s
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <button
+            type="button"
             onClick={() => setAbierto((v) => !v)}
-            className="text-xs font-bold uppercase text-gray-500 hover:text-primary"
+            aria-expanded={abierto}
+            aria-label={`${abierto ? 'Ocultar' : 'Ver'} enlace de ${invitacion.email}`}
+            className="min-h-11 px-3 text-xs font-bold uppercase text-gray-500 hover:text-primary"
           >
             {abierto ? 'Ocultar enlace' : 'Ver enlace'}
           </button>
           <button
+            type="button"
             onClick={() => void onRevocar()}
             disabled={revocar.isPending}
-            className="text-xs font-bold uppercase text-gray-500 hover:text-primary disabled:opacity-40"
+            aria-label={`Cancelar invitación de ${invitacion.email}`}
+            className="min-h-11 px-3 text-xs font-bold uppercase text-gray-500 hover:text-primary disabled:opacity-40"
           >
             Cancelar
           </button>

@@ -7,11 +7,14 @@ export function useCambiarRegla() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: { orgId: string; ruleId: string; isActive: boolean }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('automation_rules')
         .update({ is_active: args.isActive })
-        .eq('id', args.ruleId);
+        .eq('id', args.ruleId)
+        .select('id')
+        .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error('No se encontró la regla o no tienes permiso para cambiarla.');
     },
     onSuccess: (_d, v) => {
       void qc.invalidateQueries({ queryKey: ['automation-rules', v.orgId] });
@@ -35,12 +38,15 @@ export function useGuardarPlantilla() {
       body: string;
       variables: string[];
     }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('message_templates')
         .update({ body: args.body, variables: args.variables })
         .eq('id', args.templateId)
-        .eq('org_id', args.orgId);
+        .eq('org_id', args.orgId)
+        .select('id')
+        .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error('No se encontró la plantilla del box o no tienes permiso para editarla.');
     },
     onSuccess: (_d, v) => {
       void qc.invalidateQueries({ queryKey: ['automation-rules', v.orgId] });
@@ -80,7 +86,7 @@ export function useCancelarMensaje() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: { orgId: string; messageId: string; motivo?: string }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('message_outbox')
         .update({
           status: 'cancelled',
@@ -89,8 +95,12 @@ export function useCancelarMensaje() {
         })
         .eq('id', args.messageId)
         .eq('org_id', args.orgId)
-        .in('status', ['queued', 'ready']);
+        .in('status', ['queued', 'ready'])
+        .select('id');
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('El mensaje ya salió, no se puede cancelar.');
+      }
     },
     onSuccess: (_d, v) => {
       void qc.invalidateQueries({ queryKey: ['message-outbox', v.orgId] });

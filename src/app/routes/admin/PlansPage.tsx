@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../features/auth/useAuth';
 import { usePlans } from '../../../features/billing/queries-athlete';
 import { useSavePlan } from '../../../features/billing/mutations';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 import { formatCents, parsePesosToCents } from '../../../shared/lib/money';
 import {
   Button, Card, Drawer, EmptyState, ErrorNote, Field, Select, Spinner, TextInput,
@@ -19,7 +20,7 @@ const PERIODOS = [
 export default function PlansPage() {
   const { activeMembership } = useAuth();
   const orgId = activeMembership?.org_id;
-  const { data: planes, isLoading } = usePlans(orgId);
+  const { data: planes, isLoading, error } = usePlans(orgId);
   const [editando, setEditando] = useState<Plan | null>(null);
   const [creando, setCreando] = useState(false);
 
@@ -37,7 +38,9 @@ export default function PlansPage() {
         al asignarlo: si subes el plan, los atletas que ya lo tenían conservan el suyo.
       </p>
 
-      {planes?.length === 0 && (
+      {error && <ErrorNote>No se pudieron cargar los planes: {mensajeAmigable(error)}</ErrorNote>}
+
+      {!error && planes?.length === 0 && (
         <EmptyState
           title="Todavía no hay planes"
           hint="Crea al menos la mensualidad para poder generar cobros."
@@ -60,8 +63,10 @@ export default function PlansPage() {
                 {formatCents(p.price_cents)}
               </span>
               <button
+                type="button"
                 onClick={() => setEditando(p)}
-                className="text-xs font-bold uppercase text-gray-500 hover:text-primary"
+                aria-label={`Editar ${p.name}`}
+                className="min-h-11 px-3 text-xs font-bold uppercase text-gray-500 hover:text-primary"
               >
                 Editar
               </button>
@@ -108,7 +113,7 @@ function PlanForm({ orgId, plan, onClose }: { orgId: string; plan: Plan | null; 
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar');
+      setError(mensajeAmigable(err));
     }
   }
 

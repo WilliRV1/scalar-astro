@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../features/auth/useAuth';
-import { useCartera, useMonthlyCollected, type CarteraRow } from '../../../features/billing/queries';
+import {
+  LIMITE_CARTERA, useCartera, useMonthlyCollected, type CarteraRow,
+} from '../../../features/billing/queries';
+import { mensajeAmigable } from '../../../shared/lib/errores';
+import { fechaCorta, fechaLarga } from '../../../shared/lib/fechas';
 import { daysOverdue, formatCents } from '../../../shared/lib/money';
 import { formatPhone, whatsappLink } from '../../../shared/lib/phone';
 import { Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
@@ -33,15 +37,19 @@ function tramoDe(dias: number): Tramo {
 function mensajeCobro(row: CarteraRow, saldo: number, dias: number): string {
   const nombre = row.athletes?.first_name ?? '';
   return dias <= 0
-    ? `Hola ${nombre}, te recuerdo que tu mensualidad de ${formatCents(saldo)} vence el ${row.due_on}. ¡Nos vemos en el box!`
-    : `Hola ${nombre}, tu mensualidad de ${formatCents(saldo)} venció el ${row.due_on}. ¿Nos ayudas con el pago?`;
+    ? `Hola ${nombre}, te recuerdo que tu mensualidad de ${formatCents(saldo)} vence el ${fechaLarga(row.due_on)}. ¡Nos vemos en el box!`
+    : `Hola ${nombre}, tu mensualidad de ${formatCents(saldo)} venció el ${fechaLarga(row.due_on)}. ¿Nos ayudas con el pago?`;
 }
 
 export default function AdminHome() {
   const { activeMembership } = useAuth();
   const orgId = activeMembership?.org_id;
   const { data: cartera, isLoading, error } = useCartera(orgId);
-  const { data: recaudo } = useMonthlyCollected(orgId);
+  const {
+    data: recaudo,
+    isLoading: cargandoRecaudo,
+    error: errorRecaudo,
+  } = useMonthlyCollected(orgId);
   const [tramoAbierto, setTramoAbierto] = useState<Tramo | 'todos'>('todos');
 
   const grupos = useMemo(() => {
@@ -60,21 +68,36 @@ export default function AdminHome() {
     return base;
   }, [cartera]);
 
-  if (isLoading) return <Spinner label="Cargando cartera" />;
-  if (error) return <ErrorNote>No se pudo cargar la cartera: {String(error)}</ErrorNote>;
+  if (isLoading && !cartera) return <Spinner label="Cargando cartera" />;
+  if (error && !cartera) {
+    return <ErrorNote>No se pudo cargar la cartera: {mensajeAmigable(error)}</ErrorNote>;
+  }
 
   const filas = cartera ?? [];
+  const listaIncompleta = filas.length >= LIMITE_CARTERA;
   const pendiente = filas.reduce((acc, r) => acc + (r.amount_cents - r.paid_cents), 0);
   const enMora = filas.filter((r) => daysOverdue(r.due_on) > 0);
   const visibles = tramoAbierto === 'todos' ? filas : grupos[tramoAbierto].rows;
 
   return (
     <div className="space-y-6">
+      {error && (
+        <ErrorNote>No se pudo actualizar la cartera: {mensajeAmigable(error)}</ErrorNote>
+      )}
+      {errorRecaudo && (
+        <ErrorNote>No se pudo leer el recaudo del mes: {mensajeAmigable(errorRecaudo)}</ErrorNote>
+      )}
+      {listaIncompleta && (
+        <ErrorNote>
+          Mostrando los primeros {LIMITE_CARTERA} cobros abiertos; el total puede ser mayor.
+        </ErrorNote>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat
           label="Por cobrar"
           value={formatCents(pendiente)}
-          hint={`${filas.length} cobro(s) abierto(s)`}
+          hint={`${filas.length} cobro(s) abierto(s)${listaIncompleta ? ' o más' : ''}`}
         />
         <Stat
           label="En mora"
@@ -83,8 +106,14 @@ export default function AdminHome() {
         />
         <Stat
           label="Recaudado este mes"
-          value={formatCents(recaudo?.cents ?? 0)}
-          hint={`${recaudo?.count ?? 0} pago(s) registrado(s)`}
+          value={errorRecaudo ? '—' : cargandoRecaudo ? '…' : formatCents(recaudo?.cents ?? 0)}
+          hint={
+            errorRecaudo
+              ? 'No se pudo leer'
+              : cargandoRecaudo
+                ? 'Cargando…'
+                : `${recaudo?.count ?? 0} pago(s) registrado(s)`
+          }
         />
       </div>
 
@@ -95,8 +124,10 @@ export default function AdminHome() {
           return (
             <button
               key={t.key}
+              type="button"
+              aria-pressed={activo}
               onClick={() => setTramoAbierto(activo ? 'todos' : t.key)}
-              className={`grunge-border p-3 text-left transition ${
+              className={`grunge-border min-h-11 p-3 text-left transition ${
                 activo ? 'border-primary bg-primary/10' : 'hover:border-gray-500'
               }`}
             >
@@ -123,8 +154,9 @@ export default function AdminHome() {
           </h2>
           {tramoAbierto !== 'todos' && (
             <button
+              type="button"
               onClick={() => setTramoAbierto('todos')}
-              className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+              className="min-h-11 px-3 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
             >
               Ver todo
             </button>
@@ -132,10 +164,17 @@ export default function AdminHome() {
         </div>
 
         {visibles.length === 0 ? (
-          <EmptyState
-            title="Nadie debe nada"
-            hint="Cuando se generen los cobros del periodo aparecerán aquí, del más viejo al más nuevo."
-          />
+          tramoAbierto === 'todos' ? (
+            <EmptyState
+              title="Nadie debe nada"
+              hint="Cuando se generen los cobros del periodo aparecerán aquí, del más viejo al más nuevo."
+            />
+          ) : (
+            <EmptyState
+              title={`Nadie en el tramo "${TRAMOS.find((t) => t.key === tramoAbierto)?.label ?? ''}"`}
+              hint="Hay cobros abiertos en otros tramos. Toca «Ver todo» para verlos."
+            />
+          )
         ) : (
           <div className="space-y-2">
             {visibles.map((r) => {
@@ -149,7 +188,7 @@ export default function AdminHome() {
                       {nombre || 'Atleta'}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatPhone(r.athletes?.phone)} · vence {r.due_on}
+                      {formatPhone(r.athletes?.phone)} · vence {fechaCorta(r.due_on)}
                       {mora > 0 && (
                         <span className="ml-2 font-bold text-primary">
                           {mora} {mora === 1 ? 'día' : 'días'} de mora
@@ -168,7 +207,8 @@ export default function AdminHome() {
                         href={whatsappLink(r.athletes.phone, mensajeCobro(r, saldo, mora))}
                         target="_blank"
                         rel="noreferrer"
-                        className="grunge-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:border-primary hover:text-primary"
+                        aria-label={`Escribir a ${nombre || 'atleta'} por WhatsApp`}
+                        className="grunge-border inline-flex min-h-11 items-center px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:border-primary hover:text-primary"
                       >
                         Escribir
                       </a>

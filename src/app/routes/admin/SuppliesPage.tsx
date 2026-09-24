@@ -8,8 +8,12 @@ import {
   useLowStock, usePurchases, useSupplies, useSuppliers,
 } from '../../../features/finance/queries';
 import type { LowStockRow, SupplyWithSupplier } from '../../../features/finance/types';
+import { mensajeAmigable } from '../../../shared/lib/errores';
+import { fechaCorta } from '../../../shared/lib/fechas';
 import { formatCents } from '../../../shared/lib/money';
-import { Button, Card, EmptyState, ErrorNote, Spinner } from '../../../shared/ui';
+import {
+  Button, Card, ConfirmarBoton, EmptyState, ErrorNote, Spinner,
+} from '../../../shared/ui';
 
 /**
  * Insumos del box: magnesio, tiza, cauchos, cintas.
@@ -29,9 +33,17 @@ export default function SuppliesPage() {
   const orgId = activeMembership?.org_id;
 
   const { data: insumos, isLoading, error } = useSupplies(orgId);
-  const { data: bajoMinimo } = useLowStock(orgId);
+  const {
+    data: bajoMinimo,
+    isLoading: cargandoAlertas,
+    error: errorAlertas,
+  } = useLowStock(orgId);
   const { data: proveedores } = useSuppliers(orgId);
-  const { data: compras } = usePurchases(orgId);
+  const {
+    data: compras,
+    isLoading: cargandoCompras,
+    error: errorCompras,
+  } = usePurchases(orgId);
   const borrarCompra = useDeletePurchase();
 
   const [comprando, setComprando] = useState<string | null>(null);
@@ -41,15 +53,19 @@ export default function SuppliesPage() {
   const lista = useMemo(() => insumos ?? [], [insumos]);
   const alertas = bajoMinimo ?? [];
   const idsEnAlerta = new Set(alertas.map((a) => a.supply_id));
-  const resto = lista.filter((i) => !idsEnAlerta.has(i.id));
+  // Si la lectura de alertas falló no se puede separar nada: se muestra todo
+  // el inventario y el error arriba, en vez de fingir que todo tiene stock.
+  const resto = errorAlertas ? lista : lista.filter((i) => !idsEnAlerta.has(i.id));
 
   const valorInventario = lista.reduce(
     (acc, i) => acc + (i.avg_unit_cost_cents ?? 0) * i.current_stock, 0,
   );
   const gastoCompras = (compras ?? []).reduce((acc, c) => acc + c.total_cents, 0);
 
-  if (isLoading) return <Spinner label="Cargando insumos" />;
-  if (error) return <ErrorNote>No se pudieron cargar los insumos: {String(error)}</ErrorNote>;
+  if (isLoading && !insumos) return <Spinner label="Cargando insumos" />;
+  if (error && !insumos) {
+    return <ErrorNote>No se pudieron cargar los insumos: {mensajeAmigable(error)}</ErrorNote>;
+  }
 
   return (
     <div className="space-y-6">
@@ -63,11 +79,26 @@ export default function SuppliesPage() {
         </div>
       </div>
 
+      {error && (
+        <ErrorNote>No se pudieron actualizar los insumos: {mensajeAmigable(error)}</ErrorNote>
+      )}
+      {errorAlertas && (
+        <ErrorNote>
+          No se pudo leer qué está bajo mínimo: {mensajeAmigable(errorAlertas)}
+        </ErrorNote>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <CasillaDato
           label="Bajo mínimo"
-          value={String(alertas.length)}
-          hint={alertas.length ? 'Hay que comprar' : 'Todo con stock'}
+          value={errorAlertas ? '—' : cargandoAlertas ? '…' : String(alertas.length)}
+          hint={
+            errorAlertas
+              ? 'No se pudo leer'
+              : cargandoAlertas
+                ? 'Cargando…'
+                : alertas.length ? 'Hay que comprar' : 'Todo con stock'
+          }
         />
         <CasillaDato
           label="Valor del inventario"
@@ -76,8 +107,14 @@ export default function SuppliesPage() {
         />
         <CasillaDato
           label="Comprado (últimas 100)"
-          value={formatCents(gastoCompras)}
-          hint={`${(compras ?? []).length} compra(s)`}
+          value={errorCompras ? '—' : formatCents(gastoCompras)}
+          hint={
+            errorCompras
+              ? 'No se pudieron leer'
+              : cargandoCompras
+                ? 'Cargando…'
+                : `${(compras ?? []).length} compra(s)`
+          }
         />
       </div>
 
@@ -119,7 +156,7 @@ export default function SuppliesPage() {
                 </div>
                 <p className="text-xs text-gray-500">
                   {i.last_purchased_on
-                    ? `Última compra ${i.last_purchased_on}`
+                    ? `Última compra ${fechaCorta(i.last_purchased_on)}`
                     : 'Sin compras registradas'}
                   {i.avg_unit_cost_cents !== null
                     ? ` · ${formatCents(i.avg_unit_cost_cents)} por ${i.unit}`
@@ -127,14 +164,18 @@ export default function SuppliesPage() {
                 </p>
                 <div className="flex gap-3 pt-1">
                   <button
+                    type="button"
                     onClick={() => setComprando(i.id)}
-                    className="text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+                    aria-label={`Comprar ${i.name}`}
+                    className="min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
                   >
                     Comprar
                   </button>
                   <button
+                    type="button"
                     onClick={() => setEditando(i)}
-                    className="text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+                    aria-label={`Editar ${i.name}`}
+                    className="min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
                   >
                     Editar
                   </button>
@@ -147,12 +188,20 @@ export default function SuppliesPage() {
 
       {/* --------------------------------------------- compras ----------- */}
       <Seccion title="Últimas compras">
-        {(compras ?? []).length === 0 ? (
+        {errorCompras && (
+          <ErrorNote>No se pudieron cargar las compras: {mensajeAmigable(errorCompras)}</ErrorNote>
+        )}
+        {borrarCompra.isError && (
+          <ErrorNote>No se pudo borrar la compra: {mensajeAmigable(borrarCompra.error)}</ErrorNote>
+        )}
+        {cargandoCompras && !compras && <Spinner label="Cargando compras" />}
+        {!cargandoCompras && !errorCompras && (compras ?? []).length === 0 && (
           <EmptyState
             title="Sin compras registradas"
             hint="Cada compra que registres suma el stock y queda como gasto en la categoría Insumos."
           />
-        ) : (
+        )}
+        {(compras ?? []).length > 0 && (
           <div className="space-y-2">
             {(compras ?? []).slice(0, 20).map((c) => (
               <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
@@ -161,30 +210,30 @@ export default function SuppliesPage() {
                     {c.supplies?.name ?? 'Insumo'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {c.purchased_on} · {cantidad(c.quantity, c.supplies?.unit ?? 'unidad')}
+                    {fechaCorta(c.purchased_on)} · {cantidad(c.quantity, c.supplies?.unit ?? 'unidad')}
                     {c.suppliers?.name ? ` · ${c.suppliers.name}` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-4">
                   <span className="font-display text-2xl text-black dark:text-white">
                     {formatCents(c.total_cents)}
                   </span>
                   <ReceiptLink path={c.invoice_url} />
-                  <button
-                    onClick={() => borrarCompra.mutate(c.id)}
+                  <ConfirmarBoton
+                    onConfirm={() => borrarCompra.mutate(c.id)}
                     disabled={borrarCompra.isPending}
-                    className="text-[11px] font-bold uppercase tracking-widest text-gray-600 hover:text-primary"
+                    ariaLabel={`Borrar compra de ${c.supplies?.name ?? 'insumo'} del ${fechaCorta(c.purchased_on)}`}
                   >
                     Borrar
-                  </button>
+                  </ConfirmarBoton>
                 </div>
               </Card>
             ))}
           </div>
         )}
         <p className="text-xs text-gray-500">
-          Borrar una compra devuelve el stock y elimina su gasto: el P&amp;L no queda contando
-          plata que nunca salió.
+          Borrar una compra devuelve el stock y elimina su gasto: el reporte de ganancias y
+          pérdidas no queda contando plata que nunca salió.
         </p>
       </Seccion>
 
@@ -224,7 +273,7 @@ function FilaAlerta({ alerta, onComprar }: { alerta: LowStockRow; onComprar: () 
         {/* Exactamente lo que pregunta el dueño: cuándo lo compré y a cuánto. */}
         <p className="mt-1 text-xs text-gray-400">
           {alerta.last_purchased_on
-            ? `Última compra: ${alerta.last_purchased_on}` +
+            ? `Última compra: ${fechaCorta(alerta.last_purchased_on)}` +
               (alerta.last_supplier ? ` a ${alerta.last_supplier}` : '') +
               (alerta.last_total_cents !== null
                 ? ` · ${formatCents(alerta.last_total_cents)}`
@@ -235,10 +284,12 @@ function FilaAlerta({ alerta, onComprar }: { alerta: LowStockRow; onComprar: () 
             : 'Nunca se ha registrado una compra de este insumo'}
         </p>
         {alerta.suggested_reorder_on && (
-          <p className="text-xs text-gray-500">Toca reponer sobre el {alerta.suggested_reorder_on}</p>
+          <p className="text-xs text-gray-500">
+            Toca reponer sobre el {fechaCorta(alerta.suggested_reorder_on)}
+          </p>
         )}
       </div>
-      <Button onClick={onComprar} className="!py-2 !text-base">Comprar</Button>
+      <Button onClick={onComprar} className="min-h-11 !py-2 !text-base">Comprar</Button>
     </Card>
   );
 }

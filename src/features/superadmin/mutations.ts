@@ -34,6 +34,9 @@ export function useCrearBox() {
       });
       if (error) throw error;
       const filas = (data ?? []) as unknown as AltaDeBox[];
+      if (!filas[0]) {
+        throw new Error('El box no se creó: la base no devolvió ningún registro. Revisa si ya existe ese dominio.');
+      }
       return filas[0];
     },
     onSuccess: () => {

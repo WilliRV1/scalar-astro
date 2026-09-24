@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, Drawer, ErrorNote, Field, Spinner } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { formatCents } from '../../shared/lib/money';
 import { useCerrarSuplantacion, useSuplantar } from './mutations';
 import { useDetalleDeBox } from './queries';
@@ -55,12 +56,16 @@ export function SoporteDrawer({
     try {
       setSesion(await suplantar.mutateAsync({ orgId: box.org_id, motivo }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo abrir la sesión de soporte');
+      setError(mensajeAmigable(err));
     }
   }
 
   async function terminar() {
-    if (!sesion) return;
+    if (!sesion) {
+      limpiar();
+      onClose();
+      return;
+    }
     try {
       await cerrar.mutateAsync({ sesionId: sesion.id, orgId: sesion.org_id });
     } catch {
@@ -74,14 +79,18 @@ export function SoporteDrawer({
     <Drawer
       open={open && box != null}
       title={sesion ? 'Sesión de soporte abierta' : 'Entrar a dar soporte'}
-      onClose={() => {
-        limpiar();
-        onClose();
-      }}
+      // Cerrar por la X, Escape o el fondo también cierra la sesión de
+      // soporte: si no, queda una hora abierta a nombre de quien la olvidó.
+      onClose={() => void terminar()}
       footer={
         sesion ? (
-          <Button variant="ghost" className="w-full" onClick={() => void terminar()}>
-            Cerrar la sesión de soporte
+          <Button
+            variant="ghost"
+            className="w-full"
+            disabled={cerrar.isPending}
+            onClick={() => void terminar()}
+          >
+            {cerrar.isPending ? 'Cerrando…' : 'Cerrar la sesión de soporte'}
           </Button>
         ) : (
           <Button
@@ -120,7 +129,7 @@ export function SoporteDrawer({
                   onChange={(e) => setMotivo(e.target.value)}
                   rows={3}
                   placeholder="Revisar el cobro duplicado de Marcela del 3 de octubre"
-                  className="w-full border border-gray-300 bg-gray-100 p-3 text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+                  className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
                 />
               </Field>
 
@@ -139,9 +148,7 @@ export function SoporteDrawer({
 
               {detalle.isLoading && <Spinner label="Mirando el box" />}
               {detalle.error && (
-                <ErrorNote>
-                  {detalle.error instanceof Error ? detalle.error.message : 'No se pudo consultar'}
-                </ErrorNote>
+                <ErrorNote>{mensajeAmigable(detalle.error)}</ErrorNote>
               )}
 
               {detalle.data && (

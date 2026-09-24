@@ -45,7 +45,7 @@ export function InvitationLink({ token, email }: { token: string; email: string 
         <button
           type="button"
           onClick={() => void copiar()}
-          className="grunge-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:border-primary hover:text-primary"
+          className="grunge-border min-h-11 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:border-primary hover:text-primary"
         >
           {copiado ? 'Copiado ✓' : 'Copiar enlace'}
         </button>
@@ -53,7 +53,7 @@ export function InvitationLink({ token, email }: { token: string; email: string 
           href={`https://wa.me/?text=${encodeURIComponent(mensaje)}`}
           target="_blank"
           rel="noreferrer"
-          className="grunge-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:border-primary hover:text-primary"
+          className="grunge-border inline-flex min-h-11 items-center px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 hover:border-primary hover:text-primary"
         >
           Mandar por WhatsApp
         </a>

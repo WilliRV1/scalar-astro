@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../features/auth/useAuth';
+import { mensajeAmigable } from '../../../shared/lib/errores';
+import { fechaCorta } from '../../../shared/lib/fechas';
 import { formatCents } from '../../../shared/lib/money';
 import { Button, Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
 import {
@@ -15,12 +17,6 @@ import {
   useMetricasDePlataforma,
   type BoxDePlataforma,
 } from '../../../features/superadmin';
-
-const FECHA = new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
-
-function fecha(iso: string | null): string {
-  return iso ? FECHA.format(new Date(iso)) : '—';
-}
 
 /**
  * Panel de plataforma.
@@ -48,6 +44,16 @@ export default function SuperadminHome() {
 
   if (esSuperadmin.isLoading) return <Spinner label="Comprobando acceso" />;
 
+  // Un fallo de red no es lo mismo que "no eres superadmin": si se confunden,
+  // el equipo de Scalar cree que perdió el acceso cuando solo se cayó la señal.
+  if (esSuperadmin.error) {
+    return (
+      <ErrorNote>
+        No se pudo comprobar el acceso: {mensajeAmigable(esSuperadmin.error)}
+      </ErrorNote>
+    );
+  }
+
   if (!habilitado) {
     return (
       <EmptyState
@@ -72,8 +78,7 @@ export default function SuperadminHome() {
       {/* --------------------------------------------------------- métricas */}
       {metricas.error && (
         <ErrorNote>
-          No se pudieron cargar las métricas:{' '}
-          {metricas.error instanceof Error ? metricas.error.message : String(metricas.error)}
+          No se pudieron cargar las métricas: {mensajeAmigable(metricas.error)}
         </ErrorNote>
       )}
       {metricas.isLoading && <Spinner label="Contando" />}
@@ -103,7 +108,7 @@ export default function SuperadminHome() {
       )}
 
       {metricas.data && (metricas.data.boxes_en_mora > 0 || metricas.data.boxes_suspendidos > 0) && (
-        <p className="border-l-4 border-primary bg-primary/10 px-4 py-3 text-sm font-bold text-primary">
+        <p role="status" className="border-l-4 border-primary bg-primary/10 px-4 py-3 text-sm font-bold text-primary">
           {metricas.data.boxes_en_mora} en mora · {metricas.data.boxes_suspendidos} suspendidos.
           Dos cancelaciones seguidas no son un problema de precio: son de producto.
         </p>
@@ -115,13 +120,12 @@ export default function SuperadminHome() {
 
         {boxes.error && (
           <ErrorNote>
-            No se pudo cargar la lista:{' '}
-            {boxes.error instanceof Error ? boxes.error.message : String(boxes.error)}
+            No se pudo cargar la lista: {mensajeAmigable(boxes.error)}
           </ErrorNote>
         )}
         {boxes.isLoading && <Spinner label="Cargando boxes" />}
 
-        {!boxes.isLoading && lista.length === 0 && (
+        {!boxes.isLoading && !boxes.error && lista.length === 0 && (
           <EmptyState
             title="Todavía no hay ningún box"
             hint="El primero es el de tu entrenador: gratis o a precio de fundador, y a cambio te presenta a otros dueños."
@@ -158,7 +162,7 @@ export default function SuperadminHome() {
                 <dd className="text-gray-300">{formatCents(b.price_cents)}/mes</dd>
 
                 <dt className="text-gray-500">Próximo cobro</dt>
-                <dd className="text-gray-300">{fecha(b.next_charge_on)}</dd>
+                <dd className="text-gray-300">{fechaCorta(b.next_charge_on)}</dd>
 
                 <dt className="text-gray-500">Atletas</dt>
                 <dd className="text-gray-300">{b.atletas_activos}</dd>
@@ -168,14 +172,16 @@ export default function SuperadminHome() {
                 <button
                   type="button"
                   onClick={() => setSoporteDe(b)}
-                  className="grunge-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 transition hover:border-primary hover:text-primary"
+                  aria-label={`Dar soporte a ${b.name}`}
+                  className="grunge-border min-h-11 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 transition hover:border-primary hover:text-primary"
                 >
                   Soporte
                 </button>
                 <button
                   type="button"
                   onClick={() => setCobroDe(b)}
-                  className="grunge-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 transition hover:border-primary hover:text-primary"
+                  aria-label={`${b.org_status === 'suspended' ? 'Reactivar' : 'Suspender'} ${b.name}`}
+                  className="grunge-border min-h-11 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-300 transition hover:border-primary hover:text-primary"
                 >
                   {b.org_status === 'suspended' ? 'Reactivar' : 'Suspender'}
                 </button>
