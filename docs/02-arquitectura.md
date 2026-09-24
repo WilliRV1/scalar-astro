@@ -140,8 +140,15 @@ docs/
 
 ## Trabajos programados (el corazón de la automatización)
 
-`pg_cron` dispara Edge Functions. Todas son **idempotentes** (se pueden correr dos veces
-sin duplicar nada) y dejan registro en `job_runs`.
+Desde la migración `20260923160000_cron.sql`, `pg_cron` corre las funciones SQL del motor
+(cobros, mora, parrilla, cierre de clases, riesgo, reglas, avisos, cobro de Scalar a los
+boxes) envueltas en `run_scheduled_job()`, que deja cada corrida en `job_runs`. Lo que
+necesita salir a internet (WhatsApp, Wompi) lo hacen las Edge Functions y se programan
+aparte con `net.http_post` cuando estén desplegadas. Todas son **idempotentes** (se pueden
+correr dos veces sin duplicar nada).
+
+Para saber si el motor corrió: `select job, status, processed, started_at from job_runs
+order by id desc limit 20;`
 
 | Job | Frecuencia | Qué hace |
 |---|---|---|

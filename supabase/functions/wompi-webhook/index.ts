@@ -19,10 +19,13 @@
 //   400 · cuerpo ilegible                        -> no reintentar
 //   500 · falló la base                          -> QUE REINTENTE
 //
-// Secretos: WOMPI_EVENTS_SECRET (ver docs/10-wompi.md).
+// Secretos: el `wompi_events_secret` del box dueño de la referencia (lo mete el
+// dueño en Configuración → Integraciones); WOMPI_EVENTS_SECRET del entorno solo
+// como respaldo (ver docs/10-wompi.md).
 // =============================================================================
 
-import { env, requiereEnv } from '../_shared/env.ts';
+import { env } from '../_shared/env.ts';
+import { credencialDelBox } from '../_shared/credenciales.ts';
 import { error, json, registrarFallo } from '../_shared/http.ts';
 import { clienteDeServicio } from '../_shared/supabase.ts';
 import {
@@ -63,11 +66,40 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // 1 · Verificar la firma. Antes de esto, el evento no es más que un texto que
   //     mandó un desconocido.
   // ---------------------------------------------------------------------------
-  let secretoDeEventos: string;
+  // Cada box tiene su propia cuenta de Wompi y, por tanto, su propio secreto de
+  // eventos. La referencia de la transacción dice de qué box es el pago; con
+  // eso se busca SU secreto. Si no se puede saber (referencia desconocida o
+  // repetida en dos boxes), se cae al secreto del entorno, que es el respaldo
+  // para desarrollo y para boxes que aún no configuraron el suyo.
+  const referencia = evento.data?.transaction?.reference;
+  let secretoDeEventos: string | undefined;
   try {
-    secretoDeEventos = requiereEnv('WOMPI_EVENTS_SECRET');
+    const servicio = clienteDeServicio();
+    if (typeof referencia === 'string' && referencia.length > 0) {
+      const { data: intentos, error: errorBusqueda } = await servicio
+        .from('payment_intents')
+        .select('org_id')
+        .eq('provider', 'wompi')
+        .eq('reference', referencia)
+        .limit(2);
+      if (errorBusqueda) {
+        registrarFallo('wompi-webhook:referencia', errorBusqueda);
+      } else if (intentos && intentos.length === 1) {
+        secretoDeEventos = (
+          await credencialDelBox(servicio, String(intentos[0].org_id), 'wompi_events_secret')
+        )?.valor;
+      }
+    }
+    secretoDeEventos ??= env('WOMPI_EVENTS_SECRET') || undefined;
   } catch (causa) {
     registrarFallo('wompi-webhook:config', causa);
+  }
+
+  if (!secretoDeEventos) {
+    registrarFallo(
+      'wompi-webhook:config',
+      new Error('ningún secreto de eventos: ni del box de la referencia ni WOMPI_EVENTS_SECRET'),
+    );
     // 500 y no 401: el evento puede ser legítimo; que Wompi reintente mientras
     // se arregla la configuración.
     return error(500, 'error_interno', 'No se pudo procesar el evento.');

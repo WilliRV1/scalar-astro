@@ -81,7 +81,7 @@ Dicho sin rodeos, para que nadie se lleve una sorpresa en una demostración:
 |---|---|
 | Cobro en línea (Wompi) | El código está y probado contra la base, pero **ninguna transacción real ha pasado por él**. Falta cuenta de comercio |
 | WhatsApp automático | Funciona el botón de un clic (`wa.me`). El envío automático necesita cuenta de WhatsApp Business y plantillas aprobadas por Meta |
-| Tareas programadas | Los cobros, los avisos y la generación de clases son funciones listas, pero **falta engancharlas a `pg_cron`**. Hoy se disparan a mano |
+| Tareas programadas | Cobros, mora, parrilla, cierre de clases, riesgo y avisos corren solos con `pg_cron` desde la migración `…_cron.sql`. El envío real de WhatsApp y el cobro en Wompi siguen dependiendo de las Edge Functions |
 | Correo | No hay proveedor configurado; las invitaciones se pasan por enlace copiable |
 
 Nada de eso impide enseñar el producto: la parte que se ve funciona completa.

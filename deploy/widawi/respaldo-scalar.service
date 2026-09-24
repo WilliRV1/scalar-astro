@@ -1,0 +1,9 @@
+[Unit]
+Description=Respaldo de la base y los archivos de Scalar con rotacion
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=willirv
+ExecStart=/usr/local/sbin/respaldo-scalar.sh

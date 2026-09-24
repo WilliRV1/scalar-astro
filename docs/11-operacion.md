@@ -77,9 +77,12 @@ Un respaldo que nunca se restauró no es un respaldo: es una carpeta con archivo
 
 | Capa | Qué cubre | Dónde |
 |---|---|---|
-| PITR de Supabase (plan Pro) | Toda la base, a cualquier segundo de los últimos 7 días | Consola de Supabase |
-| `db-export` (cron, domingos 03:00) | Volcado lógico a Storage | Bucket privado de respaldos |
+| Entorno de prueba (widawi) | `pg_dump -Fc` de la base + tar de Storage, **diario a las 3:15 a. m.**, 14 días, en `~/respaldos/scalar` | `deploy/widawi/respaldo-scalar.*` (timer de systemd) |
+| Supabase en la nube (cuando exista) | PITR del plan Pro: toda la base, a cualquier segundo de los últimos 7 días | Consola de Supabase |
 | Git | Migraciones y código | GitHub |
+
+> Hasta el 2026-09-24 este documento describía un `db-export` a Storage que **nunca existió**.
+> Lo que hay es lo de la tabla.
 
 El PITR cubre el desastre grande (se cayó la base). El volcado lógico cubre el desastre
 pequeño y mucho más probable: **alguien borró algo y nadie se dio cuenta hasta el martes**.
@@ -89,23 +92,23 @@ pequeño y mucho más probable: **alguien borró algo y nadie se dio cuenta hast
 Sin esta prueba no sabemos si tenemos respaldos. Se hace en **staging**, nunca en producción.
 
 ```bash
-# 1. Traer el volcado más reciente desde Storage
-supabase storage download backups/scalar-AAAA-MM-DD.sql.gz ./restore.sql.gz
-gunzip restore.sql.gz
+# En widawi. 1. El volcado más reciente
+ULTIMO=$(ls -t ~/respaldos/scalar/scalar-db-*.dump | head -1)
 
-# 2. Levantar una base limpia local
-BASE=$(mktemp -d) && chmod 711 $BASE && mkdir -p $BASE/data
-chown postgres:postgres $BASE $BASE/data
-su postgres -c "/usr/lib/postgresql/16/bin/initdb -D $BASE/data -U postgres --auth=trust"
-su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D $BASE/data -o '-k $BASE -c listen_addresses=' -l $BASE/log start"
+# 2. Una base limpia y desechable, con la MISMA imagen de producción
+docker run -d --name restaura -e POSTGRES_PASSWORD=x supabase/postgres:17.6.1.136
+sleep 15
 
 # 3. Restaurar
-psql -h $BASE -U postgres -v ON_ERROR_STOP=1 -f restore.sql
+docker exec -i restaura pg_restore -U postgres -d postgres --no-owner < "$ULTIMO"
 
 # 4. Comprobar que los datos están de verdad (esto es la prueba, no el paso 3)
-psql -h $BASE -U postgres -c "select count(*) from public.organizations;"
-psql -h $BASE -U postgres -c "select count(*) from public.athletes where deleted_at is null;"
-psql -h $BASE -U postgres -c "select sum(amount_cents) from public.payments where status='confirmed';"
+docker exec restaura psql -U postgres -c "select count(*) from public.organizations;"
+docker exec restaura psql -U postgres -c "select count(*) from public.athletes;"
+docker exec restaura psql -U postgres -c "select sum(amount_cents) from public.payments where status='confirmed';"
+docker exec restaura psql -U postgres -c "select public.assert_rls_enabled();"
+
+docker rm -f restaura
 ```
 
 **Criterio de aprobado**, y hay que escribirlo en la bitácora de la prueba:

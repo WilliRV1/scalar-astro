@@ -10,7 +10,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [studio]
 enabled = true
@@ -29,7 +29,8 @@ enable_refresh_token_rotation = true
 # El registro queda abierto porque un invitado tiene que poder crear su cuenta
 # al canjear el enlace. Tener cuenta no concede acceso a NADA: sin una fila en
 # `memberships`, la RLS no devuelve ni un registro y el usuario cae en
-# /sin-acceso. El alta de BOXES sí es manual, no pública.
+# /sin-acceso. Un box nuevo nace por /registro (register_my_box, con tope
+# de tres por usuario) o por el alta interna del superadministrador.
 enable_signup = true
 
 [auth.email]

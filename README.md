@@ -99,7 +99,7 @@ el atleta solo lo suyo. Si eso se cumple, el aislamiento de permisos funciona.
 |---|---|
 | Cobro en línea (Wompi) | Código completo y probado contra la base, pero **ninguna transacción real ha pasado por él**, ni en sandbox. Falta cuenta de comercio |
 | WhatsApp automático | Funciona el botón de un clic (`wa.me`). El envío automático necesita cuenta de WhatsApp Business y plantillas aprobadas por Meta |
-| Tareas programadas | Cobros, avisos y generación de clases son funciones listas, pero **falta engancharlas a `pg_cron`** |
+| Tareas programadas | Cobros, mora, parrilla, cierre de clases, riesgo y avisos corren solos con `pg_cron` (`job_runs` guarda cada corrida). Lo que sale a internet (WhatsApp, Wompi) necesita las Edge Functions |
 | Correo | Sin proveedor. Las invitaciones se pasan por enlace copiable |
 
 Nada de eso impide enseñar el producto: lo que se ve funciona completo.

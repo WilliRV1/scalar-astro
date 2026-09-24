@@ -63,7 +63,7 @@ supabase secrets list
 |---|---|---|
 | `WOMPI_PUBLIC_KEY` | sí | Identifica el comercio en el enlace de checkout. `pub_test_…` o `pub_prod_…` |
 | `WOMPI_INTEGRITY_SECRET` | sí | Firma el enlace: sin ella cualquiera podría alterar el monto en la URL |
-| `WOMPI_EVENTS_SECRET` | sí (webhook) | Verifica la firma de los eventos entrantes |
+| `WOMPI_EVENTS_SECRET` | solo como respaldo | Verifica la firma de los eventos entrantes cuando el box de la referencia no tiene su propio `wompi_events_secret` (Configuración → Integraciones). Desde 2026-09-24 el webhook busca primero el secreto del box dueño de la referencia |
 | `WOMPI_PRIVATE_KEY` | todavía no | Consultar una transacción por API (`GET /v1/transactions/{id}`). Reservada para la conciliación de respaldo, que **no está implementada** |
 | `WOMPI_ENVIRONMENT` | recomendada | `test` o `prod`. Si está, el webhook rechaza eventos del otro ambiente |
 | `WOMPI_REDIRECT_URL` | opcional | A dónde vuelve el atleta al terminar. Solo del entorno, nunca del cliente: aceptarla por parámetro sería un redirector abierto |
