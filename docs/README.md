@@ -19,6 +19,7 @@ vendible a boxes de CrossFit y gimnasios pequeños.
 | [06-roadmap.md](./06-roadmap.md) | Fases, entregables y cuándo se puede empezar a cobrar |
 | [07-legal-colombia.md](./07-legal-colombia.md) | Habeas Data, SIC, contrato de encargo, DIAN |
 | [08-mercado-cali.md](./08-mercado-cali.md) | **Investigación de mercado**: censo de boxes, precios, competencia, dolores |
+| [14-auditoria-2026-09-24.md](./14-auditoria-2026-09-24.md) | **Auditoría**: seguridad, operación y frontend; lo arreglado y lo pendiente por severidad |
 
 ## Decisiones tomadas
 
