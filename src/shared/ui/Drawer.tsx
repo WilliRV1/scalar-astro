@@ -42,14 +42,14 @@ export function Drawer({
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="px-2 text-2xl leading-none text-gray-500 hover:text-primary"
+            className="flex min-h-11 min-w-11 items-center justify-center text-2xl leading-none text-gray-500 hover:text-primary"
           >
             ×
           </button>
         </header>
         <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
         {footer && (
-          <footer className="border-t border-gray-200 px-5 py-4 dark:border-gray-800">{footer}</footer>
+          <footer className="border-t border-gray-200 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-gray-800">{footer}</footer>
         )}
       </div>
     </div>

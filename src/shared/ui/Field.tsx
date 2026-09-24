@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 const inputBase =
-  'w-full border border-gray-300 bg-gray-100 p-3 text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black';
+  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm focus:outline-none dark:border-gray-700 dark:bg-black';
 
 export function Field({
   label, error, hint, children,
