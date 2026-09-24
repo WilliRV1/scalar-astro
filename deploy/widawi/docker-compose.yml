@@ -10,6 +10,9 @@ x-logs: &logs
     driver: json-file
     options: { max-size: "10m", max-file: "3" }
 
+# Los healthchecks van a 127.0.0.1 y no a `localhost`: dentro de las imágenes
+# alpine `localhost` resuelve primero a ::1 y storage/nginx solo escuchan en
+# IPv4, así que el chequeo fallaba con el servicio funcionando.
 services:
   db:
     image: supabase/postgres:17.6.1.136
@@ -57,7 +60,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9999/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -106,6 +109,8 @@ services:
       PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
       PGRST_APP_SETTINGS_JWT_EXP: 3600
       PGRST_ADMIN_SERVER_PORT: 3001
+      # `postgrest --ready` (el healthcheck) exige que el admin escuche en localhost.
+      PGRST_ADMIN_SERVER_HOST: localhost
 
   storage:
     image: supabase/storage-api:v1.74.0
@@ -117,7 +122,7 @@ services:
       rest:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/status"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:5000/status"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -148,7 +153,7 @@ services:
     ports:
       - 8099:80
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 10s
       timeout: 5s
       retries: 3
