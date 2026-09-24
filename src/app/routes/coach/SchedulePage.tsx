@@ -31,6 +31,7 @@ import {
 } from '../../../features/reservations';
 import type { ClassRow, ClassTemplate } from '../../../features/reservations';
 import { Button, Drawer, EmptyState, ErrorNote, Field, Spinner, TextInput } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 
 /**
  * Horarios del box, desde el celular del coach.
@@ -52,7 +53,10 @@ export default function SchedulePage() {
 
   const hoy = useMemo(() => todayInBox(timezone), [timezone]);
   const [semana, setSemana] = useState(() => weekStart(hoy));
-  const [claseAbierta, setClaseAbierta] = useState<ClassRow | null>(null);
+  // Solo el id: la clase se busca en `clases` en cada render, así el cajón ve
+  // el cupo y el estado nuevos en cuanto la consulta se refresca, en vez de
+  // quedarse con la foto del momento en que se abrió.
+  const [claseAbiertaId, setClaseAbiertaId] = useState<string | null>(null);
   const [plantillaAbierta, setPlantillaAbierta] = useState<ClassTemplate | null | undefined>(
     undefined,
   );
@@ -75,6 +79,9 @@ export default function SchedulePage() {
   );
 
   const activas = (parrilla ?? []).filter((p) => p.is_active);
+  const claseAbierta = claseAbiertaId
+    ? (clases ?? []).find((c) => c.id === claseAbiertaId) ?? null
+    : null;
 
   if (!orgId) return <EmptyState title="Sin box activo" />;
 
@@ -102,7 +109,9 @@ export default function SchedulePage() {
         </div>
       </header>
 
-      {error && <ErrorNote>No se pudieron cargar las clases: {String(error)}</ErrorNote>}
+      {error && (
+        <ErrorNote>No se pudieron cargar las clases: {mensajeAmigable(error)}</ErrorNote>
+      )}
       {isLoading && <Spinner label="Cargando la semana" />}
 
       <div className="space-y-4">
@@ -126,7 +135,7 @@ export default function SchedulePage() {
                     <button
                       key={c.id}
                       type="button"
-                      onClick={() => setClaseAbierta(c)}
+                      onClick={() => setClaseAbiertaId(c.id)}
                       className={`flex h-16 w-full items-center gap-3 border-l-4 px-4 text-left transition hover:border-primary ${
                         c.status === 'cancelled'
                           ? 'border-gray-700 bg-black/10 opacity-60 dark:bg-white/5'
@@ -199,10 +208,11 @@ export default function SchedulePage() {
 
       {claseAbierta && (
         <ClaseDrawer
+          key={claseAbierta.id}
           orgId={orgId}
           clase={claseAbierta}
           timezone={timezone}
-          onClose={() => setClaseAbierta(null)}
+          onClose={() => setClaseAbiertaId(null)}
         />
       )}
 
@@ -215,7 +225,14 @@ export default function SchedulePage() {
           <>
             {guardarPlantilla.error && (
               <div className="mb-3">
-                <ErrorNote>{String(guardarPlantilla.error)}</ErrorNote>
+                <ErrorNote>{mensajeAmigable(guardarPlantilla.error)}</ErrorNote>
+              </div>
+            )}
+            {quitarPlantilla.error && (
+              <div className="mb-3">
+                <ErrorNote>
+                  No se pudo desactivar la franja: {mensajeAmigable(quitarPlantilla.error)}
+                </ErrorNote>
               </div>
             )}
             <TemplateEditor
@@ -262,7 +279,7 @@ function ClaseDrawer({
   timezone: string;
   onClose: () => void;
 }) {
-  const { data: lista, isLoading } = useClassRoster(orgId, clase.id);
+  const { data: lista, isLoading, error: errorLista } = useClassRoster(orgId, clase.id);
   const checkIn = useCheckIn();
   const cerrar = useCloseClass();
   const cancelarClase = useCancelClass();
@@ -270,6 +287,7 @@ function ClaseDrawer({
 
   const [motivo, setMotivo] = useState('');
   const [confirmando, setConfirmando] = useState(false);
+  const [confirmandoCierre, setConfirmandoCierre] = useState(false);
   const [cupo, setCupo] = useState(String(clase.capacity));
 
   const ocupado =
@@ -291,11 +309,15 @@ function ClaseDrawer({
             <Button
               variant="ghost"
               disabled={ocupado}
-              onClick={() => cerrar.mutate({ orgId, classId: clase.id })}
+              onClick={() => { setConfirmando(false); setConfirmandoCierre(true); }}
             >
               Cerrar clase
             </Button>
-            <Button variant="ghost" disabled={ocupado} onClick={() => setConfirmando(true)}>
+            <Button
+              variant="ghost"
+              disabled={ocupado}
+              onClick={() => { setConfirmandoCierre(false); setConfirmando(true); }}
+            >
               Cancelar la clase
             </Button>
           </div>
@@ -312,7 +334,32 @@ function ClaseDrawer({
           {longDayLabel(diaDeClase(clase.starts_at, timezone))} · {etiquetaCupo(clase)}
         </p>
 
-        {errorDeAccion && <ErrorNote>{String(errorDeAccion)}</ErrorNote>}
+        {errorDeAccion && <ErrorNote>{mensajeAmigable(errorDeAccion)}</ErrorNote>}
+
+        {confirmandoCierre && (
+          <div className="grunge-border space-y-3 border-primary p-4">
+            <p className="text-sm text-gray-300">
+              Cerrar la clase marca como falta a quienes reservaron y no hicieron check-in.
+              Revisa la lista antes de confirmar.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                disabled={ocupado}
+                onClick={() =>
+                  cerrar.mutate(
+                    { orgId, classId: clase.id },
+                    { onSuccess: () => setConfirmandoCierre(false) },
+                  )
+                }
+              >
+                Sí, cerrar
+              </Button>
+              <Button variant="ghost" onClick={() => setConfirmandoCierre(false)}>
+                Volver
+              </Button>
+            </div>
+          </div>
+        )}
 
         {confirmando && (
           <div className="grunge-border space-y-3 border-primary p-4">
@@ -370,6 +417,8 @@ function ClaseDrawer({
 
         {isLoading ? (
           <Spinner label="Cargando la lista" />
+        ) : errorLista ? (
+          <ErrorNote>No se pudo cargar la lista: {mensajeAmigable(errorLista)}</ErrorNote>
         ) : (
           <RosterList
             filas={lista ?? []}

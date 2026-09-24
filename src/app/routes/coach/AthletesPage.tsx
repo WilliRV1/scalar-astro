@@ -5,6 +5,7 @@ import { fullName, useAthletes } from '../../../features/athletes/queries';
 import { AthleteForm } from '../../../features/athletes/AthleteForm';
 import { formatPhone } from '../../../shared/lib/phone';
 import { Button, Card, EmptyState, ErrorNote, Spinner } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 import type { Athlete, AthleteStatus } from '../../../types/database';
 
 const ESTADO: Record<AthleteStatus, { label: string; className: string }> = {
@@ -43,7 +44,7 @@ export default function AthletesPage() {
         <div className="flex items-center gap-2">
           <Link
             to="/coach/importar"
-            className="grunge-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:border-primary hover:text-primary"
+            className="grunge-border inline-flex min-h-11 items-center px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:border-primary hover:text-primary"
           >
             Importar Excel
           </Link>
@@ -55,8 +56,9 @@ export default function AthletesPage() {
         {FILTROS.map((f) => (
           <button
             key={f.key}
+            type="button"
             onClick={() => setFiltro(f.key)}
-            className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest transition ${
+            className={`min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest transition ${
               filtro === f.key
                 ? 'bg-primary text-white'
                 : 'grunge-border text-gray-500 hover:text-gray-300'
@@ -70,11 +72,13 @@ export default function AthletesPage() {
           placeholder="Buscar por nombre o celular"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="grunge-border ml-auto bg-transparent px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          className="grunge-border ml-auto min-h-11 bg-transparent px-3 text-base focus:border-primary focus:outline-none sm:text-sm"
         />
       </div>
 
-      {error && <ErrorNote>No se pudieron cargar los atletas: {String(error)}</ErrorNote>}
+      {error && (
+        <ErrorNote>No se pudieron cargar los atletas: {mensajeAmigable(error)}</ErrorNote>
+      )}
       {isLoading && <Spinner label="Cargando atletas" />}
 
       {!isLoading && lista.length === 0 && (
@@ -107,9 +111,10 @@ export default function AthletesPage() {
                   {estado.label}
                 </span>
                 <button
+                  type="button"
                   onClick={() => setEditando(a)}
                   aria-label={`Editar ${fullName(a)}`}
-                  className="text-xs font-bold uppercase text-gray-500 hover:text-primary"
+                  className="min-h-11 px-3 text-xs font-bold uppercase text-gray-500 hover:text-primary"
                 >
                   Editar
                 </button>

@@ -3,7 +3,9 @@ import { fullName, useAthlete } from '../../../features/athletes/queries';
 import { useMyInvoices, useMyPayments } from '../../../features/billing/queries';
 import { daysOverdue, formatCents } from '../../../shared/lib/money';
 import { PersonalRecords } from '../../../features/performance/PersonalRecords';
-import { Card, EmptyState, Spinner, Stat } from '../../../shared/ui';
+import { Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
+import { fechaCorta } from '../../../shared/lib/fechas';
 
 /**
  * Vista del atleta. Todo lo que se ve aquí sale de consultas SIN filtro por
@@ -15,11 +17,14 @@ export default function AthleteHome() {
   const { activeMembership } = useAuth();
   const athleteId = activeMembership?.athlete_id ?? null;
 
-  const { data: athlete, isLoading } = useAthlete(athleteId);
-  const { data: invoices } = useMyInvoices(athleteId);
-  const { data: payments } = useMyPayments(athleteId);
+  const { data: athlete, isLoading, error: errorFicha } = useAthlete(athleteId);
+  const { data: invoices, error: errorCobros } = useMyInvoices(athleteId);
+  const { data: payments, isError: fallaronPagos, error: errorPagos } = useMyPayments(athleteId);
 
   if (isLoading) return <Spinner />;
+  if (errorFicha) {
+    return <ErrorNote>No se pudo cargar tu ficha: {mensajeAmigable(errorFicha)}</ErrorNote>;
+  }
   if (!athlete) {
     return (
       <EmptyState
@@ -42,19 +47,25 @@ export default function AthleteHome() {
         </p>
       </div>
 
+      {errorCobros && (
+        <ErrorNote>No se pudo cargar tu saldo: {mensajeAmigable(errorCobros)}</ErrorNote>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <Stat
           label="Mi saldo"
-          value={saldo > 0 ? formatCents(saldo) : 'Al día'}
+          value={errorCobros ? '—' : saldo > 0 ? formatCents(saldo) : 'Al día'}
           hint={
-            proxima
-              ? daysOverdue(proxima.due_on) > 0
-                ? `Venció el ${proxima.due_on}`
-                : `Vence el ${proxima.due_on}`
-              : 'Sin cobros pendientes'
+            errorCobros
+              ? 'Sin conexión con el servidor'
+              : proxima
+                ? daysOverdue(proxima.due_on) > 0
+                  ? `Venció el ${fechaCorta(proxima.due_on)}`
+                  : `Vence el ${fechaCorta(proxima.due_on)}`
+                : 'Sin cobros pendientes'
           }
         />
-        <Stat label="Desde" value={athlete.joined_on} hint="Fecha de ingreso al box" />
+        <Stat label="Desde" value={fechaCorta(athlete.joined_on)} hint="Fecha de ingreso al box" />
       </div>
 
       {activeMembership && (
@@ -67,7 +78,9 @@ export default function AthleteHome() {
 
       <section>
         <h2 className="mb-3 font-display text-2xl text-black dark:text-white">Mis pagos</h2>
-        {(payments ?? []).length === 0 ? (
+        {fallaronPagos ? (
+          <ErrorNote>No se pudieron cargar tus pagos: {mensajeAmigable(errorPagos)}</ErrorNote>
+        ) : (payments ?? []).length === 0 ? (
           <EmptyState title="Todavía no hay pagos registrados" />
         ) : (
           <div className="space-y-2">
@@ -77,9 +90,7 @@ export default function AthleteHome() {
                   <p className="font-bold text-black dark:text-white">{formatCents(p.amount_cents)}</p>
                   <p className="text-xs uppercase tracking-widest text-gray-500">{p.method}</p>
                 </div>
-                <span className="text-xs text-gray-500">
-                  {new Date(p.paid_at).toLocaleDateString('es-CO')}
-                </span>
+                <span className="text-xs text-gray-500">{fechaCorta(p.paid_at)}</span>
               </Card>
             ))}
           </div>

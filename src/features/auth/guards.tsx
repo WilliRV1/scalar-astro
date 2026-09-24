@@ -1,9 +1,38 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Spinner } from '../../shared/ui';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button, Spinner } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { slugFromHost } from '../org/subdomain';
 import { useAuth } from './useAuth';
 import { canViewFinances } from './AuthContext';
 import type { Role } from '../../types/database';
+
+/**
+ * Las membresías no cargaron por un fallo (red, sesión vencida), no porque el
+ * usuario no tenga ninguna. Mandarlo a /sin-acceso le diría "no perteneces a
+ * ningún box" a alguien que sí pertenece y solo perdió la señal.
+ */
+function SinConexion({ error }: { error: string }) {
+  const qc = useQueryClient();
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background-light p-6 text-center dark:bg-background-dark">
+      <h1 className="font-display text-4xl text-black dark:text-white">Sin conexión</h1>
+      <p className="max-w-md text-gray-500">
+        No pudimos cargar tu box. {mensajeAmigable(error)}
+      </p>
+      <Button onClick={() => void qc.invalidateQueries({ queryKey: ['memberships'] })}>
+        Reintentar
+      </Button>
+    </div>
+  );
+}
+
+/** Sin box activo: o de verdad no tiene, o no se pudo consultar. */
+function SinBox() {
+  const { memberships, error } = useAuth();
+  if (error && memberships.length === 0) return <SinConexion error={error} />;
+  return <Navigate to="/sin-acceso" replace />;
+}
 
 /**
  * Estos guardas deciden qué se PINTA, no a qué datos se accede.
@@ -30,7 +59,7 @@ export function RequireRole({ roles }: { roles: Role[] }) {
   const { activeMembership, loading } = useAuth();
 
   if (loading) return <Spinner />;
-  if (!activeMembership) return <Navigate to="/sin-acceso" replace />;
+  if (!activeMembership) return <SinBox />;
   if (!roles.includes(activeMembership.role)) return <Navigate to="/" replace />;
   return <Outlet />;
 }
@@ -47,7 +76,7 @@ export function RequireFinance() {
   const { activeMembership, loading } = useAuth();
 
   if (loading) return <Spinner />;
-  if (!activeMembership) return <Navigate to="/sin-acceso" replace />;
+  if (!activeMembership) return <SinBox />;
   if (!canViewFinances(activeMembership)) {
     return (
       <div className="grunge-border bg-surface-light p-6 dark:bg-surface-dark">

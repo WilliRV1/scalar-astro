@@ -10,7 +10,9 @@ import { SubscriptionForm } from '../../../features/billing/SubscriptionForm';
 import { PersonalRecords } from '../../../features/performance/PersonalRecords';
 import { daysOverdue, formatCents } from '../../../shared/lib/money';
 import { formatPhone, whatsappLink } from '../../../shared/lib/phone';
-import { Button, Card, EmptyState, Spinner, Stat } from '../../../shared/ui';
+import { Button, Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
+import { fechaCorta } from '../../../shared/lib/fechas';
 import type { Invoice } from '../../../types/database';
 
 export default function AthleteDetailPage() {
@@ -19,8 +21,10 @@ export default function AthleteDetailPage() {
   const orgId = activeMembership?.org_id;
   const verFinanzas = canViewFinances(activeMembership);
 
-  const { data: athlete, isLoading } = useAthlete(id);
-  const { data: billing } = useAthleteBilling(id);
+  const { data: athlete, isLoading, error: errorAtleta } = useAthlete(id);
+  const {
+    data: billing, isError: errorCobros, error: errorDeCobros,
+  } = useAthleteBilling(id);
 
   const [editando, setEditando] = useState(false);
   const [pagoAbierto, setPagoAbierto] = useState(false);
@@ -28,6 +32,9 @@ export default function AthleteDetailPage() {
   const [cambiandoPlan, setCambiandoPlan] = useState(false);
 
   if (isLoading) return <Spinner />;
+  if (errorAtleta) {
+    return <ErrorNote>No se pudo cargar la ficha: {mensajeAmigable(errorAtleta)}</ErrorNote>;
+  }
   if (!athlete) return <EmptyState title="Atleta no encontrado" />;
 
   const abiertas = (billing?.invoices ?? []).filter(
@@ -45,7 +52,7 @@ export default function AthleteDetailPage() {
         <div>
           <h1 className="font-display text-4xl text-black dark:text-white">{fullName(athlete)}</h1>
           <p className="text-sm text-gray-500">
-            {formatPhone(athlete.phone)} · desde {athlete.joined_on}
+            {formatPhone(athlete.phone)} · desde {fechaCorta(athlete.joined_on)}
             {athlete.referral_source && ` · llegó por ${athlete.referral_source}`}
           </p>
         </div>
@@ -55,7 +62,7 @@ export default function AthleteDetailPage() {
               href={whatsappLink(athlete.phone, `Hola ${athlete.first_name}, te escribo del box.`)}
               target="_blank"
               rel="noreferrer"
-              className="grunge-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:border-primary hover:text-primary"
+              className="grunge-border inline-flex min-h-11 items-center px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:border-primary hover:text-primary"
             >
               WhatsApp
             </a>
@@ -66,6 +73,11 @@ export default function AthleteDetailPage() {
 
       {verFinanzas && (
         <>
+          {errorCobros && (
+            <ErrorNote>
+              No se pudieron cargar los cobros: {mensajeAmigable(errorDeCobros)}
+            </ErrorNote>
+          )}
           <div className="grid gap-3 sm:grid-cols-3">
             <Stat
               label="Saldo pendiente"
@@ -93,7 +105,7 @@ export default function AthleteDetailPage() {
 
           <section>
             <h2 className="mb-3 font-display text-2xl text-black dark:text-white">Cobros</h2>
-            {(billing?.invoices ?? []).length === 0 ? (
+            {errorCobros ? null : (billing?.invoices ?? []).length === 0 ? (
               <EmptyState
                 title="Sin cobros todavía"
                 hint="Se generan solos en la fecha de corte del atleta."
@@ -108,7 +120,7 @@ export default function AthleteDetailPage() {
                       <div>
                         <p className="font-bold text-black dark:text-white">{i.number}</p>
                         <p className="text-xs text-gray-500">
-                          {i.period_start} a {i.period_end} · vence {i.due_on}
+                          {fechaCorta(i.period_start)} a {fechaCorta(i.period_end)} · vence {fechaCorta(i.due_on)}
                           {i.status !== 'paid' && mora > 0 && (
                             <span className="ml-2 font-bold text-primary">{mora} días de mora</span>
                           )}
@@ -124,8 +136,9 @@ export default function AthleteDetailPage() {
                           </span>
                         ) : (
                           <button
+                            type="button"
                             onClick={() => { setFacturaElegida(i); setPagoAbierto(true); }}
-                            className="text-xs font-bold uppercase text-gray-500 hover:text-primary"
+                            className="min-h-11 px-3 text-xs font-bold uppercase text-gray-500 hover:text-primary"
                           >
                             Cobrar {formatCents(pendiente)}
                           </button>
@@ -140,7 +153,7 @@ export default function AthleteDetailPage() {
 
           <section>
             <h2 className="mb-3 font-display text-2xl text-black dark:text-white">Pagos recibidos</h2>
-            {(billing?.payments ?? []).length === 0 ? (
+            {errorCobros ? null : (billing?.payments ?? []).length === 0 ? (
               <EmptyState title="Sin pagos registrados" />
             ) : (
               <div className="space-y-2">
@@ -150,9 +163,7 @@ export default function AthleteDetailPage() {
                       <p className="font-bold text-black dark:text-white">{formatCents(p.amount_cents)}</p>
                       <p className="text-xs uppercase tracking-widest text-gray-500">{p.method}</p>
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {new Date(p.paid_at).toLocaleDateString('es-CO')}
-                    </span>
+                    <span className="text-xs text-gray-500">{fechaCorta(p.paid_at)}</span>
                   </Card>
                 ))}
               </div>

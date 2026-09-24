@@ -298,7 +298,7 @@ export default function Landing() {
         </p>
         <p className="mt-2">
           Scalar · Cali, Colombia · Hecho para boxes de entrenamiento funcional. No estamos
-          afiliados a CrossFit®, que es marca registrada de CrossFit, LLC.
+          afiliados a ninguna marca registrada de entrenamiento.
         </p>
       </footer>
     </div>

@@ -18,6 +18,7 @@ import {
 } from '../../../features/reservations';
 import type { ClassRow, ReservationRow } from '../../../features/reservations';
 import { Button, EmptyState, ErrorNote, Spinner } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 
 /**
  * Reservas del atleta.
@@ -53,9 +54,9 @@ export default function BookingPage() {
   const hasta = useMemo(() => `${addDays(hoy, 16)}T00:00:00.000Z`, [hoy]);
 
   const { data: clases, isLoading, error } = useClasses(orgId, desde, hasta);
-  const { data: ajustes } = useReservationSettings(orgId);
-  const { data: estado } = useMyBookingStatus(orgId);
-  const { data: misReservas } = useMyReservations(orgId, athleteId);
+  const { data: ajustes, error: errorAjustes, refetch: recargarAjustes } = useReservationSettings(orgId);
+  const { data: estado, error: errorEstado } = useMyBookingStatus(orgId);
+  const { data: misReservas, error: errorReservas } = useMyReservations(orgId, athleteId);
 
   const reservar = useBookClass();
   const cancelar = useCancelReservation();
@@ -175,8 +176,25 @@ export default function BookingPage() {
         })}
       </div>
 
-      {error && <ErrorNote>No se pudieron cargar los horarios: {String(error)}</ErrorNote>}
-      {errorDeAccion && <ErrorNote>{mensajeDeError(errorDeAccion)}</ErrorNote>}
+      {error && (
+        <ErrorNote>No se pudieron cargar los horarios: {mensajeAmigable(error)}</ErrorNote>
+      )}
+      {errorAjustes && (
+        <ErrorNote>
+          No se pudieron cargar las reglas de reserva: {mensajeAmigable(errorAjustes)}
+        </ErrorNote>
+      )}
+      {errorEstado && (
+        <ErrorNote>
+          No se pudo consultar tu estado de reserva: {mensajeAmigable(errorEstado)}
+        </ErrorNote>
+      )}
+      {errorReservas && (
+        <ErrorNote>
+          No se pudieron cargar tus reservas: {mensajeAmigable(errorReservas)}
+        </ErrorNote>
+      )}
+      {errorDeAccion && <ErrorNote>{mensajeAmigable(errorDeAccion)}</ErrorNote>}
       {aviso && (
         <p className="border-l-4 border-green-500 bg-green-500/10 px-4 py-3 text-sm font-bold text-green-500">
           {aviso}
@@ -192,8 +210,10 @@ export default function BookingPage() {
         />
       )}
 
+      {/* Sin saber qué reservas tiene, la tarjeta no puede decir si "Reservar"
+          o "Cancelar": se espera a que carguen antes de ofrecer botones. */}
       <div className="space-y-2">
-        {ajustes &&
+        {ajustes && !errorReservas &&
           delDia.map((c) => (
             <ClassCard
               key={c.id}
@@ -236,23 +256,10 @@ export default function BookingPage() {
       )}
 
       {!ajustes && !isLoading && (
-        <Button variant="ghost" onClick={() => window.location.reload()}>
-          Recargar
+        <Button variant="ghost" onClick={() => void recargarAjustes()}>
+          Reintentar
         </Button>
       )}
     </div>
   );
-}
-
-/**
- * Los mensajes de la base vienen redactados en español y para el usuario
- * ("Ya cerró la reserva para esa clase"). Se muestran tal cual: taparlos con un
- * "algo salió mal" es perder la única información útil que hay.
- */
-function mensajeDeError(e: unknown): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.length > 0) return m;
-  }
-  return String(e);
 }

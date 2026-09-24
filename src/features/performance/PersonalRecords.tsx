@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Button, Card, EmptyState, Spinner } from '../../shared/ui';
+import { Button, Card, EmptyState, ErrorNote, Spinner } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
+import { fechaCorta } from '../../shared/lib/fechas';
 import { formatValue, progressSince, type Metric } from './format';
 import { useAthleteRecords } from './queries';
 import { Sparkline } from './Sparkline';
@@ -17,7 +19,7 @@ export function PersonalRecords({
   athleteId: string;
   canEdit: boolean;
 }) {
-  const { data: grupos, isLoading } = useAthleteRecords(athleteId);
+  const { data: grupos, isLoading, isError, error } = useAthleteRecords(athleteId);
   const [registrando, setRegistrando] = useState(false);
 
   if (isLoading) return <Spinner label="Cargando marcas" />;
@@ -29,7 +31,11 @@ export function PersonalRecords({
         {canEdit && <Button variant="ghost" onClick={() => setRegistrando(true)}>+ Marca</Button>}
       </div>
 
-      {(!grupos || grupos.length === 0) && (
+      {isError && (
+        <ErrorNote>No se pudieron cargar las marcas: {mensajeAmigable(error)}</ErrorNote>
+      )}
+
+      {!isError && (!grupos || grupos.length === 0) && (
         <EmptyState
           title="Todavía no hay marcas"
           hint="Registra la primera y la evolución empieza a dibujarse sola."
@@ -41,7 +47,7 @@ export function PersonalRecords({
           const metric = movement.metric as Metric;
           const valores = records.map((r) => r.value_numeric);
           const etiquetas = records.map(
-            (r) => `${formatValue(r.value_numeric, metric, movement.unit)} · ${r.achieved_on}`,
+            (r) => `${formatValue(r.value_numeric, metric, movement.unit)} · ${fechaCorta(r.achieved_on)}`,
           );
           const progreso = progressSince(valores, metric, movement.unit);
 
@@ -61,11 +67,11 @@ export function PersonalRecords({
                     <p className={`text-xs font-bold ${progreso.improved ? 'text-[#4ADE80]' : 'text-gray-500'}`}>
                       {progreso.improved ? '▲' : '▼'} {progreso.label}
                       <span className="ml-1 font-normal text-gray-500">
-                        desde {records[0].achieved_on}
+                        desde {fechaCorta(records[0].achieved_on)}
                       </span>
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500">{current.achieved_on}</p>
+                    <p className="text-xs text-gray-500">{fechaCorta(current.achieved_on)}</p>
                   )}
                 </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, ErrorNote, Field, TextInput } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { useMovements } from '../performance/queries';
 import { BlockEditor } from './BlockEditor';
 import { BenchmarkPicker } from './BenchmarkPicker';
@@ -7,7 +8,7 @@ import { useSaveBlocks, useSaveWod, useTogglePublish } from './mutations';
 import type { BlockDraft, WodWithBlocks } from './types';
 
 const textarea =
-  'w-full border border-gray-300 bg-gray-100 p-3 text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black';
+  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm focus:outline-none dark:border-gray-700 dark:bg-black';
 
 function bloqueVacio(position: number): BlockDraft {
   return {
@@ -108,7 +109,7 @@ export function WodEditor({
       setEliminados([]);
       setGuardado(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el WOD.');
+      setError(`No se pudo guardar el WOD: ${mensajeAmigable(err)}`);
     }
   }
 
@@ -121,7 +122,7 @@ export function WodEditor({
     try {
       await publicar.mutateAsync({ orgId, date, wodId: wod.id, publish: !publicado });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cambiar la publicación.');
+      setError(`No se pudo cambiar la publicación: ${mensajeAmigable(err)}`);
     }
   }
 

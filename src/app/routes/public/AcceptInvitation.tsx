@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../../shared/lib/supabase';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 import { useAuth } from '../../../features/auth/useAuth';
 import { Button, ErrorNote, Field, Spinner, TextInput } from '../../../shared/ui';
 
@@ -28,6 +29,7 @@ export default function AcceptInvitation() {
   const [correo, setCorreo] = useState('');
   const [correoEnviado, setCorreoEnviado] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
   // El token viene en la URL, o quedó guardado antes de salir al enlace mágico.
   const token = tokenUrl ?? sessionStorage.getItem(CLAVE_TOKEN) ?? '';
@@ -59,19 +61,29 @@ export default function AcceptInvitation() {
 
   async function enviarEnlace(e: React.FormEvent) {
     e.preventDefault();
+    // Dos toques seguidos mandarían dos correos y el segundo enlace invalida
+    // el primero: se bloquea el botón mientras responde el servidor.
+    if (enviando) return;
+    setEnviando(true);
     setErrorEnvio('');
     sessionStorage.setItem(CLAVE_TOKEN, token);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: correo.trim(),
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/invitacion/${token}`,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: correo.trim(),
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/invitacion/${token}`,
+        },
+      });
 
-    if (error) setErrorEnvio('No pudimos enviar el enlace. Revisa el correo e intenta de nuevo.');
-    else setCorreoEnviado(true);
+      if (error) setErrorEnvio('No pudimos enviar el enlace. Revisa el correo e intenta de nuevo.');
+      else setCorreoEnviado(true);
+    } catch (err) {
+      setErrorEnvio(mensajeAmigable(err));
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -95,9 +107,7 @@ export default function AcceptInvitation() {
           <div className="space-y-4">
             {/* Los mensajes de la función son explícitos y están en español:
                 se muestran tal cual en vez de taparlos con un "algo salió mal". */}
-            <ErrorNote>
-              {canje.error instanceof Error ? canje.error.message : 'No se pudo aceptar'}
-            </ErrorNote>
+            <ErrorNote>{mensajeAmigable(canje.error)}</ErrorNote>
             <p className="text-sm text-gray-500">
               Las invitaciones vencen, y solo sirven para el correo al que se enviaron. Si el
               tuyo es distinto, pídele al box que te mande una nueva.
@@ -134,11 +144,12 @@ export default function AcceptInvitation() {
                 required
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
-                autoFocus
               />
             </Field>
             {errorEnvio && <ErrorNote>{errorEnvio}</ErrorNote>}
-            <Button type="submit" className="w-full">Enviar enlace</Button>
+            <Button type="submit" className="w-full" disabled={enviando}>
+              {enviando ? 'Enviando…' : 'Enviar enlace'}
+            </Button>
           </form>
         )}
       </div>

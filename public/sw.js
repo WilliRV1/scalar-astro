@@ -90,8 +90,14 @@ self.addEventListener('fetch', (evento) => {
       (async () => {
         try {
           const respuesta = await fetch(peticion);
-          const cache = await caches.open(CACHE_CASCARON);
-          cache.put('/index.html', respuesta.clone());
+          // Solo se guarda un HTML bueno. Un 500 del hosting o una página de
+          // error del proxy guardada aquí dejaría la app "sin conexión" para
+          // siempre, incluso con señal.
+          const tipo = respuesta.headers.get('content-type') || '';
+          if (respuesta.ok && tipo.includes('text/html')) {
+            const cache = await caches.open(CACHE_CASCARON);
+            await cache.put('/index.html', respuesta.clone());
+          }
           return respuesta;
         } catch {
           const cache = await caches.open(CACHE_CASCARON);

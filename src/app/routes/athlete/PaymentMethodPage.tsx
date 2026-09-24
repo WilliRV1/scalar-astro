@@ -2,7 +2,8 @@ import { useAuth } from '../../../features/auth/useAuth';
 import { useAthlete } from '../../../features/athletes/queries';
 import { useAthleteBilling } from '../../../features/billing/queries-athlete';
 import { formatCents } from '../../../shared/lib/money';
-import { Card, EmptyState, Spinner } from '../../../shared/ui';
+import { Card, EmptyState, ErrorNote, Spinner } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 import {
   AutorizarDebito,
   CobrosAutomaticos,
@@ -30,12 +31,20 @@ export default function PaymentMethodPage() {
   const { activeMembership } = useAuth();
   const athleteId = activeMembership?.athlete_id ?? null;
 
-  const { data: athlete, isLoading: cargandoAtleta } = useAthlete(athleteId);
-  const { data: debito, isLoading: cargandoDebito } = useMiDebito(athleteId);
-  const { data: cobros } = useMisCobrosAutomaticos(athleteId);
-  const { data: facturacion } = useAthleteBilling(athleteId);
+  const {
+    data: athlete, isLoading: cargandoAtleta, error: errorAtleta,
+  } = useAthlete(athleteId);
+  const {
+    data: debito, isLoading: cargandoDebito, isError: fallaDebito, error: errorDebito,
+  } = useMiDebito(athleteId);
+  const { data: cobros, isError: fallanCobros, error: errorCobros } = useMisCobrosAutomaticos(athleteId);
+  const { data: facturacion, error: errorFacturacion } = useAthleteBilling(athleteId);
 
   if (cargandoAtleta || cargandoDebito) return <Spinner />;
+
+  if (errorAtleta) {
+    return <ErrorNote>No se pudo cargar tu ficha: {mensajeAmigable(errorAtleta)}</ErrorNote>;
+  }
 
   if (!athlete || !athleteId) {
     return (
@@ -68,7 +77,20 @@ export default function PaymentMethodPage() {
         </p>
       </div>
 
-      {activo && debito?.metodo && debito?.autorizacion ? (
+      {errorFacturacion && (
+        <ErrorNote>
+          No se pudo cargar tu plan: {mensajeAmigable(errorFacturacion)}
+        </ErrorNote>
+      )}
+
+      {/* Si no se sabe si ya hay un débito activo, NO se ofrece activar otro:
+          autorizaría dos veces el mismo cobro. */}
+      {fallaDebito ? (
+        <ErrorNote>
+          No se pudo consultar tu pago automático: {mensajeAmigable(errorDebito)}. Recarga la
+          página cuando tengas señal.
+        </ErrorNote>
+      ) : activo && debito?.metodo && debito?.autorizacion ? (
         <DebitoActivo
           metodo={debito.metodo}
           autorizacion={debito.autorizacion}
@@ -84,7 +106,7 @@ export default function PaymentMethodPage() {
         />
       )}
 
-      {saldo > 0 && (
+      {!errorFacturacion && saldo > 0 && (
         <Card>
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
             Pendiente hoy
@@ -102,7 +124,13 @@ export default function PaymentMethodPage() {
         <h2 className="mb-3 font-display text-2xl text-black dark:text-white">
           Mis cobros automáticos
         </h2>
-        <CobrosAutomaticos cobros={cobros ?? []} />
+        {fallanCobros ? (
+          <ErrorNote>
+            No se pudieron cargar tus cobros: {mensajeAmigable(errorCobros)}
+          </ErrorNote>
+        ) : (
+          <CobrosAutomaticos cobros={cobros ?? []} />
+        )}
       </section>
 
       <p className="text-xs leading-relaxed text-gray-500">

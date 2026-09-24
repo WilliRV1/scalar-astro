@@ -7,6 +7,7 @@ import { useLeaderboard, useWodByDate, useWodsInRange } from '../../../features/
 import { useDuplicateWod } from '../../../features/wods/mutations';
 import { addDays, longDayLabel, todayInBox, weekDays, weekStart } from '../../../features/wods/dates';
 import { Button, Drawer, EmptyState, ErrorNote, Spinner } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 
 /**
  * El WOD del día, para el coach.
@@ -66,7 +67,7 @@ export default function WodPage() {
         onShiftWeek={(delta) => setFecha(addDays(fecha, delta * 7))}
       />
 
-      {error && <ErrorNote>No se pudo cargar el WOD: {String(error)}</ErrorNote>}
+      {error && <ErrorNote>No se pudo cargar el WOD: {mensajeAmigable(error)}</ErrorNote>}
       {isLoading && <Spinner label="Cargando el WOD" />}
 
       {!isLoading && (
@@ -103,10 +104,12 @@ export default function WodPage() {
                 key={w.id}
                 type="button"
                 disabled={duplicar.isPending}
-                onClick={async () => {
-                  await duplicar.mutateAsync({ orgId, date: fecha, fromWodId: w.id });
-                  setDuplicando(false);
-                }}
+                onClick={() =>
+                  duplicar.mutate(
+                    { orgId, date: fecha, fromWodId: w.id },
+                    { onSuccess: () => setDuplicando(false) },
+                  )
+                }
                 className="grunge-border w-full px-4 py-3 text-left hover:border-primary disabled:opacity-50"
               >
                 <p className="font-display text-2xl text-black dark:text-white">
@@ -116,7 +119,9 @@ export default function WodPage() {
               </button>
             ))}
 
-          {duplicar.error && <ErrorNote>{String(duplicar.error)}</ErrorNote>}
+          {duplicar.error && (
+            <ErrorNote>No se pudo duplicar: {mensajeAmigable(duplicar.error)}</ErrorNote>
+          )}
         </div>
       </Drawer>
     </div>

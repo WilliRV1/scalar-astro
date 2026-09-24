@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Button, ErrorNote, Field, Select, TextInput } from '../../shared/ui';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { SCALE_LABEL, SCORE_HINT, SCORE_LABEL, parseScore } from './score';
 import { willBeRecord } from './pr';
 import { useSaveResult } from './mutations';
@@ -9,7 +10,7 @@ import type { Result, Scale, WodBlock } from './types';
 const SCALES: Scale[] = ['rx', 'scaled', 'beginner'];
 
 const textarea =
-  'w-full border border-gray-300 bg-gray-100 p-3 text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black';
+  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm focus:outline-none dark:border-gray-700 dark:bg-black';
 
 /** Fiesta. Es publicidad gratis para el box y engancha al atleta. */
 function celebrar() {
@@ -106,7 +107,7 @@ export function ResultForm({
       setError(
         msg.includes('duplicate') || msg.includes('unique')
           ? 'Ya tienes un resultado en este bloque; se actualizó el que había.'
-          : msg || 'No se pudo guardar el resultado.',
+          : mensajeAmigable(err),
       );
     }
   }

@@ -55,11 +55,14 @@ export interface Athlete {
   last_name: string | null;
   phone: string | null;
   email: string | null;
+  document_id: string | null;
   avatar_url: string | null;
   birth_date: string | null;
   referral_source: string | null;
   joined_on: string;
   status: AthleteStatus;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
   tags: string[];
   /**
    * Valores de los campos que definió el box. Ver `features/customfields`.

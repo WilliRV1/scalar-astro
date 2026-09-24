@@ -6,6 +6,7 @@ import { useAttendance } from '../../../features/attendance/queries';
 import { useToggleAttendance } from '../../../features/attendance/mutations';
 import { addDays, longDayLabel, todayInBox } from '../../../features/wods/dates';
 import { Button, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 
 /**
  * Asistencia del día.
@@ -26,7 +27,9 @@ export default function AttendancePage() {
   const [busqueda, setBusqueda] = useState('');
 
   const { data: atletas, isLoading, error } = useAthletes(orgId, busqueda);
-  const { data: asistencia } = useAttendance(orgId, fecha);
+  // Si la asistencia no cargó, las filas se bloquean: sin saber quién está
+  // marcado, un toque intentaría marcar dos veces a quien ya vino.
+  const { data: asistencia, error: errorAsistencia } = useAttendance(orgId, fecha);
   const marcar = useToggleAttendance();
 
   const porAtleta = useMemo(
@@ -70,8 +73,15 @@ export default function AttendancePage() {
         className="grunge-border w-full bg-transparent px-3 py-3 text-sm focus:border-primary focus:outline-none"
       />
 
-      {error && <ErrorNote>No se pudieron cargar los atletas: {String(error)}</ErrorNote>}
-      {marcar.error && <ErrorNote>No se pudo marcar: {String(marcar.error)}</ErrorNote>}
+      {error && (
+        <ErrorNote>No se pudieron cargar los atletas: {mensajeAmigable(error)}</ErrorNote>
+      )}
+      {errorAsistencia && (
+        <ErrorNote>
+          No se pudo cargar la asistencia del día: {mensajeAmigable(errorAsistencia)}
+        </ErrorNote>
+      )}
+      {marcar.error && <ErrorNote>No se pudo marcar: {mensajeAmigable(marcar.error)}</ErrorNote>}
       {isLoading && <Spinner label="Cargando atletas" />}
 
       {!isLoading && lista.length === 0 && (
@@ -90,7 +100,7 @@ export default function AttendancePage() {
               name={fullName(a)}
               hint={a.status === 'overdue' ? 'En mora' : undefined}
               present={Boolean(fila)}
-              disabled={marcar.isPending}
+              disabled={marcar.isPending || Boolean(errorAsistencia)}
               onToggle={() =>
                 marcar.mutate({ orgId, athleteId: a.id, date: fecha, existing: fila })
               }

@@ -39,7 +39,15 @@ export function useToggleAttendance() {
         status: 'attended',
         checked_in_by: user.user?.id ?? null,
       });
-      if (error) throw error;
+      if (error) {
+        // Dos coaches marcando a la vez, o una lista vieja: la fila ya existe.
+        // Se dice en español y se refresca la lista para que se vea marcado.
+        if (error.code === '23505' || /duplicate key/i.test(error.message)) {
+          void qc.invalidateQueries({ queryKey: ['asistencia', orgId, date] });
+          throw new Error('Ya estaba marcado hoy. La lista se acaba de actualizar.');
+        }
+        throw error;
+      }
     },
     onSuccess: (_d, v) => {
       void qc.invalidateQueries({ queryKey: ['asistencia', v.orgId, v.date] });

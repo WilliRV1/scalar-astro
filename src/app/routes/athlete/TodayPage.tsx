@@ -7,6 +7,7 @@ import { longDayLabel, todayInBox } from '../../../features/wods/dates';
 import { SCALE_LABEL, SCORE_LABEL } from '../../../features/wods/score';
 import type { Scale, WodBlock } from '../../../features/wods/types';
 import { Card, EmptyState, ErrorNote, Spinner } from '../../../shared/ui';
+import { mensajeAmigable } from '../../../shared/lib/errores';
 
 const KIND_LABEL: Record<string, string> = {
   warmup: 'Calentamiento',
@@ -68,7 +69,12 @@ export default function TodayPage() {
     );
   }
 
-  if (error) return <ErrorNote>No se pudo cargar el WOD: {String(error)}</ErrorNote>;
+  // Sin datos no hay nada que pintar. Si el WOD ya cargó y falla un refresco,
+  // el aviso va arriba: desmontar la pantalla borraría el resultado que el
+  // atleta está escribiendo.
+  if (error && !wod) {
+    return <ErrorNote>No se pudo cargar el WOD: {mensajeAmigable(error)}</ErrorNote>;
+  }
 
   if (!wod) {
     return (
@@ -81,6 +87,9 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <ErrorNote>No se pudo actualizar el WOD: {mensajeAmigable(error)}</ErrorNote>
+      )}
       <header>
         <p className="text-xs uppercase tracking-widest text-primary">Hoy</p>
         <h1 className="font-display text-4xl text-black dark:text-white">

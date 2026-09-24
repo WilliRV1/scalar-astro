@@ -62,7 +62,7 @@ export default function StaffLogin() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 bg-gray-100 p-3 focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+              className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
             />
           </div>
 
@@ -77,7 +77,7 @@ export default function StaffLogin() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 bg-gray-100 p-3 focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+              className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
             />
           </div>
 

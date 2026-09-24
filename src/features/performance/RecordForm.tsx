@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
+import { mensajeAmigable } from '../../shared/lib/errores';
 import { Button, Drawer, ErrorNote, Field, Select, TextInput } from '../../shared/ui';
 import { formatValue, parseValue, type Metric } from './format';
 import { useMovements } from './queries';
@@ -64,7 +65,7 @@ export function RecordForm({
       setError(
         msg.includes('duplicate') || msg.includes('unique')
           ? 'Ya hay una marca de ese movimiento en esa fecha.'
-          : msg || 'No se pudo guardar',
+          : mensajeAmigable(err),
       );
     }
   }
@@ -106,6 +107,7 @@ export function RecordForm({
           <TextInput
             value={valor}
             onChange={(e) => setValor(e.target.value)}
+            inputMode={metric === 'time' ? 'text' : 'decimal'}
             placeholder={metric === 'time' ? '8:30' : '120'}
             disabled={!movimiento}
           />

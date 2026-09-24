@@ -89,7 +89,7 @@ export default function RiskPage() {
             key={f.key}
             type="button"
             onClick={() => setFiltro(f.key)}
-            className={`grunge-border px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition ${
+            className={`grunge-border min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest transition ${
               filtro === f.key ? 'border-primary text-primary' : 'text-gray-500 hover:text-gray-300'
             }`}
           >
@@ -153,19 +153,19 @@ function FilaDeRiesgo({ riesgo, nombreDelBox }: { riesgo: RiesgoAtleta; nombreDe
               href={enlace}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-primary px-4 py-3 font-display text-xl tracking-wide text-white transition hover:bg-red-700"
+              className="inline-flex min-h-11 items-center justify-center gap-2 bg-primary px-4 py-3 font-display text-xl tracking-wide text-white transition hover:bg-red-700"
             >
               Escribirle
             </a>
           ) : (
-            <span className="grunge-border px-4 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-gray-600">
+            <span className="grunge-border inline-flex min-h-11 items-center justify-center px-4 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-gray-600">
               {riesgo.athletes?.phone ? 'Pidió no recibir mensajes' : 'Sin teléfono'}
             </span>
           )}
           <button
             type="button"
             onClick={() => setAbierto((v) => !v)}
-            className="text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
+            className="min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary"
           >
             {abierto ? 'Ocultar' : 'Por qué'}
           </button>

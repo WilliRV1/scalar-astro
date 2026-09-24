@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
 import { formatCents } from '../../shared/lib/money';
-import { normalizarEncabezado } from './parse';
-import type { FilaNormalizada } from './parse';
+import { claveNombre, normalizarEncabezado } from './parse';
+import type { AtletaExistente, FilaNormalizada } from './parse';
 import type { AthleteStatus, Movement, Plan, SubscriptionStatus } from '../../types/database';
 
 /**
@@ -171,9 +171,89 @@ async function asegurarPlanes(
 type ResultadoInsercion = { id: string } | { error: string };
 
 /**
+ * ¿La base rechazó el lote por permisos? Reintentar fila por fila daría 50
+ * veces el mismo "no", y lo que necesita el coach es un solo mensaje claro.
+ */
+export function esErrorDePermiso(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const { code, message } = err as { code?: unknown; message?: unknown };
+  return code === '42501' || /row-level security|permission denied/i.test(String(message ?? ''));
+}
+
+interface IdentidadAtleta {
+  first_name: string;
+  last_name: string | null;
+  phone: string | null;
+}
+
+/**
+ * Para cada fila del lote, el id del atleta que YA existe en el box, o null.
+ *
+ * Se usa cuando un lote falló: PostgREST lo mete en una transacción, pero un
+ * fallo de red DESPUÉS de confirmar deja las filas guardadas y al cliente con
+ * un error en la mano. Reintentar a ciegas duplicaría 50 atletas. Se empareja
+ * por teléfono (E.164, único de verdad) y, si la fila no trae, por nombre y
+ * apellido normalizados, el mismo criterio que usa `detectarDuplicados`.
+ */
+export function emparejarExistentes(
+  registros: IdentidadAtleta[],
+  existentes: AtletaExistente[],
+): Array<string | null> {
+  const porTelefono = new Map<string, string>();
+  const porNombre = new Map<string, string>();
+  for (const e of existentes) {
+    if (e.phone && !porTelefono.has(e.phone)) porTelefono.set(e.phone, e.id);
+    const clave = claveNombre(e.first_name, e.last_name);
+    if (clave && !porNombre.has(clave)) porNombre.set(clave, e.id);
+  }
+
+  return registros.map((r) => {
+    if (r.phone) return porTelefono.get(r.phone) ?? null;
+    const clave = claveNombre(r.first_name, r.last_name);
+    return clave ? porNombre.get(clave) ?? null : null;
+  });
+}
+
+/** Consulta a la base qué filas del lote ya están guardadas en el box. */
+async function buscarAtletasExistentes(
+  orgId: string,
+  registros: IdentidadAtleta[],
+): Promise<Array<string | null>> {
+  const telefonos = registros.map((r) => r.phone).filter((p): p is string => Boolean(p));
+  const nombres = registros.filter((r) => !r.phone).map((r) => r.first_name);
+
+  const encontrados: AtletaExistente[] = [];
+  const columnas = 'id, first_name, last_name, phone';
+
+  if (telefonos.length > 0) {
+    const { data, error } = await supabase
+      .from('athletes').select(columnas)
+      .eq('org_id', orgId).is('deleted_at', null).in('phone', telefonos);
+    if (error) throw error;
+    encontrados.push(...((data ?? []) as AtletaExistente[]));
+  }
+  if (nombres.length > 0) {
+    const { data, error } = await supabase
+      .from('athletes').select(columnas)
+      .eq('org_id', orgId).is('deleted_at', null).in('first_name', nombres);
+    if (error) throw error;
+    encontrados.push(...((data ?? []) as AtletaExistente[]));
+  }
+
+  return emparejarExistentes(registros, encontrados);
+}
+
+/**
  * Inserta un lote y, si el lote falla, lo reintenta fila por fila. PostgREST
- * mete el lote en una sola transacción, así que un lote fallido no dejó nada a
- * medias: reintentar fila por fila no duplica a nadie.
+ * mete el lote en una sola transacción, así que un lote fallido en la base no
+ * dejó nada a medias.
+ *
+ * Dos excepciones al reintento:
+ *  · Si el fallo fue de permisos (RLS), no se reintenta: sería el mismo "no"
+ *    cincuenta veces.
+ *  · Si `yaExisten` viene, se consulta antes qué filas ya están guardadas (el
+ *    lote pudo confirmarse y fallar la respuesta) y esas se dan por hechas con
+ *    su id, sin volver a insertarlas.
  *
  * El reintento NO se hace cuando la base no reportó error: en ese caso las
  * filas ya quedaron guardadas y volver a mandarlas sí duplicaría.
@@ -181,6 +261,7 @@ type ResultadoInsercion = { id: string } | { error: string };
 async function insertarLote<T extends object>(
   tabla: 'athletes' | 'subscriptions' | 'personal_records',
   registros: T[],
+  yaExisten?: (registros: T[]) => Promise<Array<string | null>>,
 ): Promise<ResultadoInsercion[]> {
   const { data, error } = await supabase.from(tabla).insert(registros).select('id');
 
@@ -191,8 +272,30 @@ async function insertarLote<T extends object>(
     });
   }
 
+  if (esErrorDePermiso(error)) {
+    const motivo = mensajeDeError(error);
+    return registros.map(() => ({ error: motivo }));
+  }
+
+  let existentes: Array<string | null> = registros.map(() => null);
+  if (yaExisten) {
+    try {
+      existentes = await yaExisten(registros);
+    } catch {
+      // Sin poder consultar no se reintenta: mejor reportar el lote entero
+      // que arriesgarse a duplicarlo.
+      const motivo = `No se pudo comprobar si ya estaba guardado: ${mensajeDeError(error)}`;
+      return registros.map(() => ({ error: motivo }));
+    }
+  }
+
   const resultados: ResultadoInsercion[] = [];
-  for (const registro of registros) {
+  for (const [i, registro] of registros.entries()) {
+    const idExistente = existentes[i];
+    if (idExistente) {
+      resultados.push({ id: idExistente });
+      continue;
+    }
     const uno = await supabase.from(tabla).insert(registro).select('id').single();
     if (uno.error) resultados.push({ error: mensajeDeError(uno.error) });
     else resultados.push(uno.data as { id: string });
@@ -223,7 +326,11 @@ export async function ejecutarImportacion(args: ArgsImportacion): Promise<Resume
   const idPorFila = new Map<number, string>();
 
   for (const lote of enLotes(filas)) {
-    const resultados = await insertarLote('athletes', lote.map((f) => filaAAtleta(orgId, f, hoy)));
+    const resultados = await insertarLote(
+      'athletes',
+      lote.map((f) => filaAAtleta(orgId, f, hoy)),
+      (registros) => buscarAtletasExistentes(orgId, registros),
+    );
     resultados.forEach((r, i) => {
       const fila = lote[i];
       if ('id' in r) {

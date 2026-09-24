@@ -131,17 +131,25 @@ function BotonDeAccion({
         </button>
       );
     case 'cancelar':
-    case 'en_espera':
+    case 'en_espera': {
+      // Cancelación tardía: el aviso dice que se pierde el crédito. Un toque
+      // accidental aquí cuesta plata, así que se pregunta antes.
+      const aviso = accion.tipo === 'cancelar' ? accion.aviso : null;
+      const cancelar = () => {
+        if (aviso && !window.confirm(`${aviso}\n\n¿Cancelar de todas formas?`)) return;
+        onCancelar();
+      };
       return (
         <button
           type="button"
-          onClick={onCancelar}
+          onClick={cancelar}
           disabled={ocupado}
           className={`${base} grunge-border text-gray-400 hover:border-primary hover:text-primary`}
         >
           Cancelar
         </button>
       );
+    }
     case 'asistida':
       return (
         <span className="flex h-12 min-w-[6rem] items-center justify-center text-2xl text-green-500">
