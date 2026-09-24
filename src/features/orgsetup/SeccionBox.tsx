@@ -110,8 +110,48 @@ function Formulario({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Opcion etiqueta="Nombre del box" ayuda={AYUDA.nombre} error={errores.name}>
-        <TextInput value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus />
+      {/* El logo va de primero y se guarda solo al subirlo: en el celular, el
+          selector de archivos manda la app a segundo plano y lo que estuviera
+          escrito en el formulario puede perderse. Así, lo primero que se hace
+          es lo único que puede tumbar la página, y el resto se escribe después. */}
+      <Nota>
+        <span className="font-bold text-white">Sube el logo primero.</span> Se guarda solo al
+        elegirlo; después llena el resto y dale a Guardar.
+      </Nota>
+
+      <Opcion etiqueta="1 · Logo" ayuda={AYUDA.logo} error={errores.logo_url}>
+        <div className="flex flex-wrap items-center gap-3">
+          {vistaPrevia.data && (
+            <img
+              src={vistaPrevia.data}
+              alt="Logo de tu box"
+              className="h-16 w-16 shrink-0 border border-gray-700 object-contain"
+            />
+          )}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={onArchivo}
+            className="text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:font-display file:text-base file:text-white"
+          />
+          {subir.isPending && <span className="text-xs text-gray-500">Subiendo…</span>}
+          {subir.isSuccess && !subir.isPending && (
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">Logo guardado</span>
+          )}
+          {logo && (
+            <button
+              type="button"
+              onClick={() => setLogo('')}
+              className="text-xs font-bold uppercase text-gray-500 hover:text-primary"
+            >
+              Quitar
+            </button>
+          )}
+        </div>
+      </Opcion>
+
+      <Opcion etiqueta="2 · Nombre del box" ayuda={AYUDA.nombre} error={errores.name}>
+        <TextInput value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </Opcion>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -165,34 +205,6 @@ function Formulario({
             onChange={(e) => setColor(e.target.value.toUpperCase())}
             placeholder="#EF4444"
           />
-        </div>
-      </Opcion>
-
-      <Opcion etiqueta="Logo" ayuda={AYUDA.logo} error={errores.logo_url}>
-        <div className="flex flex-wrap items-center gap-3">
-          {vistaPrevia.data && (
-            <img
-              src={vistaPrevia.data}
-              alt="Logo de tu box"
-              className="h-16 w-16 shrink-0 border border-gray-700 object-contain"
-            />
-          )}
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={onArchivo}
-            className="text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:font-display file:text-base file:text-white"
-          />
-          {subir.isPending && <span className="text-xs text-gray-500">Subiendo…</span>}
-          {logo && (
-            <button
-              type="button"
-              onClick={() => setLogo('')}
-              className="text-xs font-bold uppercase text-gray-500 hover:text-primary"
-            >
-              Quitar
-            </button>
-          )}
         </div>
       </Opcion>
 

@@ -172,16 +172,33 @@ export function useDesactivarPlan() {
 }
 
 /** Subir el logo al bucket privado del box. La ruta empieza por el org_id: así lo aísla la RLS de Storage. */
+/**
+ * Subir el logo Y dejarlo guardado en el box de una vez.
+ *
+ * Antes solo subía el archivo y dejaba la ruta en el formulario, a la espera
+ * de "Guardar". En el celular, abrir el selector de archivos manda la app a
+ * segundo plano y Android puede matar la página mientras tanto: el archivo
+ * llegaba al servidor y la ruta se perdía con el formulario. Guardarla aquí
+ * hace que el logo sobreviva a lo que le pase al formulario después.
+ */
 export function useSubirLogo() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: { orgId: string; archivo: File }): Promise<string> => {
       const ext = args.archivo.name.split('.').pop()?.toLowerCase() ?? 'png';
       const ruta = `${args.orgId}/logo-${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
+      const subida = await supabase.storage
         .from('avatars')
         .upload(ruta, args.archivo, { upsert: false });
+      if (subida.error) throw subida.error;
+
+      const { error } = await supabase
+        .from('organizations')
+        .update({ logo_url: ruta })
+        .eq('id', args.orgId);
       if (error) throw error;
       return ruta;
     },
+    onSuccess: (_d, v) => void qc.invalidateQueries({ queryKey: ['box', v.orgId] }),
   });
 }
