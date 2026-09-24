@@ -205,7 +205,7 @@ export default function SuppliesPage() {
           <div className="space-y-2">
             {(compras ?? []).slice(0, 20).map((c) => (
               <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
+                <div className="min-w-40 flex-1">
                   <p className="truncate font-bold text-black dark:text-white">
                     {c.supplies?.name ?? 'Insumo'}
                   </p>
@@ -264,7 +264,7 @@ export default function SuppliesPage() {
 function FilaAlerta({ alerta, onComprar }: { alerta: LowStockRow; onComprar: () => void }) {
   return (
     <Card className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-l-primary">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-40 flex-1">
         <p className="font-bold text-black dark:text-white">{alerta.name}</p>
         <p className="text-xs text-gray-500">
           Quedan {cantidad(alerta.current_stock, alerta.unit)} · mínimo{' '}

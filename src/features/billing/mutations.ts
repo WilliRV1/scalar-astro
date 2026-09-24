@@ -35,8 +35,12 @@ export function useAssignSubscription() {
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
-      void qc.invalidateQueries({ queryKey: ['subscription', v.athleteId] });
+      // 'athlete-billing' es la que de verdad lee la ficha del atleta
+      // (useAthleteBilling); sin invalidarla, el plan asignado no aparecía
+      // hasta recargar la página a mano.
+      void qc.invalidateQueries({ queryKey: ['athlete-billing', v.athleteId] });
       void qc.invalidateQueries({ queryKey: ['athletes', v.orgId] });
+      void qc.invalidateQueries({ queryKey: ['cartera', v.orgId] });
     },
   });
 }

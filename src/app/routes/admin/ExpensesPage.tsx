@@ -216,7 +216,7 @@ export default function ExpensesPage() {
           <div className="space-y-2">
             {filas.map((g) => (
               <Card key={g.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
+                <div className="min-w-40 flex-1">
                   <p className="truncate font-bold text-black dark:text-white">{g.description}</p>
                   <p className="text-xs text-gray-500">
                     {fechaCorta(g.incurred_on)}
@@ -284,7 +284,7 @@ function FilaCompromiso({
     <Card className={`flex flex-wrap items-center justify-between gap-3 ${
       vencido ? 'border-l-4 border-l-primary' : ''
     }`}>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-40 flex-1">
         <p className="truncate font-bold text-black dark:text-white">{compromiso.label}</p>
         <p className="text-xs text-gray-500">
           Vence {fechaCorta(compromiso.due_on)}
