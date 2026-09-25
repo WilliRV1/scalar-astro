@@ -24,6 +24,7 @@ import type { Ambiente, ClaveCredencial, Credencial, Pasarela } from './types';
  */
 
 const CLAVES: Record<Pasarela, ClaveCredencial[]> = {
+  mercadopago: ['mercadopago_access_token', 'mercadopago_webhook_secret'],
   wompi: [
     'wompi_public_key',
     'wompi_private_key',
@@ -34,9 +35,15 @@ const CLAVES: Record<Pasarela, ClaveCredencial[]> = {
 };
 
 const NOMBRE_PASARELA: Record<Pasarela, string> = {
-  wompi: 'Wompi · pagos en línea',
+  mercadopago: 'Mercado Pago · pagos en línea',
+  wompi: 'Wompi · pagos en línea (alternativa)',
   whatsapp_cloud: 'WhatsApp · envío automático',
 };
+
+/** La URL que el dueño pega en el panel de Mercado Pago (Webhooks). */
+function urlDelWebhook(orgId: string): string {
+  return `${window.location.origin}/functions/v1/mercadopago-webhook/box/${orgId}`;
+}
 
 export function SeccionIntegraciones({ orgId }: { orgId: string }) {
   const { data, isLoading, error } = useCredenciales(orgId);
@@ -59,6 +66,7 @@ export function SeccionIntegraciones({ orgId }: { orgId: string }) {
           credenciales={CLAVES[pasarela].map((k) => porClave.get(k) ?? null)}
           claves={CLAVES[pasarela]}
           onEditar={setEditando}
+          webhook={pasarela === 'mercadopago' ? urlDelWebhook(orgId) : undefined}
         />
       ))}
 
@@ -76,12 +84,14 @@ export function SeccionIntegraciones({ orgId }: { orgId: string }) {
 }
 
 function BloquePasarela({
-  pasarela, claves, credenciales, onEditar,
+  pasarela, claves, credenciales, onEditar, webhook,
 }: {
   pasarela: Pasarela;
   claves: ClaveCredencial[];
   credenciales: (Credencial | null)[];
   onEditar: (c: ClaveCredencial) => void;
+  /** URL de avisos que el dueño pega en el panel de su pasarela. */
+  webhook?: string;
 }) {
   const puestas = credenciales.filter((c) => c?.is_set).length;
   const completa = puestas === claves.length;
@@ -104,6 +114,15 @@ function BloquePasarela({
       </div>
 
       <p className="text-xs leading-relaxed text-gray-500">{AYUDA_PASARELA[pasarela]}</p>
+
+      {webhook && (
+        <div className="grunge-border p-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            URL para el webhook (Mercado Pago → Webhooks → Configurar notificaciones)
+          </p>
+          <p className="mt-1 break-all font-mono text-xs text-black dark:text-white">{webhook}</p>
+        </div>
+      )}
 
       {mezclada && (
         <ErrorNote>

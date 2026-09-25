@@ -45,7 +45,15 @@ código de producto**: es un puñado de decisiones de seguridad/despliegue, y so
    y todo el tráfico pasa por el mismo origen (`scalar.widawi.online`), sin CORS de por medio.
    Solo importa el día que se desplieguen Edge Functions (Cloud o widawi con Deno). **30
    minutos** al desplegar: `supabase secrets set SITIO_PERMITIDO=https://<dominio del panel>`.
-3. **Ninguna transacción de Wompi —ni sandbox— ha pasado por el código**
+3. **Actualizado 2026-09-25: la pasarela de arranque es Mercado Pago**, para las
+   dos cosas (el box cobra a sus atletas; el box le paga a Scalar). Está construida
+   sobre el mismo molde de Wompi, con el edge-runtime corriendo ya en widawi
+   (`/functions/v1/` en vivo) y 50+ aserciones SQL más 48 del módulo; falta la
+   **primera transacción real en sandbox** con credenciales de prueba de Mercado
+   Pago (~1-2 h, ver [20-mercadopago.md](./20-mercadopago.md) "Qué queda por
+   verificar"). Lo de abajo sobre Wompi sigue siendo cierto pero ya no bloquea:
+   Wompi queda como alternativa.
+   **Ninguna transacción de Wompi —ni sandbox— ha pasado por el código**
    (`docs/10-wompi.md`, confirmado: no existen llaves ni evidencia de ejecución en el repo).
    El código de firma e idempotencia está probado contra vectores propios
    (`supabase/functions/_shared/wompi_pruebas.ts`) pero **no contra el servidor real de

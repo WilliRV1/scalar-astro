@@ -145,11 +145,42 @@ services:
     volumes:
       - storage-data:/var/lib/storage
 
+  # Las Edge Functions (enlaces de pago, webhooks de Mercado Pago). El mismo
+  # edge-runtime del docker-compose oficial de Supabase; el enrutador está en
+  # functions/main (viene de deploy/widawi/functions/main). Habla con Auth y
+  # PostgREST a través de nginx (`web`), como lo haría el navegador.
+  functions:
+    image: supabase/edge-runtime:v1.77.0
+    restart: unless-stopped
+    <<: *logs
+    depends_on:
+      auth:
+        condition: service_started
+      rest:
+        condition: service_started
+    command: ["start", "--main-service", "/home/deno/functions/main"]
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://web
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      PUBLIC_URL: ${PUBLIC_URL}
+      SITIO_PERMITIDO: ${PUBLIC_URL}
+      MERCADOPAGO_BACK_URL: ${PUBLIC_URL}
+      # La cuenta de Mercado Pago de SCALAR (lo que los boxes nos pagan).
+      # Vacías hasta que se pongan en .env; las de cada box van en la base.
+      SCALAR_MP_ACCESS_TOKEN: ${SCALAR_MP_ACCESS_TOKEN:-}
+      SCALAR_MP_WEBHOOK_SECRET: ${SCALAR_MP_WEBHOOK_SECRET:-}
+      AUTOMATIONS_CRON_SECRET: ${AUTOMATIONS_CRON_SECRET:-}
+    volumes:
+      - ./functions:/home/deno/functions:ro
+
   web:
     image: nginx:alpine
     restart: unless-stopped
     <<: *logs
-    depends_on: [auth, rest, storage]
+    # nginx resuelve `functions` al arrancar: tiene que existir ya.
+    depends_on: [auth, rest, storage, functions]
     ports:
       - 8099:80
     healthcheck:

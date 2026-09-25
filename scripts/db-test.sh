@@ -175,6 +175,13 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de totales"; exit 1
 fi
 
+echo "→ Mercado Pago (cobro del box a sus atletas y del box a Scalar)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/mercadopago.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|MERCADO PAGO" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de Mercado Pago"; exit 1
+fi
+
 echo "→ Motor de cobros"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/billing_engine.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|MOTOR" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

@@ -11,7 +11,7 @@ import type { InicioDeNequi, MetodoGuardado } from './types';
  * ("Todavía no aparece aprobado en Nequi…"). Aquí se lee el cuerpo del error,
  * que es justo lo que hay que mostrarle a la persona.
  */
-async function invocar<T>(nombre: string, body: Record<string, unknown>): Promise<T> {
+export async function invocar<T>(nombre: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>(nombre, { body });
 
   if (error) {

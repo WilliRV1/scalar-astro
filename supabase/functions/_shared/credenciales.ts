@@ -27,9 +27,18 @@ export type ClaveCredencial =
   | 'wompi_integrity_secret'
   | 'wompi_events_secret'
   | 'whatsapp_token'
-  | 'whatsapp_phone_number_id';
+  | 'whatsapp_phone_number_id'
+  | 'mercadopago_access_token'
+  | 'mercadopago_webhook_secret';
 
-/** Variable de entorno de respaldo para cada credencial. */
+/**
+ * Variable de entorno de respaldo para cada credencial.
+ *
+ * OJO: las de Mercado Pago del box NO son las de Scalar. Lo que Scalar cobra a
+ * los boxes va en SCALAR_MP_ACCESS_TOKEN / SCALAR_MP_WEBHOOK_SECRET, que no
+ * están aquí a propósito: si un box sin configurar cayera a la cuenta de
+ * Scalar, la plata de sus atletas entraría a la nuestra.
+ */
 const RESPALDO: Record<ClaveCredencial, string> = {
   wompi_public_key: 'WOMPI_PUBLIC_KEY',
   wompi_private_key: 'WOMPI_PRIVATE_KEY',
@@ -37,6 +46,8 @@ const RESPALDO: Record<ClaveCredencial, string> = {
   wompi_events_secret: 'WOMPI_EVENTS_SECRET',
   whatsapp_token: 'WHATSAPP_TOKEN',
   whatsapp_phone_number_id: 'WHATSAPP_PHONE_NUMBER_ID',
+  mercadopago_access_token: 'MERCADOPAGO_ACCESS_TOKEN',
+  mercadopago_webhook_secret: 'MERCADOPAGO_WEBHOOK_SECRET',
 };
 
 /**

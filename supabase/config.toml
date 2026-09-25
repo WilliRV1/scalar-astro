@@ -79,3 +79,13 @@ verify_jwt = false
 # La tokenización sí la inicia el atleta desde la aplicación.
 [functions.tokenize-payment-method]
 verify_jwt = true
+
+# Mercado Pago avisa servidor a servidor, sin JWT. Lo que autentica el aviso es
+# la firma x-signature que verifica la propia función, y el pago se consulta
+# después en la API: el aviso nunca es la verdad.
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+# El dueño pide desde la aplicación el enlace para pagarle a Scalar.
+[functions.platform-payment-link]
+verify_jwt = true

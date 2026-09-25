@@ -93,6 +93,16 @@ export const CREDENCIALES: Record<
   ClaveCredencial,
   { etiqueta: string; ayuda: string; secreta: boolean }
 > = {
+  mercadopago_access_token: {
+    etiqueta: 'Access token',
+    ayuda: 'Empieza por APP_USR- (producción) o TEST- (pruebas). Está en mercadopago.com.co/developers → Tus integraciones → tu aplicación → Credenciales. Con este se cobra a tu cuenta, así que no se lo pases a nadie.',
+    secreta: true,
+  },
+  mercadopago_webhook_secret: {
+    etiqueta: 'Clave secreta del webhook',
+    ayuda: 'En la misma aplicación, en Webhooks → Configurar notificaciones: pega como URL la que te mostramos arriba, marca el evento "Pagos" y copia la clave secreta que aparece. Con ella comprobamos que el aviso de "pago aprobado" vino de Mercado Pago.',
+    secreta: true,
+  },
   wompi_public_key: {
     etiqueta: 'Llave pública',
     ayuda: 'Empieza por pub_test_ (pruebas) o pub_prod_ (producción). Está en el panel de Wompi, en Desarrolladores → Llaves de API.',
@@ -125,9 +135,11 @@ export const CREDENCIALES: Record<
   },
 };
 
-export const AYUDA_PASARELA: Record<'wompi' | 'whatsapp_cloud', string> = {
+export const AYUDA_PASARELA: Record<'mercadopago' | 'wompi' | 'whatsapp_cloud', string> = {
+  mercadopago:
+    'La pasarela recomendada: abres la cuenta con tu cédula en minutos y la plata de tus mensualidades entra a TU cuenta de Mercado Pago (PSE, tarjeta, Efecty). Si configuras Mercado Pago y Wompi a la vez, manda Mercado Pago.',
   wompi:
-    'Tus llaves de Wompi, para que la plata de tus mensualidades entre a TU cuenta. Sin esto, tus atletas no pueden pagar en línea.',
+    'Alternativa con Nequi nativo. Pide RUT y unos días de aprobación. Las llaves son tuyas: la plata entra a TU cuenta.',
   whatsapp_cloud:
     'Opcional. Con esto los mensajes salen solos. Sin esto también funciona: el sistema te los deja listos y tú das un clic para enviarlos por WhatsApp.',
 };

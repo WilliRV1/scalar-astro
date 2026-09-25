@@ -5,14 +5,21 @@ Scalar corre en el servidor `widawi` sin Supabase en la nube, en
 de Cloudflare `widawi` (ruta `scalar.widawi.online → http://100.94.57.56:8099`).
 
 Es un Supabase recortado a lo que usa la app: Postgres (imagen oficial de
-Supabase, con `pg_cron`), Auth (GoTrue), PostgREST y Storage. Un nginx sirve la
-SPA y hace de pasarela bajo el mismo origen. **No hay Edge Functions**: el
-cobro en línea, el WhatsApp automático y el correo no funcionan aquí.
+Supabase, con `pg_cron`), Auth (GoTrue), PostgREST, Storage y, desde el
+2026-09-25, el **edge-runtime** con las Edge Functions (enlaces de pago y
+webhooks de Mercado Pago). Un nginx sirve la SPA y hace de pasarela bajo el
+mismo origen; `/functions/v1/` va al edge-runtime.
+
+Las funciones leen sus secretos de `.env` (ver `docker-compose.yml`, servicio
+`functions`): `SCALAR_MP_ACCESS_TOKEN` y `SCALAR_MP_WEBHOOK_SECRET` son la
+cuenta de Mercado Pago de Scalar (lo que los boxes nos pagan). Las de cada box
+viven en la base, no aquí.
 
 | Archivo | Qué es |
 |---|---|
-| `docker-compose.yml` | Los cinco contenedores, con healthchecks y rotación de logs |
+| `docker-compose.yml` | Los seis contenedores, con healthchecks y rotación de logs |
 | `nginx.conf` + `scalar-cabeceras.conf` | Pasarela, SPA, cabeceras de seguridad, límite de intentos de login |
+| `functions/main/` | Enrutador del edge-runtime: `/<funcion>` → `supabase/functions/<funcion>` |
 | `gen-env.py` | Genera `.env` con secretos nuevos (una sola vez) |
 | `aplicar.sh` | Aplica las migraciones pendientes (registro con hash en `scalar_demo.migraciones`) y, con `--semilla`, recarga el box de demostración |
 | `desplegar.sh` | Desde el PC: sube migraciones, compila la SPA contra este entorno y la publica |

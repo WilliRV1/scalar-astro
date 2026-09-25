@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useAuth } from '../../../features/auth/useAuth';
 import { fullName, useAthlete } from '../../../features/athletes/queries';
 import { useMyInvoices, useMyPayments } from '../../../features/billing/queries';
+import { usePagarAMano } from '../../../features/recurring/mutations';
 import { daysOverdue, formatCents } from '../../../shared/lib/money';
 import { PersonalRecords } from '../../../features/performance/PersonalRecords';
-import { Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
+import { Button, Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
 import { mensajeAmigable } from '../../../shared/lib/errores';
 import { fechaCorta } from '../../../shared/lib/fechas';
 
@@ -20,6 +22,19 @@ export default function AthleteHome() {
   const { data: athlete, isLoading, error: errorFicha } = useAthlete(athleteId);
   const { data: invoices, error: errorCobros } = useMyInvoices(athleteId);
   const { data: payments, isError: fallaronPagos, error: errorPagos } = useMyPayments(athleteId);
+  const pagar = usePagarAMano();
+  const [errorPago, setErrorPago] = useState('');
+
+  async function alPagar(invoiceId: string) {
+    setErrorPago('');
+    try {
+      const url = await pagar.mutateAsync(invoiceId);
+      // El enlace es de la pasarela: se sale de la aplicación a propósito.
+      window.location.assign(url);
+    } catch (causa) {
+      setErrorPago(causa instanceof Error ? causa.message : 'No se pudo abrir el enlace de pago.');
+    }
+  }
 
   if (isLoading) return <Spinner />;
   if (errorFicha) {
@@ -67,6 +82,23 @@ export default function AthleteHome() {
         />
         <Stat label="Desde" value={fechaCorta(athlete.joined_on)} hint="Fecha de ingreso al box" />
       </div>
+
+      {proxima && saldo > 0 && (
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-bold text-black dark:text-white">
+              Mensualidad de {formatCents(proxima.amount_cents - proxima.paid_cents)}
+            </p>
+            <p className="text-xs text-gray-500">
+              PSE, tarjeta o Efecty. El pago queda registrado solo, sin mandar comprobante.
+            </p>
+          </div>
+          <Button onClick={() => void alPagar(proxima.id)} disabled={pagar.isPending}>
+            {pagar.isPending ? 'Abriendo…' : 'Pagar en línea'}
+          </Button>
+        </Card>
+      )}
+      {errorPago && <ErrorNote>{errorPago}</ErrorNote>}
 
       {activeMembership && (
         <PersonalRecords

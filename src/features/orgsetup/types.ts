@@ -53,10 +53,12 @@ export interface AvanceOnboarding {
   completed_at: string | null;
 }
 
-export type Pasarela = 'wompi' | 'whatsapp_cloud';
+export type Pasarela = 'mercadopago' | 'wompi' | 'whatsapp_cloud';
 export type Ambiente = 'test' | 'prod';
 
 export type ClaveCredencial =
+  | 'mercadopago_access_token'
+  | 'mercadopago_webhook_secret'
   | 'wompi_public_key'
   | 'wompi_private_key'
   | 'wompi_integrity_secret'

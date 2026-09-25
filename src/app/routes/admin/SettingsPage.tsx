@@ -10,6 +10,7 @@ import {
   useBox,
   useOnboarding,
 } from '../../../features/orgsetup';
+import { SeccionSuscripcion } from '../../../features/platformbilling';
 import { Card, EmptyState } from '../../../shared/ui';
 
 /**
@@ -32,6 +33,7 @@ const PESTANAS = [
   { id: 'mensajes', label: 'Mensajes' },
   { id: 'reservas', label: 'Reservas' },
   { id: 'integraciones', label: 'Integraciones' },
+  { id: 'scalar', label: 'Mi plan' },
 ] as const;
 
 type Pestana = (typeof PESTANAS)[number]['id'];
@@ -41,7 +43,8 @@ const DESCRIPCION: Record<Pestana, string> = {
   cobros: 'Qué día se cobra, cuántos días esperas antes de marcar la mora y cómo te pagan.',
   mensajes: 'Los avisos que salen solos: cuándo se puede escribir, cuántas veces y si de verdad se envían.',
   reservas: 'Las reglas del cupo: cuándo se aparta, hasta cuándo se cancela y qué pasa con el que no llega.',
-  integraciones: 'Tus llaves de Wompi y de WhatsApp. Son tuyas: con ellas la plata de tus mensualidades entra a tu cuenta.',
+  integraciones: 'Tus llaves de Mercado Pago (o Wompi) y de WhatsApp. Son tuyas: con ellas la plata de tus mensualidades entra a tu cuenta.',
+  scalar: 'Lo que tu box le paga a Scalar: el plan, el próximo cobro y el botón para pagar en línea.',
 };
 
 export default function SettingsPage() {
@@ -122,6 +125,7 @@ export default function SettingsPage() {
         {pestana === 'mensajes' && <SeccionMensajes orgId={orgId} />}
         {pestana === 'reservas' && <SeccionReservas orgId={orgId} />}
         {pestana === 'integraciones' && <SeccionIntegraciones orgId={orgId} />}
+        {pestana === 'scalar' && <SeccionSuscripcion orgId={orgId} />}
       </Card>
     </div>
   );
