@@ -1,0 +1,150 @@
+/* Kovat: botón.
+   Requiere kovat-colores.css (tokens --k-*) y kovat-tipografia.css (--k-fuente-lectura).
+
+   Intención
+   El botón es la única pieza de la interfaz que se "enciende" en rojo: la acción principal de una
+   pantalla es el LED del marcador. Por eso hay un solo botón primario por pantalla, y los demás
+   bajan de jerarquía perdiendo relleno, no cambiando de color. Los tres son sobrios y de esquinas
+   casi rectas, como los segmentos del logo; la personalidad la pone el rojo, no la forma.
+
+   Variantes
+   - primario    relleno rojo LED, texto oscuro. La acción que la pantalla existe para hacer
+                 ("Registrar pago", "Reservar clase"). Una por pantalla.
+   - secundario  sin relleno, borde neutro, texto claro. Alternativas a la principal
+                 ("Escribir por WhatsApp", "Exportar").
+   - fantasma    sin relleno ni borde. Acciones de bajo peso ("Cancelar", "Ver todos").
+   Ningún botón lleva texto rojo: en Kovat el texto rojo significa error.
+
+   Estados
+   - predeterminado  lo que se ve en reposo.
+   - flotante        el cursor encima (solo en dispositivos con cursor: en el celular no queda
+                     "pegado"). Una capa del color del texto al 8 % encima del relleno
+                     (color-mix sobre el fondo: el mismo resultado que una capa, y se anima).
+   - presionado      la misma capa al 10 %.
+   - foco            anillo de 2 px en --k-foco, separado 2 px del botón, solo con teclado.
+   - deshabilitado   relleno del texto al 12 % y texto al 38 %, como en Material 3; no reacciona.
+   En el primario la capa es clara y no oscura como indica Material: la oscura bajaba el contraste
+   del texto a 4,40:1 (mínimo 4,5). Con la clara el botón "brilla más" al pasar el cursor. En los
+   botones neutros la capa es --k-capa-estado: clara, salvo en contraste alto, donde oscurece para
+   que el texto blanco no baje de 7:1.
+
+   Contrastes medidos (docs/marca/fuente/colores.py los comprueba en los tres niveles y falla si
+   alguno baja del mínimo: texto 4,5:1 en estándar y medio, 7:1 en alto; borde 3:1):
+                 primario (reposo / flotante / presionado)   borde secundario   texto neutro
+     estándar    5,04 / 5,36 / 5,41                          3,87 o más         7,27 o más
+     medio       6,62 / 7,14 / 7,27                          5,04 o más         7,93 o más
+     alto        11,10 / 11,60 / 11,76                       8,17 o más         10,20 o más
+   "Texto neutro" es el del secundario y el fantasma con la capa de estado, sobre cualquiera de las
+   seis superficies. Deshabilitado no tiene mínimo (WCAG lo exime).
+
+   Medidas
+   48 px de alto mínimo: el área táctil que pide Material, y el coach usa el celular a medio brazo
+   y con las manos ocupadas. Texto de 16 px en negrita, un punto más que la etiqueta de Material,
+   por la misma razón. */
+
+.k-boton {
+  /* cada variante solo cambia estas propiedades */
+  --_fondo: transparent;
+  --_texto: var(--k-texto);
+  --_borde: transparent;
+  --_capa: var(--k-capa-estado);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  min-width: 64px;
+  padding: 0 20px;
+  border: 1px solid var(--_borde);
+  border-radius: 2px;
+  background-color: var(--_fondo);
+  color: var(--_texto);
+  font: 700 16px/1.25 var(--k-fuente-lectura);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;                     /* un botón no parte su texto en dos líneas */
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+}
+
+.k-boton svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/* ------------------------------------------------------------ variantes */
+
+.k-boton--primario {
+  --_fondo: var(--k-primario-contenedor);
+  --_texto: var(--k-sobre-primario-contenedor);
+  --_capa: var(--k-capa-primario, var(--k-texto)); /* capa clara en los dos modos: el botón brilla más */
+}
+
+.k-boton--secundario {
+  --_borde: var(--k-contorno);
+  --_texto: var(--k-texto);
+}
+
+.k-boton--fantasma {
+  --_texto: var(--k-texto);
+  padding: 0 12px;
+}
+
+/* ------------------------------------------------------------ estados
+   data-estado="flotante" | "presionado" | "foco" fuerza el estado, solo para documentación y
+   pruebas visuales. */
+
+@media (hover: hover) {
+  .k-boton:hover:not(:disabled, [aria-disabled="true"]) {
+    background-color: color-mix(in srgb, var(--_capa) 8%, var(--_fondo));
+  }
+}
+.k-boton[data-estado="flotante"] {
+  background-color: color-mix(in srgb, var(--_capa) 8%, var(--_fondo));
+}
+
+.k-boton:active:not(:disabled, [aria-disabled="true"]),
+.k-boton[data-estado="presionado"] {
+  background-color: color-mix(in srgb, var(--_capa) 10%, var(--_fondo));
+}
+
+.k-boton:focus-visible,
+.k-boton[data-estado="foco"] {
+  outline: 2px solid var(--k-foco);
+  outline-offset: 2px;
+}
+
+.k-boton:disabled,
+.k-boton[aria-disabled="true"] {
+  --_fondo: color-mix(in srgb, var(--k-texto) 12%, transparent);
+  --_texto: color-mix(in srgb, var(--k-texto) 38%, transparent);
+  --_borde: transparent;
+  background-color: var(--_fondo);
+  cursor: not-allowed;
+}
+.k-boton--secundario:disabled,
+.k-boton--secundario[aria-disabled="true"] {
+  --_fondo: transparent;
+  --_borde: color-mix(in srgb, var(--k-texto) 12%, transparent);
+}
+.k-boton--fantasma:disabled,
+.k-boton--fantasma[aria-disabled="true"] {
+  --_fondo: transparent;
+}
+
+/* ------------------------------------------------------------ preferencias del sistema */
+
+@media (prefers-reduced-motion: reduce) {
+  .k-boton { transition: none; }
+}
+
+/* Modo de alto contraste de Windows: los colores los pone el sistema; el borde marca el botón. */
+@media (forced-colors: active) {
+  .k-boton { border-color: ButtonText; }
+  .k-boton:disabled,
+  .k-boton[aria-disabled="true"] { color: GrayText; border-color: GrayText; }
+}

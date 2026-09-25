@@ -1,0 +1,39 @@
+/* Kovat: escala tipográfica (roles de Material 3).
+   Dos fuentes con papeles distintos, como propone Material:
+   - Marca (Kovat Marcador): display y headline grande. Logo, títulos de campaña, cronómetros y
+     pantallas de competencia. Solo mayúsculas, desde 32 px.
+   - Lectura (Atkinson Hyperlegible Next, del Braille Institute): todo lo demás. Ninguna letra se
+     confunde con otra (I, l, 1; O, 0), que es lo que importa cuando un coach lee nombres rápido en
+     el celular. Licencia libre (OFL).
+   Tamaños de la escala de Material (progresión 1,125). Interlineado 1,2 en títulos y 1,5 en texto.
+   Números tabulares en tablas, plata y tiempos. */
+
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap");
+@import url("kovat-marcador.css");
+
+:root {
+  --k-fuente-marca: "Kovat Marcador", "Atkinson Hyperlegible Next", sans-serif;
+  --k-fuente-lectura: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+}
+
+/* marca */
+.k-display-grande   { font: 400 57px/1.12 var(--k-fuente-marca); }
+.k-display-mediano  { font: 400 45px/1.16 var(--k-fuente-marca); }
+.k-display-chico    { font: 400 36px/1.22 var(--k-fuente-marca); }
+.k-titular-grande   { font: 400 32px/1.25 var(--k-fuente-marca); }
+
+/* lectura */
+.k-titular-mediano  { font: 700 28px/1.29 var(--k-fuente-lectura); }
+.k-titular-chico    { font: 700 24px/1.33 var(--k-fuente-lectura); }
+.k-titulo-grande    { font: 700 22px/1.27 var(--k-fuente-lectura); }
+.k-titulo-mediano   { font: 600 16px/1.5 var(--k-fuente-lectura); }
+.k-titulo-chico     { font: 600 14px/1.43 var(--k-fuente-lectura); }
+.k-cuerpo-grande    { font: 400 16px/1.5 var(--k-fuente-lectura); }   /* el cuerpo por defecto en el celular */
+.k-cuerpo-mediano   { font: 400 14px/1.43 var(--k-fuente-lectura); }
+.k-cuerpo-chico     { font: 400 12px/1.33 var(--k-fuente-lectura); }
+.k-etiqueta-grande  { font: 600 14px/1.43 var(--k-fuente-lectura); }  /* botones */
+.k-etiqueta-mediana { font: 600 12px/1.33 var(--k-fuente-lectura); }
+.k-etiqueta-chica   { font: 600 11px/1.45 var(--k-fuente-lectura); }
+
+/* tablas, plata, tiempos y marcadores: todos los números del mismo ancho */
+.k-numeros { font-variant-numeric: tabular-nums; }

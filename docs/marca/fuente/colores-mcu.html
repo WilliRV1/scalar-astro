@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Kovat: esquema de color (Material Color Utilities)</title></head>
+<body style="background:#111;color:#ddd;font:12px monospace;margin:16px">
+<!--
+  Genera el esquema de color de Kovat con Material Color Utilities (MCU), la biblioteca oficial de
+  Material 3. Abrir en el navegador con internet: el resultado aparece abajo en JSON y se guarda
+  tal cual en docs/marca/colores/kovat-colores.json. Luego `python colores.py` arma el CSS, mide los
+  contrastes y construye la muestra.
+
+  Decisiones (docs/19-marca.md § 7):
+  - Modo oscuro y modo claro (decisión del 2026-09-25, segunda parte: la app sigue el ajuste del
+    celular), cada uno en los tres niveles de contraste de Material (estándar, medio, alto).
+    `esquemas` es el oscuro, como siempre; `esquemasClaros` es el claro.
+  - Primaria: la paleta del rojo LED (#F0402A), variante "fidelity" para que los rellenos se parezcan
+    al color de la marca.
+  - Tres opciones de neutros, que es lo que cubre casi toda la pantalla: "tarima" (casi gris con
+    el tinte cálido de la tarima), "grafito" (gris azulado, frío) y "pista" (tinte rojizo, como los
+    neutros que Material deriva del rojo). El resto del sistema es igual en las tres.
+  - Error en carmesí (matiz 12) en vez del rojo de Material (matiz 25), que es casi el mismo de la
+    marca (28): un error no puede parecer un botón de la marca.
+  - Verde (éxito) y ámbar (aviso) como colores estáticos, con sus cuatro roles cada uno.
+-->
+<pre id="salida">calculando…</pre>
+<script type="module">
+import * as M from 'https://cdn.jsdelivr.net/npm/@material/material-color-utilities@0.3.0/+esm';
+const { argbFromHex, hexFromArgb, Hct, DynamicScheme, MaterialDynamicColors: D, TonalPalette, SchemeFidelity, SchemeTonalSpot } = M;
+
+const LED = '#F0402A', VERDE = '#2FD075', AMBAR = '#F5A524';
+const OPCIONES = {
+  tarima:  { neutro: { hue: 39.3, chroma: 2.5 }, neutroVariante: { hue: 39.3, chroma: 5 } },
+  grafito: { neutro: { hue: 250,  chroma: 4 },   neutroVariante: { hue: 250,  chroma: 8 } },
+  pista:   { neutro: { hue: 28.2, chroma: 6 },   neutroVariante: { hue: 28.2, chroma: 10 } },
+};
+const ERROR = { hue: 12, chroma: 84 };
+const CONTRASTES = { estandar: 0, medio: 0.5, alto: 1 };
+
+const led = Hct.fromInt(argbFromHex(LED));
+// La versión 0.3.0 no exporta el enum Variant: se lee de los esquemas que sí se exportan.
+const Variant = { FIDELITY: new SchemeFidelity(led, true, 0).variant, TONAL_SPOT: new SchemeTonalSpot(led, true, 0).variant };
+const tp = (h, c) => TonalPalette.fromHueAndChroma(h, c);
+const P = {
+  primaria: TonalPalette.fromInt(argbFromHex(LED)),
+  secundaria: tp(led.hue, 16),
+  error: tp(ERROR.hue, ERROR.chroma),
+  verde: TonalPalette.fromInt(argbFromHex(VERDE)),
+  ambar: TonalPalette.fromInt(argbFromHex(AMBAR)),
+};
+
+function esquema(contraste, primaria, variante, N, oscuro = true) {
+  const s = new DynamicScheme({
+    sourceColorArgb: primaria === P.primaria ? argbFromHex(LED) : primaria.tone(60),
+    variant: variante, contrastLevel: contraste, isDark: oscuro,
+    primaryPalette: primaria, secondaryPalette: P.secundaria, tertiaryPalette: P.secundaria,
+    neutralPalette: N.neutra, neutralVariantPalette: N.neutraVariante,
+  });
+  s.errorPalette = P.error;
+  return s;
+}
+const ROLES = ['primary','onPrimary','primaryContainer','onPrimaryContainer','secondary','onSecondary','secondaryContainer','onSecondaryContainer',
+  'error','onError','errorContainer','onErrorContainer','surface','surfaceDim','surfaceBright','surfaceContainerLowest','surfaceContainerLow',
+  'surfaceContainer','surfaceContainerHigh','surfaceContainerHighest','onSurface','onSurfaceVariant','outline','outlineVariant',
+  'inverseSurface','inverseOnSurface','inversePrimary','scrim'];
+const leer = (s, lista) => Object.fromEntries(lista.filter(k => D[k]).map(k => [k, hexFromArgb(D[k].getArgb(s))]));
+const estatico = (pal, contraste, N, oscuro = true) => {
+  const s = esquema(contraste, pal, Variant.TONAL_SPOT, N, oscuro);
+  const r = leer(s, ['primary','onPrimary','primaryContainer','onPrimaryContainer']);
+  return { color: r.primary, onColor: r.onPrimary, container: r.primaryContainer, onContainer: r.onPrimaryContainer };
+};
+const tonos = [0,4,6,10,12,17,20,22,24,30,40,50,60,70,80,87,90,92,94,95,98,100];
+const res = {
+  generado_con: '@material/material-color-utilities 0.3.0',
+  entrada: { led: LED, verde: VERDE, ambar: AMBAR, error: ERROR, opciones: OPCIONES },
+  hct_led: [+led.hue.toFixed(2), +led.chroma.toFixed(2), +led.tone.toFixed(2)],
+  paletas: {},
+  opciones: {},
+};
+const tonal = (p) => Object.fromEntries(tonos.map(t => [t, hexFromArgb(p.tone(t))]));
+for (const [n, p] of Object.entries(P)) res.paletas[n] = tonal(p);
+for (const [nombre, o] of Object.entries(OPCIONES)) {
+  const N = { neutra: tp(o.neutro.hue, o.neutro.chroma), neutraVariante: tp(o.neutroVariante.hue, o.neutroVariante.chroma) };
+  const op = { paletas: { neutra: tonal(N.neutra), neutraVariante: tonal(N.neutraVariante) }, esquemas: {}, esquemasClaros: {} };
+  for (const [nivel, c] of Object.entries(CONTRASTES)) {
+    op.esquemas[nivel] = {
+      roles: leer(esquema(c, P.primaria, Variant.FIDELITY, N), ROLES),
+      exito: estatico(P.verde, c, N),
+      aviso: estatico(P.ambar, c, N),
+    };
+    op.esquemasClaros[nivel] = {
+      roles: leer(esquema(c, P.primaria, Variant.FIDELITY, N, false), ROLES),
+      exito: estatico(P.verde, c, N, false),
+      aviso: estatico(P.ambar, c, N, false),
+    };
+  }
+  res.opciones[nombre] = op;
+}
+window.KOVAT = res;
+document.getElementById('salida').textContent = JSON.stringify(res, null, 1);
+</script>
+</body></html>

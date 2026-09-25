@@ -29,8 +29,11 @@ done
 ssh widawi "cd ~/scalar-demo && ./aplicar.sh ${1:-} && docker compose up -d --remove-orphans && docker compose restart functions >/dev/null && docker compose exec web nginx -s reload"
 
 ANON=$(ssh widawi "grep ^ANON_KEY= ~/scalar-demo/.env | cut -d= -f2-")
+# El WhatsApp de contacto de la landing vive en el .env del servidor, no en el repositorio.
+CONTACTO=$(ssh widawi "grep ^CONTACTO_WHATSAPP= ~/scalar-demo/.env | cut -d= -f2-" || true)
 OUT=$(mktemp -d)
 VITE_SUPABASE_URL=https://scalar.widawi.online VITE_SUPABASE_ANON_KEY="$ANON" \
+  VITE_CONTACTO_WHATSAPP="$CONTACTO" \
   npx vite build --outDir "$OUT" --emptyOutDir --logLevel error
 tar czf - -C "$OUT" . | ssh widawi 'rm -rf ~/scalar-demo/dist/* && tar xzf - -C ~/scalar-demo/dist'
 rm -rf "$OUT"

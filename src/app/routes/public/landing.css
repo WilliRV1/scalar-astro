@@ -1,0 +1,699 @@
+/* Landing pública con la identidad de Kovat (docs/19-marca.md, docs/marca/pautas.md).
+   Tesis: el cronómetro colgado en la pared del box. La página es clara y callada, como un juez que
+   habla poco y exacto; el único objeto oscuro es el marcador, y sus cifras en LED solo se encienden
+   para lo que importa: el precio.
+   Va siempre en modo claro (Landing.tsx pone data-tema="claro" en <html>). Ningún color se escribe
+   aquí: todos salen de kovat-colores.css. El rojo va solo en el botón principal y en el marcador. */
+
+@import "../../../../docs/marca/colores/kovat-colores.css";
+@import "../../../../docs/marca/componentes/boton.css";
+
+/* Kovat Marcador, los mismos archivos de docs/marca/tipografia. No se importa su CSS porque el
+   WOFF pesa menos de 4 KB y Vite lo metería como data:, que la política de seguridad de widawi
+   (font-src 'self') bloquea. `?no-inline` lo sirve como archivo. */
+@font-face {
+  font-family: "Kovat Marcador";
+  src: url("../../../../docs/marca/tipografia/KovatMarcador-Regular.woff?no-inline") format("woff"),
+       url("../../../../docs/marca/tipografia/KovatMarcador-Regular.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Atkinson Hyperlegible Next servida desde el propio dominio (pautas §7, paso 3). Variable de 200 a
+   800, subconjunto latino: cubre tildes, ñ, ü, ¿ y ¡. Licencia OFL, Braille Institute. */
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  src: url("../../../assets/fonts/atkinson-hyperlegible-next-latin.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+.landing {
+  --k-fuente-marca: "Kovat Marcador", "Atkinson Hyperlegible Next", sans-serif;
+  --k-fuente-lectura: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+
+  /* Espacio, radio y movimiento: locales hasta que el sistema de marca los defina (19-marca §7.5).
+     Escala con saltos de al menos 25 %. */
+  --l-esp-1: 4px;
+  --l-esp-2: 8px;
+  --l-esp-3: 12px;
+  --l-esp-4: 16px;
+  --l-esp-5: 24px;
+  --l-esp-6: 32px;
+  --l-esp-7: 48px;
+  --l-esp-8: 64px;
+  --l-esp-9: 96px;
+  --l-radio: 2px;
+  --l-ancho: 72rem;
+  --l-margen: 16px;
+  --l-curva: cubic-bezier(0.16, 1, 0.3, 1);
+
+  min-height: 100dvh;
+  background-color: var(--k-superficie-mas-baja);
+  color: var(--k-texto);
+  font-family: var(--k-fuente-lectura);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 768px) {
+  .landing {
+    --l-margen: 32px;
+    font-size: 1.125rem;
+  }
+}
+
+.landing ::selection {
+  background-color: var(--k-secundario-contenedor);
+  color: var(--k-sobre-secundario-contenedor);
+}
+
+.landing :focus-visible {
+  outline: 2px solid var(--k-foco);
+  outline-offset: 2px;
+}
+
+.l-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.l-salto {
+  position: absolute;
+  left: var(--l-margen);
+  top: var(--l-esp-2);
+  z-index: 1;
+  transform: translateY(-200%);
+}
+.l-salto:focus-visible {
+  transform: none;
+}
+
+.l-contenedor {
+  max-width: var(--l-ancho);
+  margin-inline: auto;
+  padding-inline: var(--l-margen);
+}
+
+.l-enlace {
+  color: var(--k-enlace);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+@media (hover: hover) {
+  .l-enlace:hover {
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* Enlaces sueltos (no dentro de un párrafo): 48 px de área táctil, como pide pautas §2.9. */
+.l-acciones .l-enlace,
+.l-pie nav .l-enlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+}
+
+/* ------------------------------------------------------------------ cabecera */
+
+.l-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--l-esp-4);
+  padding-block: var(--l-esp-4);
+  border-bottom: 1px solid var(--k-contorno-variante);
+}
+
+/* El nombre escrito con la fuente del logo. Sobre fondo claro va en tinta, como el logo negro, y
+   deja el rojo al botón y al marcador. */
+.l-marca {
+  font-family: var(--k-fuente-marca);
+  font-size: 32px;
+  line-height: 1;
+  color: var(--k-pieza-tinta);
+  text-decoration: none;
+}
+
+.l-navegacion {
+  display: flex;
+  align-items: center;
+  gap: var(--l-esp-2);
+}
+
+.l-navegacion__ancla {
+  display: none;
+}
+@media (min-width: 768px) {
+  .l-navegacion__ancla {
+    display: inline-flex;
+  }
+}
+
+/* ---------------------------------------------------------------------- héroe */
+
+.l-heroe {
+  display: grid;
+  gap: var(--l-esp-7);
+  padding-block: var(--l-esp-8) var(--l-esp-8);
+}
+
+@media (min-width: 960px) {
+  .l-heroe {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: center;
+    column-gap: var(--l-esp-8);
+    padding-block: var(--l-esp-9);
+  }
+}
+
+.l-titular {
+  font-weight: 700;
+  font-size: clamp(2.5rem, 1.5rem + 3.6vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  max-width: 13ch;
+  text-wrap: balance;
+}
+
+.l-bajada {
+  margin-top: var(--l-esp-5);
+  max-width: 34ch;
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
+  line-height: 1.45;
+  color: var(--k-texto-secundario);
+  text-wrap: pretty;
+}
+
+.l-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--l-esp-3) var(--l-esp-5);
+  margin-top: var(--l-esp-6);
+}
+
+.l-nota {
+  margin-top: var(--l-esp-4);
+  font-size: 0.9375rem;
+  color: var(--k-texto-secundario);
+}
+
+/* -------------------------------------------------- el marcador (elemento firma)
+   Como un cronómetro de pared real: los segmentos apagados se insinúan detrás y los dígitos se
+   encienden uno por uno al cargar. Es la única animación de la página. */
+
+/* El marcador es un objeto de la marca, no una superficie de la página: usa las piezas fijas (tarima,
+   tiza, LED, apagado), que no cambian con el modo claro u oscuro. */
+.l-marcador {
+  --_tiza-tenue: color-mix(in srgb, var(--k-pieza-tiza) 78%, var(--k-pieza-tarima));
+
+  margin: 0;
+  padding: var(--l-esp-5);
+  background-color: var(--k-pieza-tarima);
+  color: var(--k-pieza-tiza);
+  border-radius: var(--l-radio);
+  container-type: inline-size;
+}
+
+.l-marcador__rotulo {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--_tiza-tenue);
+}
+
+.l-display {
+  position: relative;
+  display: grid;
+  margin-block: var(--l-esp-4) var(--l-esp-5);
+  font-family: var(--k-fuente-marca);
+  font-size: clamp(3.25rem, 18vw, 5.5rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+/* "$49.900" mide 3,885 em en esta fuente: 24 cqi llena el 93 % del panel sin tocar el borde. */
+@supports (font-size: 1cqi) {
+  .l-display {
+    font-size: 24cqi;
+  }
+}
+
+.l-display__capa {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.l-display__apagado {
+  color: var(--k-pieza-apagado);
+}
+
+.l-display__encendido {
+  color: var(--k-pieza-led);
+}
+
+.l-display__digito {
+  animation: l-encender 160ms var(--l-curva) both;
+  animation-delay: calc(280ms + var(--i, 0) * 90ms);
+}
+
+@keyframes l-encender {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.l-marcador__pie {
+  padding-top: var(--l-esp-4);
+  border-top: 1px solid var(--k-pieza-apagado);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.l-marcador__pie p + p {
+  margin-top: var(--l-esp-1);
+  color: var(--_tiza-tenue);
+}
+
+.l-numeros {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------- secciones */
+
+.l-seccion {
+  padding-block: var(--l-esp-8);
+  border-top: 1px solid var(--k-contorno-variante);
+}
+@media (min-width: 960px) {
+  .l-seccion {
+    padding-block: var(--l-esp-9);
+  }
+}
+
+.l-titulo {
+  font-weight: 700;
+  font-size: clamp(1.75rem, 1.25rem + 1.8vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  max-width: 26ch;
+  text-wrap: balance;
+}
+
+.l-texto {
+  margin-top: var(--l-esp-4);
+  max-width: 60ch;
+  color: var(--k-texto-secundario);
+  text-wrap: pretty;
+}
+
+.l-subtitulo {
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+/* ---------------------------------------------------------------- productos
+   Box es lo que existe hoy y ocupa la columna ancha; Competencias es lo que viene. */
+
+.l-productos {
+  display: grid;
+  gap: var(--l-esp-6);
+  margin-top: var(--l-esp-7);
+}
+@media (min-width: 960px) {
+  .l-productos {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: var(--l-esp-8);
+  }
+}
+
+.l-producto {
+  padding-top: var(--l-esp-5);
+  border-top: 1px solid var(--k-contorno);
+}
+
+.l-producto__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--l-esp-2) var(--l-esp-4);
+}
+
+.l-producto__nombre {
+  font-weight: 700;
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+  line-height: 1.2;
+}
+
+/* Un estado real: el módulo no existe todavía. Sin color de aviso para no gritarlo. */
+.l-estado {
+  padding: 2px var(--l-esp-2);
+  border: 1px solid var(--k-contorno);
+  border-radius: var(--l-radio);
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--k-texto-secundario);
+}
+
+.l-producto p {
+  margin-top: var(--l-esp-3);
+  max-width: 48ch;
+  color: var(--k-texto-secundario);
+  text-wrap: pretty;
+}
+
+.l-producto .l-enlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  margin-top: var(--l-esp-2);
+}
+
+/* -------------------------------------------- tabla: el Excel frente al sistema */
+
+.l-tabla {
+  width: 100%;
+  margin-top: var(--l-esp-7);
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.l-tabla thead th {
+  padding: 0 var(--l-esp-4) var(--l-esp-3) 0;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--k-texto-secundario);
+  border-bottom: 1px solid var(--k-contorno);
+}
+
+.l-tabla tbody tr {
+  border-bottom: 1px solid var(--k-contorno-variante);
+}
+
+.l-tabla tbody th,
+.l-tabla td {
+  padding: var(--l-esp-5) var(--l-esp-4) var(--l-esp-5) 0;
+  vertical-align: top;
+}
+
+.l-tabla tbody th {
+  width: 26%;
+  font-weight: 700;
+}
+
+.l-tabla td.l-tabla__hoy {
+  width: 32%;
+  color: var(--k-texto-secundario);
+}
+
+@media (max-width: 719px) {
+  .l-tabla,
+  .l-tabla tbody,
+  .l-tabla tr,
+  .l-tabla th,
+  .l-tabla td,
+  .l-tabla tbody th,
+  .l-tabla td.l-tabla__hoy {
+    display: block;
+    width: auto;
+  }
+  .l-tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .l-tabla tbody tr {
+    padding-block: var(--l-esp-5);
+  }
+  .l-tabla tbody th,
+  .l-tabla td {
+    padding: 0;
+  }
+  .l-tabla tbody th {
+    margin-bottom: var(--l-esp-3);
+    font-size: 1.125rem;
+  }
+  .l-tabla td + td {
+    margin-top: var(--l-esp-3);
+  }
+  .l-tabla td::before {
+    content: attr(data-etiqueta);
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--k-texto-secundario);
+  }
+}
+
+/* ---------------------------------------------------- el mensaje de cobro, real */
+
+.l-mensaje {
+  display: grid;
+  gap: var(--l-esp-5);
+  margin-top: var(--l-esp-8);
+}
+@media (min-width: 960px) {
+  .l-mensaje {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    column-gap: var(--l-esp-8);
+    align-items: start;
+  }
+}
+
+.l-mensaje .l-texto {
+  margin-top: var(--l-esp-3);
+}
+
+.l-cita {
+  margin: 0;
+  padding: var(--l-esp-5);
+  background-color: var(--k-superficie-baja);
+  border-radius: var(--l-radio);
+  font-size: 1.25rem;
+  line-height: 1.45;
+  max-width: 40ch;
+}
+
+/* ----------------------------------------------------- lo que ya funciona
+   La plata ocupa la columna ancha: es el primer argumento de venta. */
+
+.l-funciones {
+  display: grid;
+  gap: var(--l-esp-7);
+  margin-top: var(--l-esp-7);
+}
+@media (min-width: 960px) {
+  .l-funciones {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    grid-template-areas:
+      "plata clases"
+      "plata entrenamiento"
+      "atletas atletas";
+    column-gap: var(--l-esp-8);
+  }
+  .l-grupo--plata { grid-area: plata; }
+  .l-grupo--clases { grid-area: clases; }
+  .l-grupo--entrenamiento { grid-area: entrenamiento; }
+  .l-grupo--atletas { grid-area: atletas; }
+  .l-grupo--atletas .l-lista {
+    columns: 2;
+    column-gap: var(--l-esp-8);
+  }
+}
+
+.l-grupo .l-subtitulo {
+  padding-bottom: var(--l-esp-3);
+  border-bottom: 1px solid var(--k-contorno);
+}
+
+.l-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.l-lista li {
+  padding-block: var(--l-esp-3);
+  border-bottom: 1px solid var(--k-contorno-variante);
+  break-inside: avoid;
+  text-wrap: pretty;
+}
+
+/* ------------------------------------------------------- pasos para arrancar
+   Es una secuencia real, por eso va numerada. En el celular, una columna; en escritorio, cuatro. */
+
+.l-pasos {
+  list-style: none;
+  margin: var(--l-esp-7) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--l-esp-6);
+  counter-reset: paso;
+}
+@media (min-width: 960px) {
+  .l-pasos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--l-esp-6);
+  }
+}
+
+.l-pasos li {
+  counter-increment: paso;
+  padding-top: var(--l-esp-4);
+  border-top: 1px solid var(--k-contorno);
+}
+
+.l-pasos li::before {
+  content: counter(paso);
+  display: block;
+  margin-bottom: var(--l-esp-3);
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--k-texto-secundario);
+}
+
+.l-pasos p {
+  margin-top: var(--l-esp-2);
+  color: var(--k-texto-secundario);
+  text-wrap: pretty;
+}
+
+/* --------------------------------------------------------------- condiciones */
+
+.l-condiciones {
+  display: grid;
+  margin: var(--l-esp-6) 0 0;
+  max-width: 52rem;
+}
+@media (min-width: 640px) {
+  .l-condiciones {
+    grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr);
+    column-gap: var(--l-esp-6);
+  }
+}
+
+.l-condiciones dt,
+.l-condiciones dd {
+  margin: 0;
+  padding-block: var(--l-esp-4);
+  border-top: 1px solid var(--k-contorno-variante);
+}
+
+.l-condiciones dt {
+  font-weight: 600;
+  color: var(--k-texto-secundario);
+}
+
+@media (max-width: 639px) {
+  .l-condiciones dt {
+    padding-bottom: 0;
+  }
+  .l-condiciones dd {
+    padding-top: var(--l-esp-1);
+    border-top: 0;
+  }
+}
+
+.l-condiciones strong {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------ lo que todavía no hace */
+
+.l-pendientes {
+  list-style: none;
+  margin: var(--l-esp-6) 0 0;
+  padding: 0;
+  max-width: 60ch;
+}
+
+.l-pendientes li + li {
+  margin-top: var(--l-esp-5);
+}
+
+.l-pendientes p {
+  margin-top: var(--l-esp-1);
+  color: var(--k-texto-secundario);
+  text-wrap: pretty;
+}
+
+.l-pendientes + .l-texto {
+  margin-top: var(--l-esp-6);
+}
+
+.l-cita,
+.l-condiciones dd,
+.l-nota,
+.l-pie p {
+  text-wrap: pretty;
+}
+
+/* -------------------------------------------------------------------- cierre */
+
+.l-cierre {
+  background-color: var(--k-superficie-baja);
+  border-top: 1px solid var(--k-contorno-variante);
+  padding-block: var(--l-esp-8);
+}
+@media (min-width: 960px) {
+  .l-cierre {
+    padding-block: var(--l-esp-9);
+  }
+}
+
+.l-pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--l-esp-4) var(--l-esp-6);
+  padding-block: var(--l-esp-6);
+  font-size: 0.9375rem;
+  color: var(--k-texto-secundario);
+}
+
+.l-pie nav {
+  display: flex;
+  gap: var(--l-esp-5);
+}
+
+.l-pie p {
+  max-width: 60ch;
+}
+
+/* --------------------------------------------------- preferencias del sistema */
+
+@media (prefers-reduced-motion: reduce) {
+  .l-display__digito {
+    animation: none;
+  }
+}
+
+/* En alto contraste de Windows los colores los pone el sistema: los segmentos apagados quedarían
+   del mismo color que los encendidos y el precio no se leería. */
+@media (forced-colors: active) {
+  .l-display__apagado {
+    visibility: hidden;
+  }
+  .l-marcador,
+  .l-cita,
+  .l-estado {
+    border: 1px solid CanvasText;
+  }
+}

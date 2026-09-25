@@ -24,6 +24,7 @@ vendible a boxes de CrossFit y gimnasios pequeños.
 | [16-viabilidad-financiera.md](./16-viabilidad-financiera.md) | **Viabilidad financiera**: costo atómico línea por línea, punto de equilibrio, flujo de caja de los primeros 6 meses |
 | [17-viabilidad-tecnica.md](./17-viabilidad-tecnica.md) | **Viabilidad técnica**: inventario atómico de pendientes, horas de trabajo, widawi vs Supabase Cloud |
 | [18-analisis-riesgos.md](./18-analisis-riesgos.md) | **Análisis de riesgos**: legal, negocio, operacional, financiero, seguridad — matriz de priorización |
+| [19-marca.md](./19-marca.md) | **Marca**: el nombre Kovat y lo que se descartó, titular, valores, personalidad y voz, logotipo, animaciones, estados de la interfaz, tipografía Kovat Marcador, colores y pasos antes de usar el nombre. Archivos, cómo regenerarlos, pautas de interfaz y calificación en [`marca/README.md`](./marca/README.md) |
 
 ## Decisiones tomadas
 
@@ -34,6 +35,9 @@ vendible a boxes de CrossFit y gimnasios pequeños.
 | 2026-09-16 | **El producto no se llama ni se vende como "CrossFit"**: no hay afiliados oficiales en Cali y es marca ajena. Se posiciona como software para *box / entrenamiento funcional* |
 | 2026-09-16 | **El cobro con rieles colombianos sube a fase propia (F5)**: Wompi con tokenización de tarjeta y Nequi. Es el mayor hueco verificado de la competencia |
 | 2026-09-16 | **Plan Box ajustado de 189.000 a 179.000 COP**, para igualar la mensualidad de un atleta ("te cuesta lo mismo que un socio") |
+| 2026-09-25 | **El producto se llamará Kovat** (antes Scalar), sujeto a la consulta de antecedentes en la SIC. Hasta entonces el código sigue diciendo Scalar. Titular de marca: "La plataforma para boxes y competencias en Colombia." ("y competencias" entra cuando exista el módulo). Ver [19](./19-marca.md) |
+| 2026-09-25 | **Identidad visual**: logo de segmentos (dirección Marcador), tipografía de marca Kovat Marcador solo para momentos de marca, tipografía de lectura Atkinson Hyperlegible Next, y sistema de colores opción Tarima (método de Material 3, tres niveles de contraste; el texto rojo significa error). Ver [19 §5 y §7](./19-marca.md) |
+| 2026-09-25 | **Modo claro y oscuro, según el celular** (antes: solo oscuro). La landing va siempre en claro, con el precio en un marcador oscuro de segmentos LED. Paleta clara generada con el mismo método y las mismas pruebas de contraste. Ver [19 §7.6](./19-marca.md) |
 
 ## Resumen en 10 líneas
 

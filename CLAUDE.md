@@ -92,8 +92,14 @@ cobertura; se persiguen los fallos que hacen que un cliente cancele.
   transform: emite el error *dentro* del transform, donde se distingue "no
   escribió nada" de "escribió algo que no se entiende".
 - Cero `any`. Sin `console.log` de depuración.
-- Diseño oscuro industrial: `grunge-border`, `font-display`, `bg-surface-dark`,
-  `text-primary`. Todo tiene que funcionar en móvil: el coach usa el celular.
+- **Identidad visual: la de Kovat.** Antes de tocar la interfaz, lee
+  [`docs/marca/pautas.md`](./docs/marca/pautas.md): tokens `--k-*`, dos fuentes, el texto rojo
+  significa error, foco visible, definición de terminado y orden de migración. La app todavía
+  tiene el estilo anterior (`grunge-border`, `#FF0000`, Bebas, mayúsculas espaciadas): la
+  migración es una tarea aparte y va pantalla por pantalla; mientras tanto, **no se agrega más de
+  ese estilo** y todo lo nuevo lleva `:focus-visible`. Claro y oscuro según el celular: los pone
+  el sistema de tokens, nunca el componente (sin variantes `dark:`). Todo tiene que funcionar en
+  móvil: el coach usa el celular.
 
 ### Gráficas
 

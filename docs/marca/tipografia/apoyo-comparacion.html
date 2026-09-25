@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fuente de apoyo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Atkinson+Hyperlegible+Next:wght@200..800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family:"Kovat Marcador"; src:url("KovatMarcador-Regular.woff") format("woff"); font-display:block; }
+  :root { --tarima:#110E0D; --panel:#1A1514; --linea:#2E2624; --led:#F0402A; --tiza:#EFEBE7; --hierro:#A39A96; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--tarima); color:var(--tiza); font:15px/1.5 "Segoe UI", sans-serif; }
+  main { max-width:1180px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { font-family:"Kovat Marcador"; font-weight:400; color:var(--led); font-size:clamp(40px, 8vw, 72px); margin:0; line-height:1.1; }
+  .intro { color:var(--hierro); max-width:70ch; }
+  .grilla { display:grid; grid-template-columns:repeat(auto-fit, minmax(330px, 1fr)); gap:16px; margin-top:24px; }
+  .col { background:var(--panel); padding:20px; }
+  .nombre { font-size:22px; font-weight:600; margin:0; }
+  .razon { color:var(--hierro); font-size:13px; margin:4px 0 16px; min-height:58px; }
+  .tit { font-family:"Kovat Marcador"; color:var(--led); font-size:34px; line-height:1.1; margin:0 0 4px; }
+  .sub { color:var(--hierro); font-size:14px; margin:0 0 12px; }
+  .fila { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--linea); font-size:15px; }
+  .fila .quien { font-weight:600; }
+  .fila .det { color:var(--hierro); font-size:13px; }
+  .plata { font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; font-weight:600; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:14px 0; }
+  .chip { font-size:12px; padding:3px 8px; border:1px solid var(--linea); color:var(--tiza); }
+  label { display:block; font-size:13px; color:var(--hierro); margin:12px 0 4px; }
+  .campo { background:var(--tarima); border:1px solid var(--linea); padding:10px 12px; font-size:16px; font-variant-numeric:tabular-nums; }
+  .boton { display:inline-block; margin-top:12px; background:var(--led); color:#1A0806; font-weight:700; padding:11px 16px; font-size:15px; }
+  .chico { font-size:13px; color:var(--hierro); margin:14px 0 0; }
+  .prueba { font-size:18px; margin-top:12px; letter-spacing:.02em; }
+  .medida { margin-top:12px; font-size:12px; color:var(--hierro); border-top:1px solid var(--linea); padding-top:8px; }
+</style></head>
+<body><main>
+<h1>FUENTE DE APOYO</h1>
+<p class="intro">Kovat Marcador queda para los momentos de marca: el logo, los títulos grandes, cronómetros y la pantalla de competencias. Todo lo demás de la app y de la web va en una de estas tres. El texto es de la app de verdad; los nombres y valores son de ejemplo.</p>
+<div class="grilla">
+
+<section class="col" style="font-family:'Archivo', sans-serif" data-fuente="Archivo">
+  <p class="nombre">Archivo</p>
+  <p class="razon">De Omnibus-Type, fundición argentina. Grotesca de carácter industrial y con eje de ancho: se angosta para tablas densas sin cambiar de familia.</p>
+  <p class="tit">CARTERA</p><p class="sub">Quién debe, cuánto y desde cuándo.</p>
+  <div class="fila"><div><div class="quien">Juan Pérez</div><div class="det">Toca escribir en serio · 12 días</div></div><div class="plata">$179.000</div></div>
+  <div class="fila"><div><div class="quien">Camila Ñústez</div><div class="det">Un recordatorio basta · 3 días</div></div><div class="plata">$89.500</div></div>
+  <div class="fila"><div><div class="quien">Andrés Illera</div><div class="det">Probablemente ya se fue · 41 días</div></div><div class="plata">$1.110.000</div></div>
+  <div class="chips"><span class="chip">Todavía no vence</span><span class="chip">Más de 30 días</span><span class="chip">Cartera completa</span></div>
+  <label>Valor del pago</label><div class="campo">$179.000</div>
+  <span class="boton">Registrar pago</span>
+  <p class="chico">Cobro automático el día de corte con Nequi, PSE y tarjeta. Si un pago falla, el sistema reintenta y avisa.</p>
+  <p class="prueba">Il1 O0 rn m ñ ¿Sí? ¡Listo! 6:00 a. m.</p>
+  <div class="medida" data-medida></div>
+</section>
+
+<section class="col" style="font-family:'Barlow', sans-serif" data-fuente="Barlow">
+  <p class="nombre">Barlow</p>
+  <p class="razon">Inspirada en las señales de las carreteras de California: pensada para leerse de un vistazo. Algo redondeada; convive con los segmentos sin copiarlos.</p>
+  <p class="tit">CARTERA</p><p class="sub">Quién debe, cuánto y desde cuándo.</p>
+  <div class="fila"><div><div class="quien">Juan Pérez</div><div class="det">Toca escribir en serio · 12 días</div></div><div class="plata">$179.000</div></div>
+  <div class="fila"><div><div class="quien">Camila Ñústez</div><div class="det">Un recordatorio basta · 3 días</div></div><div class="plata">$89.500</div></div>
+  <div class="fila"><div><div class="quien">Andrés Illera</div><div class="det">Probablemente ya se fue · 41 días</div></div><div class="plata">$1.110.000</div></div>
+  <div class="chips"><span class="chip">Todavía no vence</span><span class="chip">Más de 30 días</span><span class="chip">Cartera completa</span></div>
+  <label>Valor del pago</label><div class="campo">$179.000</div>
+  <span class="boton">Registrar pago</span>
+  <p class="chico">Cobro automático el día de corte con Nequi, PSE y tarjeta. Si un pago falla, el sistema reintenta y avisa.</p>
+  <p class="prueba">Il1 O0 rn m ñ ¿Sí? ¡Listo! 6:00 a. m.</p>
+  <div class="medida" data-medida></div>
+</section>
+
+<section class="col" style="font-family:'Atkinson Hyperlegible Next', sans-serif" data-fuente="Atkinson Hyperlegible Next">
+  <p class="nombre">Atkinson Hyperlegible Next</p>
+  <p class="razon">Del Braille Institute, diseñada para que ninguna letra se confunda con otra. La más útil para leer rápido en el celular; la que menos carácter propio tiene.</p>
+  <p class="tit">CARTERA</p><p class="sub">Quién debe, cuánto y desde cuándo.</p>
+  <div class="fila"><div><div class="quien">Juan Pérez</div><div class="det">Toca escribir en serio · 12 días</div></div><div class="plata">$179.000</div></div>
+  <div class="fila"><div><div class="quien">Camila Ñústez</div><div class="det">Un recordatorio basta · 3 días</div></div><div class="plata">$89.500</div></div>
+  <div class="fila"><div><div class="quien">Andrés Illera</div><div class="det">Probablemente ya se fue · 41 días</div></div><div class="plata">$1.110.000</div></div>
+  <div class="chips"><span class="chip">Todavía no vence</span><span class="chip">Más de 30 días</span><span class="chip">Cartera completa</span></div>
+  <label>Valor del pago</label><div class="campo">$179.000</div>
+  <span class="boton">Registrar pago</span>
+  <p class="chico">Cobro automático el día de corte con Nequi, PSE y tarjeta. Si un pago falla, el sistema reintenta y avisa.</p>
+  <p class="prueba">Il1 O0 rn m ñ ¿Sí? ¡Listo! 6:00 a. m.</p>
+  <div class="medida" data-medida></div>
+</section>
+
+</div>
+</main>
+<script>
+// Medición en vivo: ¿los números tabulares de verdad miden lo mismo en esta fuente?
+document.fonts.ready.then(() => {
+  document.querySelectorAll('[data-fuente]').forEach(col => {
+    const fam = col.dataset.fuente;
+    const cargada = document.fonts.check(`16px "${fam}"`);
+    const medir = (txt, tab) => {
+      const s = document.createElement('span');
+      s.style.cssText = `font-family:"${fam}";font-size:40px;position:absolute;visibility:hidden;white-space:nowrap;font-variant-numeric:${tab ? 'tabular-nums' : 'normal'}`;
+      s.textContent = txt; document.body.append(s); const w = s.getBoundingClientRect().width; s.remove(); return w;
+    };
+    const unos = medir('1111111111', true), ceros = medir('0000000000', true);
+    const tabular = Math.abs(unos - ceros) < 0.5;
+    col.querySelector('[data-medida]').textContent =
+      `Medido en este navegador: fuente ${cargada ? 'cargada' : 'NO cargada'} · números tabulares ${tabular ? 'sí' : 'no'} (1111111111 = ${unos.toFixed(1)} px, 0000000000 = ${ceros.toFixed(1)} px)`;
+    col.dataset.tabular = tabular; col.dataset.cargada = cargada;
+  });
+});
+</script>
+</body></html>

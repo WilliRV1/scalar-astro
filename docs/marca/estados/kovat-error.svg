@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-labelledby="t">
+<title id="t">Error</title>
+<style>
+.l{fill:#ff8796;animation:e1 0.8s linear both}
+.p{animation:sacudida 0.8s linear both}
+@keyframes e1{0.000%{opacity:0} 5.000%{opacity:0;animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)} 17.500%{opacity:1} 100.000%{opacity:1}}
+@keyframes sacudida{0%{transform:translateX(0px)} 15.000%{transform:translateX(0px);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)} 23.750%{transform:translateX(-9px);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)} 33.750%{transform:translateX(8px);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)} 43.750%{transform:translateX(-6px);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)} 53.750%{transform:translateX(4px);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)} 63.750%{transform:translateX(-2px);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)} 73.750%{transform:translateX(0px);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)} 100%{transform:translateX(0px)}}
+@media (prefers-reduced-motion:reduce){.l,.p{animation:none!important}}
+</style>
+<g class="p"><g fill="#2A2120"><path d="M25.97 10 94.03 10 74.03 30 45.97 30Z"/><path d="M97 12.97 97 47.9 87 57.9 77 47.9 77 32.97Z"/><path d="M97 72.1 97 107.03 77 87.03 77 72.1 87 62.1Z"/><path d="M45.97 90 74.03 90 94.03 110 25.97 110Z"/><path d="M43 72.1 43 87.03 23 107.03 23 72.1 33 62.1Z"/><path d="M43 32.97 43 47.9 33 57.9 23 47.9 23 12.97Z"/><path d="M46.84 50 73.16 50 83.16 60 73.16 70 46.84 70 36.84 60Z"/></g><path class="l" d="M25.97 10 94.03 10 74.03 30 45.97 30Z"/><path class="l" d="M45.97 90 74.03 90 94.03 110 25.97 110Z"/><path class="l" d="M43 72.1 43 87.03 23 107.03 23 72.1 33 62.1Z"/><path class="l" d="M43 32.97 43 47.9 33 57.9 23 47.9 23 12.97Z"/><path class="l" d="M46.84 50 73.16 50 83.16 60 73.16 70 46.84 70 36.84 60Z"/></g>
+</svg>

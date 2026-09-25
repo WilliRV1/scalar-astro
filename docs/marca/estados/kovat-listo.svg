@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-labelledby="t">
+<title id="t">Listo</title>
+<style>
+.l{fill:#18c46b;animation-duration:0.95s;animation-fill-mode:both;animation-timing-function:linear}
+.p{transform-box:fill-box;transform-origin:center;animation:pulso 0.95s linear both}
+@keyframes pulso{0%{transform:scale(1)}58.9%{transform:scale(1);animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)}73.7%{transform:scale(1.07);animation-timing-function:cubic-bezier(0.45, 0, 0.55, 1)}100%{transform:scale(1)}}
+@keyframes c0{0.000%{opacity:0} 8.421%{opacity:0;animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)} 23.158%{opacity:1} 100.000%{opacity:1}}
+@keyframes c1{0.000%{opacity:0} 15.263%{opacity:0;animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)} 30.000%{opacity:1} 100.000%{opacity:1}}
+@keyframes c2{0.000%{opacity:0} 22.105%{opacity:0;animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)} 36.842%{opacity:1} 100.000%{opacity:1}}
+@keyframes c3{0.000%{opacity:0} 28.947%{opacity:0;animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)} 43.684%{opacity:1} 100.000%{opacity:1}}
+@keyframes c4{0.000%{opacity:0} 35.789%{opacity:0;animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)} 50.526%{opacity:1} 100.000%{opacity:1}}
+@keyframes c5{0.000%{opacity:0} 42.632%{opacity:0;animation-timing-function:cubic-bezier(0.2, 0.7, 0.2, 1)} 57.368%{opacity:1} 100.000%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.l,.p{animation:none!important}}
+</style>
+<g class="p"><g fill="#2A2120"><path d="M25.97 10 94.03 10 74.03 30 45.97 30Z"/><path d="M97 12.97 97 47.9 87 57.9 77 47.9 77 32.97Z"/><path d="M97 72.1 97 107.03 77 87.03 77 72.1 87 62.1Z"/><path d="M45.97 90 74.03 90 94.03 110 25.97 110Z"/><path d="M43 72.1 43 87.03 23 107.03 23 72.1 33 62.1Z"/><path d="M43 32.97 43 47.9 33 57.9 23 47.9 23 12.97Z"/><path d="M46.84 50 73.16 50 83.16 60 73.16 70 46.84 70 36.84 60Z"/></g><path class="l" style="animation-name:c0" d="M25.97 10 94.03 10 74.03 30 45.97 30Z"/><path class="l" style="animation-name:c1" d="M97 12.97 97 47.9 87 57.9 77 47.9 77 32.97Z"/><path class="l" style="animation-name:c2" d="M97 72.1 97 107.03 77 87.03 77 72.1 87 62.1Z"/><path class="l" style="animation-name:c3" d="M45.97 90 74.03 90 94.03 110 25.97 110Z"/><path class="l" style="animation-name:c4" d="M43 72.1 43 87.03 23 107.03 23 72.1 33 62.1Z"/><path class="l" style="animation-name:c5" d="M43 32.97 43 47.9 33 57.9 23 47.9 23 12.97Z"/></g>
+</svg>

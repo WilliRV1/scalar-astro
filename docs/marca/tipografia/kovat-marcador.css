@@ -1,0 +1,24 @@
+/* Kovat Marcador: tipografía de display de la marca.
+   Solo mayúsculas (las minúsculas muestran la mayúscula), números de ancho fijo y el espaciado
+   ya incluido en la fuente: no agregar letter-spacing. Para textos corridos se usa otra fuente. */
+@font-face {
+  font-family: "Kovat Marcador";
+  src: url("KovatMarcador-Regular.woff") format("woff"),
+       url("KovatMarcador-Regular.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.marcador {
+  font-family: "Kovat Marcador", sans-serif;
+  font-kerning: normal;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+/* Cronómetros, marcadores y columnas de plata: todos los números del mismo ancho,
+   así un tiempo que corre no hace saltar el texto. */
+.marcador-numeros {
+  font-variant-numeric: tabular-nums;
+}

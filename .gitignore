@@ -9,3 +9,6 @@ supabase/.temp
 
 # Skills de agentes instalados con `npx skills add` (symlinks a .agents/)
 .claude/skills
+
+# Compilados de los generadores de marca (docs/marca/fuente)
+__pycache__/
