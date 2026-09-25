@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../features/auth/useAuth';
 import {
-  LIMITE_CARTERA, useCartera, useMonthlyCollected, type CarteraRow,
+  LIMITE_CARTERA, useCartera, useCarteraTotales, useMonthlyCollected, type CarteraRow,
 } from '../../../features/billing/queries';
+import type { Tramo } from '../../../features/billing/totales';
 import { mensajeAmigable } from '../../../shared/lib/errores';
 import { fechaCorta, fechaLarga } from '../../../shared/lib/fechas';
 import { daysOverdue, formatCents } from '../../../shared/lib/money';
@@ -16,9 +17,11 @@ import { Card, EmptyState, ErrorNote, Spinner, Stat } from '../../../shared/ui';
  * Ordenado por antigüedad de la deuda, no por nombre: lo primero que ve el
  * dueño es lo que hay que perseguir hoy. Agrupado por tramos de mora porque no
  * se gestiona igual a quien debe desde ayer que a quien debe hace un mes.
+ *
+ * Los totales (por cobrar, en mora, cada tramo) vienen de la base y cubren
+ * todos los cobros abiertos. La lista trae solo los primeros LIMITE_CARTERA:
+ * es para escribirle a la gente, no para sumar.
  */
-
-type Tramo = 'porVencer' | 'reciente' | 'seria' | 'critica';
 
 const TRAMOS: { key: Tramo; label: string; hint: string; className: string }[] = [
   { key: 'porVencer', label: 'Por vencer',       hint: 'Todavía no vence',        className: 'text-gray-400' },
@@ -45,6 +48,7 @@ export default function AdminHome() {
   const { activeMembership } = useAuth();
   const orgId = activeMembership?.org_id;
   const { data: cartera, isLoading, error } = useCartera(orgId);
+  const { data: totales, error: errorTotales } = useCarteraTotales(orgId);
   const {
     data: recaudo,
     isLoading: cargandoRecaudo,
@@ -53,17 +57,11 @@ export default function AdminHome() {
   const [tramoAbierto, setTramoAbierto] = useState<Tramo | 'todos'>('todos');
 
   const grupos = useMemo(() => {
-    const base: Record<Tramo, { rows: CarteraRow[]; total: number }> = {
-      porVencer: { rows: [], total: 0 },
-      reciente:  { rows: [], total: 0 },
-      seria:     { rows: [], total: 0 },
-      critica:   { rows: [], total: 0 },
+    const base: Record<Tramo, CarteraRow[]> = {
+      porVencer: [], reciente: [], seria: [], critica: [],
     };
     for (const r of cartera ?? []) {
-      const saldo = r.amount_cents - r.paid_cents;
-      const g = base[tramoDe(daysOverdue(r.due_on))];
-      g.rows.push(r);
-      g.total += saldo;
+      base[tramoDe(daysOverdue(r.due_on))].push(r);
     }
     return base;
   }, [cartera]);
@@ -75,34 +73,42 @@ export default function AdminHome() {
 
   const filas = cartera ?? [];
   const listaIncompleta = filas.length >= LIMITE_CARTERA;
-  const pendiente = filas.reduce((acc, r) => acc + (r.amount_cents - r.paid_cents), 0);
-  const enMora = filas.filter((r) => daysOverdue(r.due_on) > 0);
-  const visibles = tramoAbierto === 'todos' ? filas : grupos[tramoAbierto].rows;
+  const visibles = tramoAbierto === 'todos' ? filas : grupos[tramoAbierto];
+  // Mientras la base responde se muestra "…", y si falla "—": nunca un cero
+  // que el dueño pueda leer como "nadie me debe".
+  const cifra = (cents: number | undefined) =>
+    errorTotales ? '—' : cents === undefined ? '…' : formatCents(cents);
 
   return (
     <div className="space-y-6">
       {error && (
         <ErrorNote>No se pudo actualizar la cartera: {mensajeAmigable(error)}</ErrorNote>
       )}
+      {errorTotales && (
+        <ErrorNote>No se pudieron calcular los totales: {mensajeAmigable(errorTotales)}</ErrorNote>
+      )}
       {errorRecaudo && (
         <ErrorNote>No se pudo leer el recaudo del mes: {mensajeAmigable(errorRecaudo)}</ErrorNote>
       )}
       {listaIncompleta && (
         <ErrorNote>
-          Mostrando los primeros {LIMITE_CARTERA} cobros abiertos; el total puede ser mayor.
+          La lista muestra los {LIMITE_CARTERA} cobros más antiguos
+          {totales ? ` de ${totales.cobros}` : ''}. Los totales de arriba sí incluyen todo.
         </ErrorNote>
       )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat
           label="Por cobrar"
-          value={formatCents(pendiente)}
-          hint={`${filas.length} cobro(s) abierto(s)${listaIncompleta ? ' o más' : ''}`}
+          value={cifra(totales?.pendiente_cents)}
+          hint={totales && `${totales.cobros} cobro(s) abierto(s)`}
         />
         <Stat
           label="En mora"
-          value={formatCents(enMora.reduce((a, r) => a + (r.amount_cents - r.paid_cents), 0))}
-          hint={enMora.length ? `${enMora.length} atleta(s) — gestionar hoy` : 'Nadie en mora'}
+          value={cifra(totales?.mora_cents)}
+          hint={
+            totales && (totales.enMora ? `${totales.enMora} cobro(s) — gestionar hoy` : 'Nadie en mora')
+          }
         />
         <Stat
           label="Recaudado este mes"
@@ -119,7 +125,7 @@ export default function AdminHome() {
 
       <div className="grid gap-2 sm:grid-cols-4">
         {TRAMOS.map((t) => {
-          const g = grupos[t.key];
+          const g = totales?.porTramo[t.key];
           const activo = tramoAbierto === t.key;
           return (
             <button
@@ -135,10 +141,10 @@ export default function AdminHome() {
                 {t.label}
               </p>
               <p className="font-display text-2xl text-black dark:text-white">
-                {formatCents(g.total)}
+                {cifra(g?.saldo_cents)}
               </p>
               <p className="text-[11px] text-gray-500">
-                {g.rows.length} atleta(s) · {t.hint}
+                {g ? `${g.cobros} cobro(s) · ` : ''}{t.hint}
               </p>
             </button>
           );

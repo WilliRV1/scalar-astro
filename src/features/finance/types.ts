@@ -103,6 +103,20 @@ export interface PnlMonth {
   net_cents: number;
 }
 
+/** La única fila de public.gastos_totales(): el mes completo, no solo la lista. */
+export interface ExpenseTotals {
+  total_cents: number;
+  gastos: number;
+  sin_pagar_cents: number;
+  sin_pagar: number;
+}
+
+/** Una fila de public.gastos_por_categoria(), de mayor a menor. */
+export interface CategoryTotal {
+  categoria: string;
+  total_cents: number;
+}
+
 /** Una fila de public.supplies_low_stock(). */
 export interface LowStockRow {
   supply_id: string;

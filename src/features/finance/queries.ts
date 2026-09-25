@@ -2,8 +2,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
 import { monthRange } from './pnl';
 import type {
-  AthleteSource, Commitment, ExpenseCategory, ExpenseRow, LowStockRow,
-  MembershipMonth, Mrr, PnlMonth, PurchaseRow, Supplier, SupplyWithSupplier,
+  AthleteSource, CategoryTotal, Commitment, ExpenseCategory, ExpenseRow, ExpenseTotals,
+  LowStockRow, MembershipMonth, Mrr, PnlMonth, PurchaseRow, Supplier, SupplyWithSupplier,
 } from './types';
 
 /**
@@ -16,10 +16,46 @@ import type {
  */
 
 /**
- * Tope de gastos que se traen por mes. Los totales se suman en el cliente,
- * así que si llegan exactamente este número la página avisa que puede haber más.
+ * Tope de gastos que se traen por mes para la LISTA. Los totales no dependen
+ * de él: los calcula la base con `gastos_totales`, sobre todas las filas.
  */
 export const LIMITE_GASTOS = 300;
+
+const SIN_GASTOS: ExpenseTotals = { total_cents: 0, gastos: 0, sin_pagar_cents: 0, sin_pagar: 0 };
+
+/**
+ * Totales del mes, calculados por la base. Cuelgan de la raíz `['gastos']`,
+ * que es la que invalidan todas las mutaciones de gastos y compras.
+ */
+export function useExpenseTotals(orgId: string | undefined, desde: string, hasta: string) {
+  return useQuery({
+    queryKey: ['gastos', orgId, desde, hasta, 'totales'],
+    enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
+    queryFn: async (): Promise<ExpenseTotals> => {
+      const { data, error } = await supabase.rpc('gastos_totales', {
+        p_org_id: orgId!, p_desde: desde, p_hasta: hasta,
+      });
+      if (error) throw error;
+      return ((data ?? []) as ExpenseTotals[])[0] ?? SIN_GASTOS;
+    },
+  });
+}
+
+export function useExpensesByCategory(orgId: string | undefined, desde: string, hasta: string) {
+  return useQuery({
+    queryKey: ['gastos', orgId, desde, hasta, 'categorias'],
+    enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
+    queryFn: async (): Promise<CategoryTotal[]> => {
+      const { data, error } = await supabase.rpc('gastos_por_categoria', {
+        p_org_id: orgId!, p_desde: desde, p_hasta: hasta,
+      });
+      if (error) throw error;
+      return (data ?? []) as CategoryTotal[];
+    },
+  });
+}
 
 export function useExpenses(orgId: string | undefined, desde: string, hasta: string) {
   return useQuery({

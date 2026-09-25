@@ -168,6 +168,13 @@ else
   echo "$out"; echo "✗ Fallaron las pruebas de finanzas"; exit 1
 fi
 
+echo "→ Totales en la base (cartera, recaudo y gastos)"
+if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/totales.sql 2>&1)"; then
+  echo "$out" | grep -E "ok ·|TOTALES" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }
+else
+  echo "$out"; echo "✗ Fallaron las pruebas de totales"; exit 1
+fi
+
 echo "→ Motor de cobros"
 if out="$("${PSQL[@]}" -v ON_ERROR_STOP=1 -f supabase/tests/billing_engine.sql 2>&1)"; then
   echo "$out" | grep -E "ok ·|MOTOR" || { echo "$out"; echo "✗ Sin aserciones"; exit 1; }

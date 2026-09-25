@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../shared/lib/supabase';
 import type { Invoice, Payment } from '../../types/database';
+import { resumirTramos, type CarteraTotales, type TramoCartera } from './totales';
 
 /**
- * Tope de cobros abiertos que se traen. Los totales se suman en el cliente,
- * así que si llegan exactamente este número el tablero avisa que puede haber más.
+ * Tope de cobros abiertos que se traen para la LISTA. Los totales no dependen
+ * de él: los calcula la base con `cartera_totales`, sobre todas las filas.
  */
 export const LIMITE_CARTERA = 200;
 
@@ -73,29 +74,34 @@ export function useMyPayments(athleteId: string | null | undefined) {
   });
 }
 
-/** Recaudo del mes en curso, para el tablero del dueño. */
+/**
+ * Totales de la cartera, calculados por la base sobre todos los cobros abiertos.
+ *
+ * Cuelga de la misma raíz que la lista (`['cartera', orgId]`): registrar un
+ * pago invalida esa raíz y refresca las dos cosas a la vez.
+ */
+export function useCarteraTotales(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ['cartera', orgId, 'totales'],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<CarteraTotales> => {
+      const { data, error } = await supabase.rpc('cartera_totales', { p_org_id: orgId! });
+      if (error) throw error;
+      return resumirTramos((data ?? []) as TramoCartera[]);
+    },
+  });
+}
+
+/** Recaudo del mes en curso, en la zona horaria del box (lo calcula la base). */
 export function useMonthlyCollected(orgId: string | undefined) {
   return useQuery({
-    queryKey: ['recaudo-mes', orgId],
+    queryKey: ['cartera', orgId, 'recaudo'],
     enabled: Boolean(orgId),
     queryFn: async (): Promise<{ cents: number; count: number }> => {
-      const inicio = new Date();
-      inicio.setDate(1);
-      inicio.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from('payments')
-        .select('amount_cents')
-        .eq('org_id', orgId!)
-        .eq('status', 'confirmed')
-        .gte('paid_at', inicio.toISOString());
+      const { data, error } = await supabase.rpc('recaudo_mes', { p_org_id: orgId! });
       if (error) throw error;
-
-      const filas = (data ?? []) as { amount_cents: number }[];
-      return {
-        cents: filas.reduce((acc, p) => acc + p.amount_cents, 0),
-        count: filas.length,
-      };
+      const fila = ((data ?? []) as { cents: number; pagos: number }[])[0];
+      return { cents: fila?.cents ?? 0, count: fila?.pagos ?? 0 };
     },
   });
 }

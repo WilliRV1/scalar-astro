@@ -9,7 +9,8 @@ import {
 } from '../../../features/finance/pnl';
 import {
   LIMITE_GASTOS,
-  useCommitments, useExpenseCategories, useExpenses, useRecurringExpenses, useSuppliers,
+  useCommitments, useExpenseCategories, useExpenses, useExpensesByCategory,
+  useExpenseTotals, useRecurringExpenses, useSuppliers,
 } from '../../../features/finance/queries';
 import type { Commitment, ExpenseRow } from '../../../features/finance/types';
 import { mensajeAmigable } from '../../../shared/lib/errores';
@@ -39,6 +40,10 @@ export default function ExpensesPage() {
   const hasta = finDeMes(mes);
 
   const { data: gastos, isLoading, error } = useExpenses(orgId, mes, hasta);
+  // Los totales y el desglose por categoría los calcula la base sobre todo el
+  // mes; la lista de abajo trae solo los primeros LIMITE_GASTOS.
+  const { data: totales, error: errorTotales } = useExpenseTotals(orgId, mes, hasta);
+  const { data: porCategoria } = useExpensesByCategory(orgId, mes, hasta);
   const { data: categorias } = useExpenseCategories(orgId);
   const { data: proveedores } = useSuppliers(orgId);
   const {
@@ -55,23 +60,14 @@ export default function ExpensesPage() {
   const [creando, setCreando] = useState(false);
   const [editando, setEditando] = useState<ExpenseRow | null>(null);
 
-  const filas = useMemo(() => gastos ?? [], [gastos]);
-  const total = filas.reduce((acc, g) => acc + g.amount_cents, 0);
-  const sinPagar = filas.filter((g) => !g.paid_on);
+  const filas = gastos ?? [];
   const listaIncompleta = filas.length >= LIMITE_GASTOS;
-
-  // Gasto por categoría del mes, de mayor a menor: el dueño quiere saber en qué
-  // se le va la plata, no la lista alfabética de sus categorías.
-  const porCategoria = useMemo(() => {
-    const mapa = new Map<string, number>();
-    for (const g of filas) {
-      const nombre = g.expense_categories?.name ?? 'Sin categoría';
-      mapa.set(nombre, (mapa.get(nombre) ?? 0) + g.amount_cents);
-    }
-    return [...mapa.entries()]
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [filas]);
+  const total = totales?.total_cents ?? 0;
+  const desglose = porCategoria ?? [];
+  // Mientras la base responde se muestra "…", y si falla "—": nunca un cero
+  // que se lea como "este mes no gasté nada".
+  const cifra = (cents: number | undefined) =>
+    errorTotales ? '—' : cents === undefined ? '…' : formatCents(cents);
 
   const pendientes = (compromisos ?? []).filter((c) => c.kind === 'expense');
   const totalCompromisos = (compromisos ?? []).reduce((a, c) => a + (c.amount_cents ?? 0), 0);
@@ -100,22 +96,26 @@ export default function ExpensesPage() {
       {error && (
         <ErrorNote>No se pudieron actualizar los gastos: {mensajeAmigable(error)}</ErrorNote>
       )}
+      {errorTotales && (
+        <ErrorNote>No se pudieron calcular los totales: {mensajeAmigable(errorTotales)}</ErrorNote>
+      )}
       {listaIncompleta && (
         <ErrorNote>
-          Mostrando los primeros {LIMITE_GASTOS} gastos del mes; el total puede ser mayor.
+          La lista muestra los {LIMITE_GASTOS} gastos más recientes
+          {totales ? ` de ${totales.gastos}` : ''}. Los totales de arriba sí incluyen todo.
         </ErrorNote>
       )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <CasillaDato
           label={`Gastado en ${formatMonthLong(mes).toLowerCase()}`}
-          value={formatCents(total)}
-          hint={`${filas.length} gasto(s)${listaIncompleta ? ' o más' : ''}`}
+          value={cifra(totales?.total_cents)}
+          hint={totales && `${totales.gastos} gasto(s)`}
         />
         <CasillaDato
           label="Sin pagar"
-          value={formatCents(sinPagar.reduce((a, g) => a + g.amount_cents, 0))}
-          hint={sinPagar.length ? `${sinPagar.length} por pagar` : 'Todo al día'}
+          value={cifra(totales?.sin_pagar_cents)}
+          hint={totales && (totales.sin_pagar ? `${totales.sin_pagar} por pagar` : 'Todo al día')}
         />
         <CasillaDato
           label="Compromisos del mes"
@@ -176,24 +176,24 @@ export default function ExpensesPage() {
       </Seccion>
 
       {/* ------------------------------------------------ por categoría --- */}
-      {porCategoria.length > 0 && (
+      {desglose.length > 0 && (
         <Seccion title="En qué se fue la plata">
           <Card>
             <BarrasOrdenadas
-              items={porCategoria.map((c) => ({
-                label: c.label,
-                value: Math.round(c.value / 100),
+              items={desglose.map((c) => ({
+                label: c.categoria,
+                value: Math.round(c.total_cents / 100),
               }))}
               total={Math.round(total / 100)}
             />
             {/* La tabla gemela: el color y el largo de la barra nunca son la
                 única forma de leer la cifra. */}
             <ul className="mt-3 space-y-1 border-t border-gray-200 pt-3 dark:border-gray-800">
-              {porCategoria.map((c) => (
-                <li key={c.label} className="flex justify-between gap-3 text-sm">
-                  <span className="text-gray-500">{c.label}</span>
+              {desglose.map((c) => (
+                <li key={c.categoria} className="flex justify-between gap-3 text-sm">
+                  <span className="text-gray-500">{c.categoria}</span>
                   <span className="tabular-nums text-black dark:text-white">
-                    {formatCents(c.value)}
+                    {formatCents(c.total_cents)}
                   </span>
                 </li>
               ))}
