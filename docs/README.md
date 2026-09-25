@@ -20,6 +20,7 @@ vendible a boxes de CrossFit y gimnasios pequeños.
 | [07-legal-colombia.md](./07-legal-colombia.md) | Habeas Data, SIC, contrato de encargo, DIAN |
 | [08-mercado-cali.md](./08-mercado-cali.md) | **Investigación de mercado**: censo de boxes, precios, competencia, dolores |
 | [14-auditoria-2026-09-24.md](./14-auditoria-2026-09-24.md) | **Auditoría**: seguridad, operación y frontend; lo arreglado y lo pendiente por severidad |
+| [15-competencia-software.md](./15-competencia-software.md) | **Competencia de software**: 23 gestores de box y herramientas de competencias, precio recomendado, qué construir en el módulo de competencias |
 
 ## Decisiones tomadas
 
