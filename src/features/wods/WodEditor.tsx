@@ -8,7 +8,7 @@ import { useSaveBlocks, useSaveWod, useTogglePublish } from './mutations';
 import type { BlockDraft, WodWithBlocks } from './types';
 
 const textarea =
-  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm focus:outline-none dark:border-gray-700 dark:bg-black';
+  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm dark:border-gray-700 dark:bg-black';
 
 function bloqueVacio(position: number): BlockDraft {
   return {

@@ -65,7 +65,7 @@ export default function RiskPage() {
           </p>
         </div>
         {criticos > 0 && (
-          <span className="bg-primary px-3 py-2 font-display text-xl text-white">
+          <span className="bg-primary px-3 py-2 font-display text-xl text-sobre-primario">
             {criticos} para llamar hoy
           </span>
         )}
@@ -153,7 +153,7 @@ function FilaDeRiesgo({ riesgo, nombreDelBox }: { riesgo: RiesgoAtleta; nombreDe
               href={enlace}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-11 items-center justify-center gap-2 bg-primary px-4 py-3 font-display text-xl tracking-wide text-white transition hover:bg-red-700"
+              className="inline-flex min-h-11 items-center justify-center gap-2 bg-primary px-4 py-3 font-display text-xl tracking-wide text-sobre-primario transition hover:bg-primario-flotante"
             >
               Escribirle
             </a>

@@ -114,7 +114,7 @@ function BotonDeAccion({
           type="button"
           onClick={onReservar}
           disabled={ocupado}
-          className={`${base} bg-primary text-white hover:bg-red-700`}
+          className={`${base} bg-primary text-sobre-primario hover:bg-primario-flotante`}
         >
           Reservar
         </button>

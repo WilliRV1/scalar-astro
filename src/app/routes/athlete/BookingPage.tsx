@@ -164,7 +164,7 @@ export default function BookingPage() {
               onClick={() => setDia(d)}
               aria-current={activo ? 'date' : undefined}
               className={`flex h-14 min-w-[4.25rem] shrink-0 flex-col items-center justify-center px-2 text-[11px] font-bold uppercase tracking-widest transition ${
-                activo ? 'bg-primary text-white' : 'grunge-border text-gray-500 hover:text-gray-300'
+                activo ? 'bg-primary text-sobre-primario' : 'grunge-border text-gray-500 hover:text-gray-300'
               }`}
             >
               <span>{shortDayLabel(d)}</span>

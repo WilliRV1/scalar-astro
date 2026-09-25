@@ -122,7 +122,7 @@ export function PaymentForm({
             type="file"
             accept="image/*,application/pdf"
             onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-            className="w-full text-sm text-gray-500 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white"
+            className="w-full text-sm text-gray-500 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sobre-primario"
           />
         </Field>
 

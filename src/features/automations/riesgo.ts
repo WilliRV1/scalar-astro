@@ -33,7 +33,7 @@ export function estiloDeBanda(banda: BandaRiesgo): EstiloDeBanda {
       return {
         etiqueta: 'Crítico',
         accion: 'Llamada del dueño, hoy',
-        clase: 'bg-primary text-white',
+        clase: 'bg-primary text-sobre-primario',
       };
     case 'at_risk':
       return {

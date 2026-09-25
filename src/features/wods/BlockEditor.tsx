@@ -14,7 +14,7 @@ const KINDS = Object.keys(KIND_LABEL) as BlockKind[];
 const SCORES = Object.keys(SCORE_LABEL) as ScoreType[];
 
 const textarea =
-  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm focus:outline-none dark:border-gray-700 dark:bg-black';
+  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm dark:border-gray-700 dark:bg-black';
 
 /** Un bloque del WOD en modo edición. El coach lo usa desde el celular. */
 export function BlockEditor({

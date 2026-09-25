@@ -60,7 +60,7 @@ export default function AthletesPage() {
             onClick={() => setFiltro(f.key)}
             className={`min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest transition ${
               filtro === f.key
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-sobre-primario'
                 : 'grunge-border text-gray-500 hover:text-gray-300'
             }`}
           >
@@ -72,7 +72,7 @@ export default function AthletesPage() {
           placeholder="Buscar por nombre o celular"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="grunge-border ml-auto min-h-11 bg-transparent px-3 text-base focus:border-primary focus:outline-none sm:text-sm"
+          className="grunge-border ml-auto min-h-11 bg-transparent px-3 text-base focus:border-primary sm:text-sm"
         />
       </div>
 

@@ -70,7 +70,7 @@ export function InstalarApp({ className = '' }: { className?: string }) {
         <button
           type="button"
           onClick={() => void instalar()}
-          className="bg-primary px-4 py-2 font-display text-lg tracking-wide text-white transition hover:bg-red-700"
+          className="bg-primary px-4 py-2 font-display text-lg tracking-wide text-sobre-primario transition hover:bg-primario-flotante"
         >
           Instalar
         </button>

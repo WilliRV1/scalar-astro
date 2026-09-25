@@ -71,7 +71,7 @@ export default function AthleteAccess() {
                 placeholder="300 123 4567"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-center text-lg tracking-widest focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+                className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-center text-lg tracking-widest focus:border-primary dark:border-gray-700 dark:bg-black"
               />
               <p className="mt-2 text-xs text-gray-500">
                 Te enviamos un código. Debe ser el mismo número que tiene tu box.
@@ -96,7 +96,7 @@ export default function AthleteAccess() {
                 maxLength={8}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-center text-2xl tracking-[0.5em] focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+                className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-center text-2xl tracking-[0.5em] focus:border-primary dark:border-gray-700 dark:bg-black"
               />
             </div>
             {error && <ErrorNote>{error}</ErrorNote>}

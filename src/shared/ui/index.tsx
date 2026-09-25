@@ -96,7 +96,7 @@ export function ConfirmarBoton({
         type="button"
         onClick={() => { setPreguntando(false); onConfirm(); }}
         disabled={disabled}
-        className={`${base} bg-primary text-white hover:bg-red-700`}
+        className={`${base} bg-primary text-sobre-primario hover:bg-primario-flotante`}
       >
         {confirmar}
       </button>
@@ -134,7 +134,7 @@ export function Button({
     'inline-flex items-center justify-center gap-2 px-4 py-3 font-display text-xl tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40';
   const styles =
     variant === 'primary'
-      ? 'bg-primary text-white hover:bg-red-700'
+      ? 'bg-primary text-sobre-primario hover:bg-primario-flotante'
       : 'grunge-border text-gray-300 hover:border-primary hover:text-primary';
   return (
     <button type={type} form={form} onClick={onClick} disabled={disabled} className={`${base} ${styles} ${className}`}>

@@ -70,7 +70,7 @@ export default function AttendancePage() {
         placeholder="Buscar por nombre o celular"
         value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
-        className="grunge-border w-full bg-transparent px-3 py-3 text-sm focus:border-primary focus:outline-none"
+        className="grunge-border w-full bg-transparent px-3 py-3 text-sm focus:border-primary"
       />
 
       {error && (

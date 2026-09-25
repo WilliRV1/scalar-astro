@@ -129,7 +129,7 @@ export function SoporteDrawer({
                   onChange={(e) => setMotivo(e.target.value)}
                   rows={3}
                   placeholder="Revisar el cobro duplicado de Marcela del 3 de octubre"
-                  className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-sm focus:border-primary focus:outline-none dark:border-gray-700 dark:bg-black"
+                  className="w-full border border-gray-300 bg-gray-100 p-3 text-base sm:text-sm text-sm focus:border-primary dark:border-gray-700 dark:bg-black"
                 />
               </Field>
 

@@ -48,19 +48,19 @@ export function WeekStrip({
               aria-current={activo ? 'date' : undefined}
               className={`flex h-14 min-w-[4.25rem] shrink-0 flex-col items-center justify-center px-2 text-[11px] font-bold uppercase tracking-widest transition ${
                 activo
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-sobre-primario'
                   : 'grunge-border text-gray-500 hover:text-gray-300'
               }`}
             >
               <span>{shortDayLabel(d)}</span>
               <span className="mt-1 flex items-center gap-1 text-[9px]">
-                {d === today && <span className={activo ? 'text-white' : 'text-primary'}>hoy</span>}
+                {d === today && <span className={activo ? 'text-sobre-primario' : 'text-primary'}>hoy</span>}
                 {wod && (
                   <span
                     aria-hidden
                     className={`inline-block h-1.5 w-1.5 ${
                       publicado
-                        ? activo ? 'bg-white' : 'bg-primary'
+                        ? activo ? 'bg-sobre-primario' : 'bg-primary'
                         : 'border border-current'
                     }`}
                   />

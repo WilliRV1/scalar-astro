@@ -175,7 +175,7 @@ export function ExpenseForm({
               setError('');
               setFactura(archivo);
             }}
-            className="w-full text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:text-white"
+            className="w-full text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:text-sobre-primario"
           />
         </Field>
 

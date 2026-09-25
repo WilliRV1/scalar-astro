@@ -49,7 +49,7 @@ export function ReclamarPropiedad({ token }: { token?: string } = {}) {
         </p>
         <a
           href={`/entrar?volver=${encodeURIComponent(`/propiedad/${codigo}`)}`}
-          className="inline-block bg-primary px-6 py-3 font-display text-xl tracking-wide text-white transition hover:bg-red-700"
+          className="inline-block bg-primary px-6 py-3 font-display text-xl tracking-wide text-sobre-primario transition hover:bg-primario-flotante"
         >
           Entrar
         </a>

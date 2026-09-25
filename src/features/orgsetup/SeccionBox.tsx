@@ -132,7 +132,7 @@ function Formulario({
             type="file"
             accept="image/png,image/jpeg,image/webp"
             onChange={onArchivo}
-            className="text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:font-display file:text-base file:text-white"
+            className="text-xs text-gray-400 file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:font-display file:text-base file:text-sobre-primario"
           />
           {subir.isPending && <span className="text-xs text-gray-500">Subiendo…</span>}
           {subir.isSuccess && !subir.isPending && (

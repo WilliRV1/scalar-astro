@@ -87,7 +87,7 @@ export function SelectorConAlta({
               type="button"
               onClick={() => void crear()}
               disabled={creando || !nombre.trim()}
-              className="min-h-11 bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-white disabled:opacity-40"
+              className="min-h-11 bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-sobre-primario disabled:opacity-40"
             >
               {creando ? 'Creando…' : 'Crear'}
             </button>

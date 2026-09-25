@@ -21,15 +21,17 @@ html {
     touch-action: manipulation;
 }
 
-body {
+/* El texto se puede seleccionar: la gente copia montos, nombres y teléfonos. Solo los botones
+   no, para que un toque largo en el celular no seleccione la etiqueta. */
+button {
     user-select: none;
-    /* Prevent text selection like an app */
     -webkit-user-select: none;
 }
 
-/* Allow selection in inputs/textareas */
-input,
-textarea {
-    user-select: text;
-    -webkit-user-select: text;
+/* Foco visible en todo lo interactivo: 2 px del rojo LED de Kovat (--k-foco), separado 2 px.
+   Es un indicador, no texto: da 5,5:1 sobre #000 y 5,2:1 sobre #0a0a0a.
+   Va fuera de las capas de Tailwind para ganarle a `outline-none` por orden. */
+:focus-visible {
+    outline: 2px solid #F0402A;
+    outline-offset: 2px;
 }

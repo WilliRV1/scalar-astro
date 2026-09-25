@@ -32,7 +32,7 @@ export function AvisoNuevaVersion({ className = '' }: { className?: string }) {
           setAplicando(true);
           aplicarVersionNueva();
         }}
-        className="bg-primary px-4 py-2 font-display text-lg tracking-wide text-white transition hover:bg-red-700 disabled:opacity-40"
+        className="bg-primary px-4 py-2 font-display text-lg tracking-wide text-sobre-primario transition hover:bg-primario-flotante disabled:opacity-40"
       >
         {aplicando ? 'Actualizando…' : 'Actualizar'}
       </button>

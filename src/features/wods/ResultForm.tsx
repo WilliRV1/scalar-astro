@@ -10,7 +10,7 @@ import type { Result, Scale, WodBlock } from './types';
 const SCALES: Scale[] = ['rx', 'scaled', 'beginner'];
 
 const textarea =
-  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm focus:outline-none dark:border-gray-700 dark:bg-black';
+  'w-full border border-gray-300 bg-gray-100 p-3 text-base focus:border-primary sm:text-sm dark:border-gray-700 dark:bg-black';
 
 /** Fiesta. Es publicidad gratis para el box y engancha al atleta. */
 function celebrar() {
@@ -135,7 +135,7 @@ export function ResultForm({
               onClick={() => { setScale(s); setGuardado(false); }}
               aria-pressed={scale === s}
               className={`min-h-11 flex-1 px-2 py-2 text-[11px] font-bold uppercase tracking-widest transition ${
-                scale === s ? 'bg-primary text-white' : 'grunge-border text-gray-500'
+                scale === s ? 'bg-primary text-sobre-primario' : 'grunge-border text-gray-500'
               }`}
             >
               {SCALE_LABEL[s]}
