@@ -21,6 +21,9 @@ vendible a boxes de CrossFit y gimnasios pequeños.
 | [08-mercado-cali.md](./08-mercado-cali.md) | **Investigación de mercado**: censo de boxes, precios, competencia, dolores |
 | [14-auditoria-2026-09-24.md](./14-auditoria-2026-09-24.md) | **Auditoría**: seguridad, operación y frontend; lo arreglado y lo pendiente por severidad |
 | [15-competencia-software.md](./15-competencia-software.md) | **Competencia de software**: 23 gestores de box y herramientas de competencias, precio recomendado, qué construir en el módulo de competencias |
+| [16-viabilidad-financiera.md](./16-viabilidad-financiera.md) | **Viabilidad financiera**: costo atómico línea por línea, punto de equilibrio, flujo de caja de los primeros 6 meses |
+| [17-viabilidad-tecnica.md](./17-viabilidad-tecnica.md) | **Viabilidad técnica**: inventario atómico de pendientes, horas de trabajo, widawi vs Supabase Cloud |
+| [18-analisis-riesgos.md](./18-analisis-riesgos.md) | **Análisis de riesgos**: legal, negocio, operacional, financiero, seguridad — matriz de priorización |
 
 ## Decisiones tomadas
 
