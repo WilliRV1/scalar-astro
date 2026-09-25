@@ -30,16 +30,15 @@ código de producto**: es un puñado de decisiones de seguridad/despliegue, y so
 
 ### Los 3 bloqueantes reales, en orden
 
-1. ~~`.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en `origin/master`~~ **Corregido
-   en parte, 2026-09-25**: al revisar el contenido se confirmó que esa llave **no es de
-   Scalar** — es la llave anónima del proyecto Supabase personal "coach"
-   (`wgicwqtsiiwqsxgqjlcw.supabase.co`), el que usa la prospección de negocios
-   (`~/.prospeccion.env`, `cargar.py`). La rama activa (`claude/crossfit-saas-platform-pibfm8`)
-   nunca tuvo el archivo trackeado. Se quitó `.env` de `master` (commit `97c67df`), pero
-   **falta decidir con el dueño**: (a) si rota esa llave en el dashboard de Supabase — rompe
-   `cargar.py` hasta actualizar `~/.prospeccion.env` con la nueva —, y (b) si se reescribe el
-   historial de git (`git filter-repo` + force-push) para purgarla de commits viejos. Ninguna
-   de las dos se hizo porque toca un proyecto marcado como "no tocar sin confirmar".
+1. ~~`.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en `origin/master`~~ **Cerrado,
+   2026-09-25**: al revisar el contenido se confirmó que esa llave **no es de Scalar** — es la
+   llave anónima del proyecto Supabase personal "coach" (`wgicwqtsiiwqsxgqjlcw.supabase.co`),
+   el que usa la prospección de negocios (`~/.prospeccion.env`, `cargar.py`). La rama activa
+   (`claude/crossfit-saas-platform-pibfm8`) nunca tuvo el archivo trackeado. Se quitó `.env` de
+   `master` (commit `97c67df`). **Decisión del dueño**: no rotar la llave ni reescribir el
+   historial — riesgo aceptado a conciencia, asumiendo que nadie la vio mientras estuvo
+   pública. Si en algún momento aparece actividad rara en las tablas de `prospectos`/`sst_*`,
+   ese es el primer sospechoso a revisar.
 2. **CORS abierto (`*`) en las Edge Functions si no se fija `SITIO_PERMITIDO`**
    (`supabase/functions/_shared/http.ts:15-20`, verificado). **No aplica a widawi hoy**: esas
    funciones no están desplegadas ahí (`nginx.conf` las intercepta con un 503 fijo, verificado)
