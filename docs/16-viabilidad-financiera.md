@@ -10,11 +10,80 @@ Cada cifra trae su fuente y su fecha de consulta; lo que no se pudo verificar es
 
 ---
 
-## 1. Resumen ejecutivo
+## 0. Ajuste del 2026-09-25 (mismo día): arranque informal, no Fase 1 formal
 
-**¿Alcanza el precio? Sí, pero no antes de ~10–11 boxes pagando la tarifa objetivo
-($179.000/mes), y el precio de fundador ($40.000/mes) pierde plata en cada cliente
-mientras dure.**
+**Decisión del dueño, tomada después de leer este mismo documento: para los primeros boxes
+no va a haber Wompi, RUT, cámara de comercio, contador ni facturación electrónica.** Va
+personalmente a hablar con dueños de box que ya conoce, cada box le consigna la mensualidad
+a su **Nequi personal**, y él les activa el software. El box, a su vez, sigue registrando los
+pagos de sus propios atletas a mano (con foto del comprobante) — algo que Scalar **ya hace
+hoy sin necesitar Wompi para nada** (fase F1 del producto). Se queda en **widawi**
+(autoalojado), como ya recomendaba [17-viabilidad-tecnica.md](./17-viabilidad-tecnica.md).
+
+Esto no es un ajuste de precio: es una **Fase 0** que no tenía este documento, y que cambia el
+costo fijo mensual real de forma radical. Todo lo que sigue en §1-§8 describe la **Fase 1**
+(cuando el negocio se formalice) y **sigue vigente para cuando llegue ese momento** — no se
+borra, porque el dueño va a necesitarlo. Pero no es lo que aplica esta semana.
+
+### 0.1 Costo fijo mensual en Fase 0: prácticamente $0 en efectivo
+
+| Concepto | Fase 1 (este documento, §2-3) | **Fase 0 (arranque informal, hoy)** |
+|---|---|---|
+| Hosting | Supabase Pro + Vercel Pro, $148.500 | **$0** — widawi, servidor personal ya pagado por otras cosas del dueño |
+| Dominio | $12.500/mes prorrateado | **$0** — subdominio de `widawi.online`, que ya existe |
+| Wompi | Comisión la paga el box, no Scalar | **N/A** — nadie cobra por Wompi, los atletas pagan al box como siempre y el box paga a Scalar por Nequi |
+| WhatsApp Business API | $2.700/box/mes | **$0** — se usan enlaces `wa.me`, no la API de Meta (decisión de producto ya tomada esta semana) |
+| Facturación electrónica | $20.000/mes | **$0** — no se emite factura formal todavía |
+| Contador | $500.000–$900.000/mes | **$0** — no contratado todavía |
+| RUT / cámara de comercio | ~$75.000 única vez | **$0** — no registrado todavía |
+| **Total fijo mensual** | **$681.000–$1.081.000** | **$0, en efectivo** |
+
+**El único costo real de la Fase 0 es el tiempo del dueño** (soporte, capacitar al box,
+resolver dudas) — el mismo costo de oportunidad de §2.9 (~$70.000 COP/hora), pero **no sale
+plata del bolsillo**, es tiempo que deja de dedicarse a otra cosa. No hay margen de
+contribución que calcular por box porque no hay costo variable en efectivo: **cada peso que
+un box transfiere al Nequi personal es, en caja, casi 100% del dueño**, menos lo que decida
+reinvertir.
+
+### 0.2 Punto de equilibrio en Fase 0: el primer peso
+
+Con costo fijo en efectivo de $0, **no hace falta un número mínimo de boxes para que la caja
+esté en positivo — el primer box que paga ya deja caja positiva ese mismo mes.** Esto es
+distinto (y mejor, en el corto plazo) de los "7 a 11 boxes" que calcula §3 para la Fase 1: ese
+número solo aplica **cuando** el dueño decida sumar los costos fijos de formalizarse.
+
+### 0.3 Cuándo pasar de Fase 0 a Fase 1 — señales, no una fecha fija
+
+Este documento no fija un número de boxes para el cambio (eso es decisión de negocio, no de
+costeo), pero señala **qué eventos obligan a considerarlo**, porque cada uno trae consigo el
+costo que describe §2:
+
+1. **Un box pide factura formal.** Ahí hace falta RUT + facturación electrónica ($20.000/mes,
+   §2.8) — no se puede seguir cobrando por Nequi personal si el box lo necesita para su propia
+   contabilidad.
+2. **Un box pide débito automático o pago con tarjeta/PSE.** Ahí hace falta la cuenta de
+   comercio en Wompi (§2.3) y la infraestructura donde corran las Edge Functions con
+   confiabilidad de producción (§0.1, hosting).
+3. **El volumen de soporte deja de caber en el tiempo libre del dueño** (§2.9: el número sube
+   de ~2h/box a menos según la escala, pero sigue siendo tiempo real). Ahí es cuando vale la
+   pena empezar a poner precio a ese tiempo de verdad, no solo como costo de oportunidad.
+4. **El dueño empieza a recibir ingresos recurrentes y estables** (más de 2-3 meses seguidos
+   de varios boxes pagando). Aquí es más un tema de riesgo que de costeo — ver
+   [18-analisis-riesgos.md](./18-analisis-riesgos.md): ingresos informales sostenidos, tarde
+   o temprano, hay que declararlos.
+
+**Recomendación de este ajuste**: usar la Fase 0 para validar que hay boxes dispuestos a pagar
+de verdad (no solo estar interesados) con el mínimo de fricción posible, y activar la Fase 1
+completa (§1-§8 de abajo) cuando ocurra la **primera** de las cuatro señales — probablemente
+la #1 o la #2, no un número de boxes en el calendario.
+
+---
+
+## 1. Resumen ejecutivo de la Fase 1 (formalización — no es lo que aplica hoy, ver §0)
+
+**¿Alcanza el precio, una vez formalizado? Sí, pero no antes de ~10–11 boxes pagando la
+tarifa objetivo ($179.000/mes), y el precio de fundador ($40.000/mes) pierde plata en cada
+cliente mientras dure.**
 
 - El **costo fijo mensual de operar en producción** (Supabase Pro + Vercel Pro + dominio +
   facturación electrónica + contador) es de **~$681.000 a ~$1.081.000 COP/mes**, según qué
