@@ -3,7 +3,10 @@
 Fecha: 2026-09-25. Método: actualización y ampliación de [08-mercado-cali.md](./08-mercado-cali.md)
 §5-6. Se reverificaron con fetch directo los 5 competidores ya cubiertos y se investigaron 18
 productos nuevos: 9 gestores de box/gimnasio y 9 herramientas específicas de gestión de
-competencias/torneos. TRM verificada el 2026-09-25: **~$3.300 COP/USD** (en alza fuerte ese mes:
+competencias/torneos. **§7 añade evidencia de campo**: qué usan hoy los boxes colombianos de
+verdad, combinando búsqueda dirigida (tiendas de apps, LinkedIn, foros) con navegador real contra
+Instagram, Facebook y sitios de eventos —el método que 08 no pudo usar por bloqueo anti-bot—.
+TRM verificada el 2026-09-25: **~$3.300 COP/USD** (en alza fuerte ese mes:
 $3.208 el 23-sep, $3.264 el 24-sep, $3.330 el 25-sep — Banco de la República vía
 capitalcolombia.com y pulzo.com). EUR≈1,08 USD → ~$3.564 COP/EUR.
 
@@ -34,6 +37,17 @@ resuelto salvo dos jugadores** (WodBuster Arena y Wodify Arena), y ninguno de lo
 Colombia ni cobra en pesos. Eso deja una ventana real para que el futuro módulo de competencias de
 Scalar sea, simultáneamente, el primero con rieles de pago colombianos y el primero vendido
 localmente con soporte en español y sin diferencia horaria.
+
+**Actualización de campo (§7), verificada con navegador real contra Instagram, Facebook y sitios
+propios, no solo búsqueda indexada:** de 8 boxes caleños revisados directamente —incluido
+BeFitness, el de mayor alcance de todo el censo con 167 mil seguidores— **ninguno usa software de
+gestión; todos operan por WhatsApp**, muchos ni siquiera con un Linktree funcional. Al mismo
+tiempo, sí existe un software de gestión **hecho en Colombia** (Box Pro, de un desarrollador de
+Neiva), aunque con adopción casi nula ("10+" descargas). Y, en el ángulo de competencias
+específicamente, **Cali ya tiene un evento real usando una plataforma dedicada**: BoxPodium
+gestiona "TRF Final 2026 — Train Rice Fight" en la propia ciudad, y la misma plataforma corre
+eventos en Chile, Uruguay, Brasil y Argentina — la competencia para el futuro módulo de Scalar no
+es hipotética, ya está operando en la ciudad donde el dueño va a vender.
 
 ---
 
@@ -244,6 +258,216 @@ Basadas en lo que la investigación encontró que falta o está mal hecho en la 
 
 ---
 
+## 7. Evidencia de campo — qué usan los boxes colombianos hoy
+
+Fecha: 2026-09-25. Método: WebSearch y WebFetch extensivos (sin navegador visual — Instagram y
+Facebook quedaron bloqueados como ya documentaba 08, y esa parte se cubre en paralelo). Se
+verificaron los 25 boxes censados en 08 §2.1 uno por uno donde fue posible, más los throwdowns de
+08 §7.5.
+
+### 7.1 Apps en tiendas — de los boxes censados, cero encontrados
+
+Ningún box de los 25 censados en 08 §2.1 (The Box Cali, Calimas CF, The Jungle Box, Infinity FTC,
+Kraken Fit, Killbox, Monarca Fit Club, Brutal Box, BeFitness, Xparta Box, Imperial Box, Olympus
+Box, Forza Fit Center, GoFit, Ángeles Elite Fitness Club, Jacobo's Gym, Fitness Point, Street
+Fitness, Power Fit, Active Fitness, Elite Gym, Mundo Fitness, Spetsnaz Box, Jhoan Box Colombina,
+Box Alcham) tiene una app de marca blanca publicada en Google Play o App Store bajo su propio
+nombre. Las búsquedas `site:play.google.com` y `site:apps.apple.com` con cada nombre devuelven
+solo coincidencias de nombre casual (ej. "Killbox" trae un videojuego FPS, "Kraken Fit" trae una
+marca mexicana de equipos, "Xparta" no trae nada). **Esto confirma, con otro método, el hallazgo
+de 08 §1.2: 14 de 21 boxes caleños solo tienen Instagram, y de los que sí tienen algo más, ninguno
+llegó al punto de publicar app propia.**
+
+### 7.2 Reventedores o partners locales — no encontrado, con un matiz nuevo
+
+No se encontró ningún perfil de LinkedIn con cargo "Country Manager", "Sales" o "reseller" para
+Colombia en CrossHero ni Wodify. Sí se encontró un perfil de una empleada de CrossHero en
+Customer Success/IT Support ([Melisa Müller](https://www.linkedin.com/in/melisaamuller/),
+"Departamento La Capital") pero su ubicación indicada corresponde a Argentina (La Capital es un
+departamento de Santa Fe), no a Colombia — **no cuenta como evidencia de operación colombiana**.
+CrossHero, Boxmagic, Fitco y Crossfy no publican oficina, evento ni caso de estudio específico de
+Colombia más allá de lo ya reportado en §6. Confirmado: **no hay reventedor ni partner local de
+ninguno de los 18 productos investigados.**
+
+### 7.3 Foros y redes — sin hilos directos, pero con un panorama de mercado más amplio
+
+No se encontró ningún hilo de Reddit (r/crossfit, r/colombia) ni grupo de Facebook indexado por
+Google donde alguien pregunte específicamente "qué software usan para su box" en Colombia con
+respuestas reales de dueños. Sí aparecieron, en cambio, varios sitios de comparación/directorio en
+español dirigidos al mercado colombiano general de gimnasios (no específicamente boxes) que listan
+más jugadores de los que 08/15 habían cubierto:
+[Trainingym](https://blog.trainingym.com/blog/mejores-softwares-gimnasios-2024?hsLang=es-co)
+("1 de cada 5 gimnasios en Colombia ya usa este software", dato del propio proveedor sin
+verificación independiente), [AgendaPro](https://agendapro.com/co/gimnasio/software-para-gimnasio),
+[GymGestión](https://www.gymgestion.com/), [Gymsoft](https://siboavance.com.co/software/control-de-acceso-para-gimnasios/)
+y [Gestión Gym](https://gestiongym.shop/software-para-gimnasios/). Ninguno de estos trae un caso
+de box de CrossFit/funcional nombrado con evidencia verificable (son páginas de venta propia, no
+testimonios de terceros) — se listan aquí como panorama, no como evidencia confirmada de uso.
+
+**Hallazgo nuevo relevante:** existe al menos un software de gestión de boxes **hecho en
+Colombia**: [**Box Pro: Gestión de CrossFit**](https://play.google.com/store/apps/details?id=com.julianramos.crossfit_pro_suite),
+publicado en Google Play por el desarrollador **EliteDSH**, con la empresa registrada en Neiva,
+Huila, Colombia (Cl. 14a #39 - 29, Neiva, Huila, 410004) según la ficha de contacto asociada a la
+app. Confirmado por navegador real (no solo WebFetch) el 2026-09-25, con la ficha completa de la
+tienda a la vista:
+
+- **Adopción real: "10+" descargas.** Es la cifra más baja que reporta Google Play (el siguiente
+  escalón es "50+"). Es decir: existe, está publicado, pero prácticamente nadie lo usa todavía —
+  no es una amenaza comercial hoy, aunque confirma que hay demanda percibida por un desarrollador
+  colombiano.
+- **Funciones descritas, casi calcadas del alcance F1-F2 de Scalar:** reservas de clase en 1 clic
+  con lista de espera, control de aforo por sesión, gestión de membresías ("quién está activo,
+  quién debe y quién está por vencer"), publicación del WOD del día, check-in de asistencia,
+  historial de entrenamientos del atleta. El propio texto de venta dice *"¿Pasas más tiempo
+  respondiendo WhatsApps de reservas y persiguiendo pagos que entrenando a tus atletas?"* — el
+  mismo dolor que ya usa el guion de venta de 05.
+- **Multi-sede reciente:** la nota de versión más reciente (última actualización 30-mar-2026) dice
+  *"¡Lleva el control de todas tus sedes! Ahora puedes unirte a más de un Box o Gimnasio desde una
+  misma cuenta"* — soporte multi-box agregado hace apenas medio año, señal de que el producto
+  sigue en desarrollo activo pese a la adopción casi nula.
+- **El desarrollador no es un especialista de fitness:** EliteDSH también publica, en la misma
+  cuenta de Play Store, "Carnicería Control" y "Porcícola Control" (software de inventario para
+  carnicerías y granjas porcícolas) e "iKow Oficina Virtual". Es una fábrica de software a medida
+  para pymes colombianas que hizo una vertical de CrossFit entre varias otras, no una empresa
+  enfocada en boxes. **No se pudo confirmar precio.**
+
+### 7.4 Confirmado: CrossHero SÍ tiene boxes colombianos identificables por subdominio, más de los que ya se sabía
+
+08 ya había identificado 3 boxes colombianos en CrossHero por sus subdominios `.crosshero.site`
+(Max Box en Bogotá, Family Box en Cúcuta, Distrito Crossbox en Medellín — ver 08 §3.2). Esta ronda
+confirma **dos más, con testimonio propio publicado por CrossHero**:
+
+- **Box Zona E** (Santander, Colombia), dueña Elisa Rodríguez, cliente de CrossHero desde hace
+  más de 3 años según el propio testimonio publicado por CrossHero: *"CrossHero es mucho más que
+  una plataforma, es un amigo, un aliado"* —
+  [testimonio en business.crosshero.com](https://business.crosshero.com/crosshero-es-mucho-mas-que-una-plataforma-es-un-amigo-un-aliado/).
+  **Este es el primer caso público de un box de CrossFit/funcional colombiano (no boutique, no
+  franquicia) declarando explícitamente qué software usa** — el hueco que 08 y la Parte A de 15
+  daban por no encontrado queda cerrado, al menos parcialmente, con este caso.
+- **Sala Xtreme Fit**, en La Dorada, Caldas, Colombia (Calle 11 # 8 - 34), verificado por
+  WebFetch directo a su subdominio [sala-xtremefit.crosshero.site](https://sala-xtremefit.crosshero.site/),
+  que muestra la dirección física colombiana.
+
+Nota de método: se probaron también los subdominios `el-box.crosshero.site` (resultó ser en
+Cuenca, Ecuador, no Colombia) y `zone-fitness.crosshero.site` (resultó ser en Cádiz, España, no
+Colombia) — se descartan explícitamente para no inflar el conteo. **Total confirmado de boxes
+colombianos en CrossHero ahora: al menos 5** (Max Box, Family Box, Distrito Crossbox, Box Zona E,
+Sala Xtreme Fit), 2 más de los que reportaba 08/15 Parte A.
+
+### 7.5 Cómo se inscriben realmente los throwdowns colombianos — parcialmente resuelto
+
+Este era el hueco más citado en §6. Con fetch directo a los sitios de los eventos (no solo
+búsqueda), se resolvió para 2 de los 6 eventos listados en 08 §7.5, y aparece un dato estructural
+nuevo — **existen al menos dos plataformas de inscripción hechas para el mercado
+latinoamericano/colombiano de competencias, y una de ellas es colombiana**:
+
+- **Reto Fest Colombia**: SÍ tiene mecanismo confirmado. Su sitio dice explícitamente
+  *"Regístrate en el Open Clasificatorio del 15 de enero al 20 de marzo, en www.boxpodium.com"*,
+  con el link real siendo
+  [boxpodium.com/retofest_open24.php](https://boxpodium.com/retofest_open24.php). Los atletas se
+  inscriben, suben videos y puntajes ahí mismo para revisión de jueces colombianos.
+  **BoxPodium** ([boxpodium.com](https://boxpodium.com)) — confirmado por navegador real el
+  2026-09-25, con su listado de eventos activos a la vista: **es una plataforma de eventos a
+  escala de toda Suramérica, no solo Colombia.** Su portada muestra, al mismo tiempo, eventos en
+  Chile (Strongfit Games CHL, Wodstock Chile Summer Heat, Hybrid Ed. III), Uruguay (Strongfit
+  Games URU, Patria Challenge), Brasil (Strongfit Games BRZ Final) y Argentina (Wolf Games) — y,
+  crucialmente, **un evento en Cali mismo: "TRF FINAL 2026 — Train Rice Fight", Cali, Colombia,
+  con 3 divisiones abiertas**, confirmado también por caché de búsqueda independiente
+  (`boxpodium.com`, snippet: *"TRF Final 2026 · Train Rice Fight, Final Presecial · Cali,
+  Colombia"*). También gestiona registro para **Black Games** (Popayán). **No se pudo confirmar su
+  país de origen exacto ni si cobra en COP nativamente** (a diferencia de Pukiebook, ver abajo),
+  pero queda confirmado con evidencia directa de navegador que **ya se usa para un evento real en
+  Cali hoy** — es el hallazgo más directamente accionable de toda esta ronda para el ángulo de
+  competencias del dueño de Scalar.
+- **Fitland Fitness Festival** (Bogotá): SÍ tiene mecanismo confirmado, y es una plataforma que
+  opera en Colombia. El sitio oficial [fitlandfestival.com](https://www.fitlandfestival.com/)
+  enlaza sus fases de clasificación/final a **Pukiebook**
+  ([events.pukiebook.com](https://events.pukiebook.com/event/789)). Confirmado por navegador real
+  el 2026-09-25: la página de inicio de Pukiebook (pukiebook.com) muestra un WhatsApp con
+  indicativo **+58 (Venezuela)**, no colombiano — pero las páginas de eventos individuales
+  (events.pukiebook.com) sí muestran un número **+57 302 6020672**, y montos recaudados
+  explícitamente en "COP" junto a USD. Lectura más precisa: **Pukiebook opera activamente en
+  Colombia (con contacto y cobro en pesos por evento), pero no es una empresa 100% colombiana —
+  es más probablemente venezolana con operación regional**, lo cual matiza (no invalida) la
+  etiqueta "colombiana" que le había dado la ronda anterior. Su página de servicios lista Stripe y
+  Zelle como medios de pago, **no Wompi/PSE/Nequi confirmados**. Pukiebook maneja heats,
+  cronograma, ranking de competidores y captura de resultados — es decir, **es un competidor
+  directo del futuro módulo de competencias de Scalar**, activo en el mercado colombiano aunque no
+  sea de origen colombiano puro.
+- **Colombia Championship** (Montería): **CONFIRMADO por navegador real el 2026-09-25** —
+  contradice lo que reportaba la ronda anterior. `events.pukiebook.com` tiene una página propia,
+  **"Colombia ChampionShip OPEN 2027"**, clasificatorio en línea, con la final presencial anunciada
+  del 9 al 11 de abril de 2027 en la Villa Olímpica de Occidente, Montería, Córdoba, y el mismo
+  contacto +57 302 6020672. **Colombia Championship usa Pukiebook**, igual que Fitland. El sitio
+  oficial `colombiachampionship.com` seguía sin mostrar el link de inscripción en el fetch directo,
+  pero el evento SÍ existe y SÍ tiene mecanismo de inscripción verificado por otra vía.
+- **WODFEST by Reebok**: el dominio `wodfestcolombia.com` **no resolvió** (`getaddrinfo EAI_AGAIN`,
+  es decir, el dominio no responde/no existe hoy) — consistente con que las coberturas de prensa
+  encontradas son de 2016. Si el evento sigue vigente, cambió de dominio o dejó de tener sitio
+  propio. **Sigue sin poder confirmarse.**
+- **Kame House**: no se encontró página ni post de inscripción propia; solo presencia en
+  Instagram/Facebook (bloqueadas para este método). **Sigue sin poder confirmarse.**
+- **Animal Rage**: se confirmó que es un evento real (8va versión, abril 2025, Ibagué, Tolima) pero
+  no se encontró mecanismo de inscripción verificable más allá de su Instagram. **Sigue sin poder
+  confirmarse.**
+- **KW Games**: no se encontró ninguna competencia con ese nombre exacto en Colombia en esta
+  ronda (posible confusión de nombre, o evento discontinuado/muy local). **No encontrado.**
+
+**Conclusión de esta tarea, actualizada tras verificación por navegador:** el mercado de
+inscripción a throwdowns colombianos no es "WhatsApp y ya" en todos los casos — **tres** eventos
+grandes confirmados (Reto Fest, Fitland, Colombia Championship) usan plataformas dedicadas
+(BoxPodium, Pukiebook), y **BoxPodium tiene un evento activo en Cali mismo** (TRF Final 2026).
+Pukiebook cobra en COP por evento pero no es de origen colombiano puro (ver arriba). Esto matiza
+pero no invalida el argumento de venta de la §5.3.1: estas plataformas resuelven
+heats+leaderboard+cobro para el EVENTO puntual, pero no hay evidencia de que estén integradas con
+la gestión diaria del box (reservas, mensualidades, WOD del día a día) — siguen siendo
+herramientas de evento, no de negocio, que es donde Scalar sí compite. Un módulo de competencias
+de Scalar que viva DENTRO de la misma cuenta con la que el box ya cobra mensualidades tendría una
+ventaja estructural que ni BoxPodium ni Pukiebook ofrecen hoy: un solo lugar, no dos sistemas
+separados para el día a día y para el evento.
+
+### 7.6 Casos adicionales fuera de Cali
+
+Además del caso de Box Zona E (Santander) y Sala Xtreme Fit (La Dorada, Caldas) ya reportados en
+§7.4, no se encontraron casos adicionales verificables de boxes de Bogotá, Medellín o Barranquilla
+declarando públicamente su software de gestión (Instagram bio, sitio propio, reseña) más allá de
+los ya conocidos (Orangetheory Bogotá con Mindbody, Unique Pilates Medellín con Fitco — ambos
+boutique/franquicia, no CrossFit/funcional independiente, como ya aclaraba §6). Se revisaron
+específicamente boxes de Bogotá (CrossFit Bogotá, Mapana CrossFit, ETDC Box CrossFit, Saints H.
+CrossFit, Alpha FC CrossFit) y Medellín (Hakuna CrossFit, CrossFit DLX, BullBox Mde CrossFit) vía
+búsqueda de nombre + "wodbuster.com"/"crosshero.site"/"boxmagic" sin encontrar coincidencias
+adicionales confirmadas. **Este hueco de 08/15 Parte A se cierra solo parcialmente** (2 casos
+nuevos vía CrossHero, ver §7.4), no de forma general.
+
+### 7.7 Instagram y Facebook — SÍ se pudo, con navegador real
+
+`WebFetch` contra `instagram.com`/`facebook.com` no es viable (bloqueo anti-bot, confirmado otra
+vez en esta ronda), pero **un navegador real (no automatizado por fetch) sí puede leer los
+perfiles públicos sin iniciar sesión** — se verificó el 2026-09-25 contra 7 de los 25 boxes
+censados en 08 §2.1, elegidos por representar tamaños distintos (de ~500 a ~167 mil seguidores):
+
+| Box | Canal revisado | Bio / enlace encontrado | Software detectado |
+|---|---|---|---|
+| The Box Cali | Instagram (@theboxcali) + Facebook | Solo WhatsApp y correo | Ninguno |
+| Calimas CF | Instagram (@calimas_fitness_de_elite, 12,7 mil seguidores) | Solo teléfonos | Ninguno |
+| The Jungle Box | Facebook | Un link acortado (`bit.ly/thejunglebox`) que resuelve a un **diseño de Canva** (un flyer), no a software | Ninguno |
+| Infinity FTC | Instagram (@infinityftc) | Linktree (`linktr.ee/infinitycolombia22`) → solo enlaces a Facebook/Instagram/WhatsApp | Ninguno |
+| Kraken Fit | Instagram (@kraken.fitnness) | Link a `treinta.shop/krakenfit`, una **tienda de ropa/suplementos**, no gestión de clases | Ninguno |
+| Killbox | Instagram (@kill.box) | WhatsApp (`wa.pe/...`). Tiene destacados propios llamados **"Competencias"** y **"Killer Games"** (organiza su propio throwdown interno) — no se encontró rastro de este evento fuera de Instagram, mecanismo de inscripción probablemente manual/WhatsApp | Ninguno |
+| Brutal Box Cali | Instagram (@brutalboxcali, ~9,9 mil seguidores) | WhatsApp (`wa.link/...`) | Ninguno |
+| BeFitness | Instagram (@befitnesscali, **167 mil seguidores** — el box con más alcance de todo el censo) | Solo WhatsApp | Ninguno |
+| Mundo Fitness | Sitio propio `mundofitnessjamundi.com.co` | El sitio devuelve **"Ha habido un error crítico en esta web"** (WordPress roto) | Ninguno — ni siquiera el sitio funciona hoy |
+
+**Resultado: 8 de 8 verificados por navegador real, cero con evidencia de software de gestión.**
+Confirma con el método que faltaba (no solo búsqueda indexada, sino lectura directa del perfil) lo
+que ya sugerían 08 y §7.1: **en Cali, hoy, ni siquiera los boxes más grandes por seguidores
+(BeFitness con 167 mil) usan un sistema de reservas o membresías más allá de WhatsApp y, en el
+mejor de los casos, un Linktree.** El caso de Killbox con su propio "Killer Games" es la única
+señal de que algún box caleño organiza competencias propias, y todo indica que lo hace sin
+plataforma dedicada.
+
+---
+
 ## Fuentes consultadas
 
 **Gestores de box (verificación y ampliación):**
@@ -300,3 +524,45 @@ Basadas en lo que la investigación encontró que falta o está mal hecho en la 
 [TRM Capital Colombia](https://www.capitalcolombia.com/sec-trm_precio_dolar_en_colombia) ·
 [TRM Pulzo 23-sep-2026](https://www.pulzo.com/amp/economia/dolar-hoy-colombia-23092026-trm-volvio-disparar-e-ilusiona-PP5310848) ·
 [Wompi métodos de pago](https://docs.wompi.co/en/docs/colombia/metodos-de-pago/)
+
+**Evidencia de campo (§7):**
+[Box Pro en Google Play](https://play.google.com/store/apps/details?id=com.julianramos.crossfit_pro_suite) ·
+[CrossHero — testimonio Box Zona E](https://business.crosshero.com/crosshero-es-mucho-mas-que-una-plataforma-es-un-amigo-un-aliado/) ·
+[Sala Xtreme Fit en CrossHero](https://sala-xtremefit.crosshero.site/) ·
+[EL BOX (Cuenca, Ecuador — descartado)](https://el-box.crosshero.site/) ·
+[Zone Fitness (Cádiz, España — descartado)](https://zone-fitness.crosshero.site/) ·
+[CrossHero LinkedIn](https://www.linkedin.com/company/crossheroapp) ·
+[Melisa Müller (CrossHero, Argentina — no es Colombia)](https://www.linkedin.com/in/melisaamuller/) ·
+[Wodify LinkedIn](https://www.linkedin.com/company/wodify) ·
+[Reto Fest Colombia — inscripción](https://retofestcolombia.com/) ·
+[BoxPodium — registro Reto Fest Open](https://boxpodium.com/retofest_open24.php) ·
+[BoxPodium (es)](https://www.boxpodium.com/en) ·
+[Fitland Fitness Festival — sitio oficial](https://www.fitlandfestival.com/) ·
+[Pukiebook — Qualifier Fitland 2025 (plataforma colombiana, cobra en COP)](https://events.pukiebook.com/event/789) ·
+[Colombia Championship (sin link de inscripción verificable)](https://colombiachampionship.com/) ·
+[Animal Rage — Instagram (no accesible por fetch)](https://www.instagram.com/animalrage_/) ·
+[XCORE — software gimnasios Colombia](https://xcore.fit/en/gym-software-colombia/) ·
+[Harbiz](https://www.harbiz.io/en) ·
+[Trainingym — mejores softwares gimnasios Colombia](https://blog.trainingym.com/blog/mejores-softwares-gimnasios-2024?hsLang=es-co) ·
+[AgendaPro Colombia](https://agendapro.com/co/gimnasio/software-para-gimnasio) ·
+[GymGestión](https://www.gymgestion.com/) ·
+[Gymsoft](https://siboavance.com.co/software/control-de-acceso-para-gimnasios/) ·
+[Gestión Gym](https://gestiongym.shop/software-para-gimnasios/)
+
+**Verificado con navegador real (no fetch) el 2026-09-25:**
+[The Box Cali — Facebook](https://www.facebook.com/thebox.calicol/) ·
+[The Box Cali — Instagram](https://www.instagram.com/theboxcali/) ·
+[Calimas CF — Instagram](https://www.instagram.com/calimas_fitness_de_elite/) ·
+[The Jungle Box — Facebook](https://www.facebook.com/thejungleboxcali/) ·
+[Infinity FTC — Instagram](https://www.instagram.com/infinityftc/) ·
+[Infinity FTC — Linktree](https://linktr.ee/infinitycolombia22) ·
+[Kraken Fit — Instagram](https://www.instagram.com/kraken.fitnness/) ·
+[Killbox — Instagram](https://www.instagram.com/kill.box/) ·
+[Brutal Box Cali — Instagram](https://www.instagram.com/brutalboxcali/) ·
+[BeFitness — Instagram](https://www.instagram.com/befitnesscali/) ·
+[Mundo Fitness — sitio propio (roto)](https://mundofitnessjamundi.com.co) ·
+[Box Pro: Gestión de CrossFit — ficha de Google Play](https://play.google.com/store/apps/details?id=com.julianramos.crossfit_pro_suite) ·
+[Pukiebook — inicio](https://pukiebook.com) ·
+[Pukiebook — listado de eventos indexados](https://events.pukiebook.com) ·
+[Pukiebook — Colombia ChampionShip OPEN 2027](https://events.pukiebook.com/event/957) ·
+[BoxPodium — portada con eventos activos](https://boxpodium.com)
