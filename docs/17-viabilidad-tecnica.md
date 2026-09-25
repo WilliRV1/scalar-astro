@@ -30,14 +30,21 @@ código de producto**: es un puñado de decisiones de seguridad/despliegue, y so
 
 ### Los 3 bloqueantes reales, en orden
 
-1. **`.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` sigue en `origin/master`, en un
-   repositorio público** (verificado con `git cat-file -p origin/master:.env`). Mientras esa
-   llave siga siendo la que usa la base de datos con la que se le cobra a alguien, cualquiera
-   puede leerla del historial de GitHub. **2 horas**: rotar la llave anónima y confirmar que
-   la rama que se despliega no la trae.
+1. ~~`.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en `origin/master`~~ **Corregido
+   en parte, 2026-09-25**: al revisar el contenido se confirmó que esa llave **no es de
+   Scalar** — es la llave anónima del proyecto Supabase personal "coach"
+   (`wgicwqtsiiwqsxgqjlcw.supabase.co`), el que usa la prospección de negocios
+   (`~/.prospeccion.env`, `cargar.py`). La rama activa (`claude/crossfit-saas-platform-pibfm8`)
+   nunca tuvo el archivo trackeado. Se quitó `.env` de `master` (commit `97c67df`), pero
+   **falta decidir con el dueño**: (a) si rota esa llave en el dashboard de Supabase — rompe
+   `cargar.py` hasta actualizar `~/.prospeccion.env` con la nueva —, y (b) si se reescribe el
+   historial de git (`git filter-repo` + force-push) para purgarla de commits viejos. Ninguna
+   de las dos se hizo porque toca un proyecto marcado como "no tocar sin confirmar".
 2. **CORS abierto (`*`) en las Edge Functions si no se fija `SITIO_PERMITIDO`**
-   (`supabase/functions/_shared/http.ts:15-20`, verificado). No es explotable por sí solo
-   (RLS sigue protegiendo los datos), pero es una puerta abierta de más sin motivo. **30
+   (`supabase/functions/_shared/http.ts:15-20`, verificado). **No aplica a widawi hoy**: esas
+   funciones no están desplegadas ahí (`nginx.conf` las intercepta con un 503 fijo, verificado)
+   y todo el tráfico pasa por el mismo origen (`scalar.widawi.online`), sin CORS de por medio.
+   Solo importa el día que se desplieguen Edge Functions (Cloud o widawi con Deno). **30
    minutos** al desplegar: `supabase secrets set SITIO_PERMITIDO=https://<dominio del panel>`.
 3. **Ninguna transacción de Wompi —ni sandbox— ha pasado por el código**
    (`docs/10-wompi.md`, confirmado: no existen llaves ni evidencia de ejecución en el repo).
@@ -104,6 +111,28 @@ funcionando.
 | **Riesgo de reputación** | Si se vende "cobro automático por Nequi" y el box descubre que no está activo, es peor que no prometerlo. Si se vende "gestión + cartera + cobro manual con Wompi", cumple sin sorpresas | Ninguno adicional si se hace la prueba de sandbox antes de cobrar el primer peso real |
 
 **Recomendación**: **A, para el primer box**, con el mensaje comercial ajustado: *"gestión, cartera, reservas y automatizaciones ya están"*; el cobro automático por Nequi llega en la semana siguiente, cuando se haga la migración a Supabase Cloud (que de todas formas hay que hacer para poder desplegar Edge Functions en cualquier entorno). Migrar a Cloud **antes** de firmar solo tiene sentido si el cliente exige débito automático desde el primer día — en ese caso, sumar los 10-14 horas de B antes de vender.
+
+### 3.1 Medición real de widawi (2026-09-25), y por qué "número de boxes" no es la señal correcta
+
+Se entró por SSH y se midió carga real en lugar de asumir un límite. Hallazgos:
+
+| Métrica | Valor medido | Lectura |
+|---|---|---|
+| Contenedores de Scalar (web, storage, auth, rest, db) | 5-120 MB RAM c/u, 0-0,2% CPU | Scalar es ruido de fondo: no es lo que puede saturar el servidor, ni con 10-15 boxes reales |
+| Memoria total del servidor | 7,7 GB, 2,6 GB en uso, 5,2 GB disponible | Holgura amplia hoy |
+| Carga del sistema | 2,0 en 4 núcleos | Viene de Coolify, Immich y otros proyectos del dueño (`sst`, `prospectos`, `chatbot`, `kulombo`) que corren en la misma máquina — **no de Scalar** |
+| Conexiones activas a Postgres | 10 | Muy por debajo de cualquier límite de plan gratuito o Pro |
+
+**Corrección a §3**: la pregunta "¿aguanta widawi el box 3?" está mal planteada — Scalar en sí no genera carga medible todavía. La señal correcta para migrar a Cloud sigue siendo la misma de la tabla de arriba: **que un cliente exija débito automático**, no un número de boxes.
+
+Se encontraron en cambio dos riesgos de infraestructura reales, sin relación con Scalar ni con el número de boxes:
+
+| # | Hallazgo | Evidencia | Riesgo |
+|---|---|---|---|
+| H1 | **Un solo disco, sin redundancia** (`lsblk`: un único SSD Kingston SA400S3 de 447 GB, consumer-grade, sin RAID). SMART lo reporta sano hoy | `lsblk`, `smartctl -H /dev/sda` → PASSED | Si ese disco falla, se pierde Scalar **y** el resto de proyectos del dueño en la misma máquina (`sst`, `prospectos`, `chatbot`, `kulombo`, Immich) al mismo tiempo, sin aviso previo |
+| H2 | **widawi es un portátil**, no un servidor de torre — tiene batería (`BAT0`) degradada: 56% de su capacidad de fábrica, reportando 0% de carga en el momento de la medición | `upower -i` sobre `BAT0` | La batería ya no sirve como respaldo de energía confiable; un corte de luz apaga el servidor de golpe |
+
+**Recomendación revisada**: antes de gastar en migrar a la nube por temor a la carga de Scalar (que hoy no existe), el gasto que sí resuelve un riesgo real y actual es un **disco externo de respaldo** (~$200.000-350.000 COP, ya hay script listo en `deploy/widawi/respaldo-scalar.sh`) y un **UPS pequeño** (~$300.000-450.000 COP). Es gasto único, no mensual, y protege todos los proyectos del dueño en esa máquina, no solo Scalar.
 
 ---
 
